@@ -2,10 +2,12 @@
 ## Game Design Document
 
 **Plattform:** Meta Quest 3 (WebXR)  
-**Technologie:** A-Frame / Three.js  
+**Technologie:** A-Frame / Three.js / Web Audio API  
 **Genre:** VR Exploration / Fantasy  
 **Perspektive:** First Person VR  
-**Status:** In Entwicklung – Technische Umsetzung  
+**Repository:** https://github.com/challerbachvr/kingdoms  
+**Live URL:** https://challerbachvr.github.io/kingdoms  
+**Status:** In Entwicklung – Kesselstadt ✅ / Feenreich ✅ (Terrain + Leben + Sounds)
 
 ---
 
@@ -20,6 +22,7 @@ Jedes Reich hat eine eigene Atmosphäre, Farbpalette, Kreaturenwelt und Soundlan
 - Jede Zone erzählt ihre Geschichte durch Umgebung und Atmosphäre
 - Lebendige Welt: Kreaturen, Wind, Wasser, Tag/Nacht-Wechsel
 - Intuitive VR-Navigation mit Controller-Interaktion
+- Unterstützung für VR (Quest 3), Desktop (WASD) und Mobile (Touch-Joysticks)
 
 ---
 
@@ -39,202 +42,213 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 | Zone | Stil | Atmosphäre | Status |
 |------|------|------------|--------|
-| 🏙️ Kesselstadt | Steampunk-Mittelalter | Belebt, laut, geschäftig | ✅ Aktiv |
-| 🍄 Feenreich | Magisch, bunt | Märchenhaft & lebendig | ✅ Aktiv (Hauptzone) |
-| 🌟 Lichtreich | Hell & kristallin | Magisch, schwebend | 🔲 Kulisse |
-| 🌑 Schattenreich | Dunkel & mystisch | Nebel, Mondlicht | 🔲 Kulisse |
-| 🐉 Sturmreich | Episch & dramatisch | Gewitter, Burgen | 🔲 Kulisse |
+| 🏙️ Kesselstadt | Steampunk-Mittelalter | Belebt, laut, geschäftig | ✅ Fertig |
+| 🍄 Feenreich | Magisch, bunt | Märchenhaft & lebendig | ✅ Terrain + Leben + Sounds |
+| 🌟 Lichtreich | Hell & kristallin | Magisch, schwebend | 🔲 Kulisse geplant |
+| 🌑 Schattenreich | Dunkel & mystisch | Nebel, Mondlicht | 🔲 Kulisse geplant |
+| 🐉 Sturmreich | Episch & dramatisch | Gewitter, Burgen | 🔲 Kulisse geplant |
+
+### Zonenwechsel
+- Übergang Kesselstadt → Feenreich bei z > 33
+- Automatischer Himmel-, Licht- und Sound-Wechsel beim Betreten
+- 4-Sekunden Audio-Crossfade zwischen den Zonen
 
 ---
 
-## 3. Die Kesselstadt (Zentrum)
-
-Die Kesselstadt ist der Ausgangspunkt aller Erkundungen. Sie verbindet mittelalterliche Architektur mit Steampunk-Technologie – Zahnräder und Dampfmaschinen neben Türmen aus Stein.
+## 3. Die Kesselstadt (Zentrum) ✅
 
 ### Atmosphäre
 - Belebt und laut – die Stadt lebt rund um die Uhr
-- Tag/Nacht-Wechsel per UI steuerbar
+- Tag/Nacht-Wechsel per UI steuerbar (Morgen / Tag / Abend / Nacht)
 - Tagsüber: warmes goldenes Licht, Marktschreier, Dampfpfeifen
 - Nachts: Gaslaternen, Sterne, ruhigere aber immer noch aktive Stadt
 
 ### Architektur & Elemente
-- Kopfsteinpflaster-Straßen und mittelalterliche Gebäude
+- Kopfsteinpflaster-Straßen (prozedurale Canvas-Textur)
+- 4 Hauptgebäude mit echten Satteldächern:
+  - Schmied (SW) – 39.2° Neigung, Terrakotta-Ziegel
+  - Händlerhaus (SO) – 48° Neigung, Sandstein-Ziegel
+  - Gasthaus (NW) – 42.8° Neigung, breiter Grundriss
+  - Alchemistenladen (NO) – 39.2° Neigung, mit Rundturm
+- Steinmauer-Texturen an allen Gebäuden und Mauern
+- Vollständige Stadtmauer mit 4 Toren (N/S/O/W) und 4 Ecktürmen
+- Zinnen an allen Mauerabschnitten und Toren
+- Zentraler Brunnen auf dem Marktplatz
 - Dampfbetriebene Maschinen und Zahnradkonstruktionen
-- Luftschiffe die am Himmel kreuzen
-- Marktplatz als zentraler Treffpunkt
-- Vier große Stadttore – je eines in Richtung der vier Reiche (Nord/Süd/Ost/West)
-- Uhrtürme mit sichtbaren Zahnrädern
+- Heißluftballon am Himmel
+- Gaslaternen
+- Marktbuden mit Holztexturen
 
-### Sounds
-- Dampfpfeifen und Maschinengeräusche
-- Marktschreier und Stimmengewirr
-- Metallisches Klingen von Zahnrädern
-- Nachts: ruhigeres Ambiente, Eulenrufe, Laternen-Knistern
+### Fenster
+- Einheitliche Bernstein-Farbe (#f5c842) an allen Gebäuden
+- Abends: emissiveIntensity 0.55 (warmes Leuchten von innen)
+- Nachts: emissiveIntensity 1.0 (helles Leuchten)
+
+### Prozeduraler Himmel
+- 4 Modi: Morgen / Tag / Abend / Nacht
+- Gradient mit Sonne/Mond/Sternen und prozeduralen Wolken
+- Wechselt automatisch mit Tageszeit-UI
+
+### Stadtleben
+- 9 NPCs mit stilisierten Figuren, 9 verschiedene Kleidungsfarben
+- Patrol-System mit 28 Wegpunkten über Marktplatz und Gassen
+- 3 Hunde, 2 Katzen, 6 Hühner, 13 Vögel in 2 Schwärmen
+
+### Prozedurale Sounds (Web Audio API)
+- Tagsüber: Stimmengewirr, Dampfpfeifen, Zahnrad-Klingen, Schmiedehammer
+- Nachts: Feuerknistern, Wind, Eulenrufe
+- Sanfter 4-Sekunden Crossfade zwischen Tag und Nacht
+
+### Kollisionserkennung
+- AABB-Boxen für Gebäude und Mauern
+- Kreise für Türme und Brunnen
+- Torlücken korrekt freigelassen
 
 ---
 
-## 4. Das Feenreich (Hauptzone)
-
-Das Feenreich ist die erste vollständig ausgearbeitete Zone. Es ist eine lebendige, bunte und magische Welt – ein Mix aus verschiedenen Landschaftselementen, bevölkert von Feen, Tieren und Geistwesen.
+## 4. Das Feenreich ✅
 
 ### Farbstimmung & Atmosphäre
-- Bunt & schillernd – viele Farben gleichzeitig
-- Magisches Leuchten von Pflanzen, Kristallen und Kreaturen
-- Weiche, diffuse Beleuchtung ohne harte Schatten
-- Schimmernde Partikeleffekte in der Luft
+- Bunt & schillernd – Violett/Pink/Pastelltöne
+- Prozeduraler Himmel: Violett→Pink→Pfirsich-Gradient
+- 4 Aurora-Bänder, 280 Sterne, 2 magische Monde
+- Weiches diffuses Licht – lila Ambient + rosa Sonnenlicht
 
 ### Landschaft
+- Sanft hügelige Wiese mit Pastellfarben
+- 5 Hügel, 5 Riesenpilze, 10 kleine Pilze
+- 3 Riesenbäume mit Feendörfern in den Wurzeln
+- Kristallklarer Bach mit animiertem Wasser
+- 11 leuchtende Blumen
 
-#### Riesige Pilze
-- Verschiedene Größen – von hüfthohen bis turmhohen Exemplaren
-- Leuchtende Spots und Muster auf den Kappen
-- Farben: Türkis, Magenta, Orange, Violett, Goldgelb
-
-#### Feen-Dörfer in Baumwurzeln
-- Kleine Siedlungen versteckt in den Wurzeln riesiger Bäume
-- Winzige Türen, Fenster mit warmem Licht
-- Brücken aus geflochtenen Ranken zwischen den Wurzeln
-- Laternen aus getrockneten Pilzen
-
-#### Offene Wiese
-- Zentrales Element – verbindet alle Landschaftsteile
-- Wogendes Gras in Pastellfarben (Hellgrün, Rosa, Hellblau)
-- Magische Blumen die sich langsam öffnen und schließen
-- Kristallklarer Bach der durch die Wiese fließt
+### Prozedurale Texturen
+- `fee-grass`: Pastellgrün mit 500 Grashalmen
+- `fee-mushcap`: Organische Blobs, Spiralen, Glitzerpunkte
+- `fee-bark`: Holzmaserung mit Moos-Tint
+- `fee-foliage`: Blattwerk mit magischen Glows
+- `fee-moss`: Erde mit Moos und Kieselsteinen
+- `fee-water`: Schimmernde Wellen mit animiertem UV-Offset
 
 ### Kreaturen
+- 3 Feenschwärme (Gold/Blau/Grün), je 4 Feen mit Schwarm-KI
+- 3 weiße Hasen, 2 Füchse, 5 Schmetterlinge (Lissajous-Bahnen)
+- 3 halbtransparente Geistwesen mit pulsierender Opacity
+- Alle Tiere flüchten wenn Spieler zu nah kommt
 
-#### Kleine Feen
-- Fliegen in Schwärmen durch die Luft
-- Hinterlassen leuchtende Partikelspuren
-- Reagieren auf die Anwesenheit des Spielers – neugierig aber scheu
-- Verschiedene Farben: Goldene, Blaue, Grüne Feen
-
-#### Freundliche Tiere
-- Weiße Hasen mit leuchtenden Augen
-- Füchse mit schimmerndem Fell
-- Große bunte Schmetterlinge
-- Tiere flüchten langsam wenn man zu nah kommt
-
-#### Mysteriöse Geistwesen
-- Halbtransparente Erscheinungen die durch den Wald gleiten
-- Reagieren nicht auf den Spieler – ruhig und friedlich
-- Erscheinen hauptsächlich in der Dämmerung
-
-### Sounds
-- Glockenhelles Feen-Zwitschern
-- Sanftes Wasserrauschen des Bachs
-- Magisches Summen der Kristalle
-- Vogelgesang in ungewöhnlichen Tonlagen
-- Windgeräusche die durch die Pilze pfeifen
+### Prozedurale Sounds
+- Magisches Grundrauschen, Feen-Zwitschern, Bach-Plätschern
+- Kristall-Summen, magischer Vogelgesang, Insekten-Summen
+- 4-Sekunden Crossfade von/zu Kesselstadt-Sounds
 
 ---
 
-## 5. UI & Interaktion
+## 5. Navigation & Steuerung
 
-Die Benutzeroberfläche ist als In-World-Panel gestaltet – ein schwebendes Menü das der Spieler mit dem Controller bedienen kann.
-
-### Haupt-Menü Panel
-- **Position:** Schwebt vor dem Spieler, per Knopf ein-/ausblendbar
-- **Interaktion:** Controller zeigen + Trigger drücken
-- **Design:** Holografisch, passend zur jeweiligen Zone
-
-### Menü-Funktionen
-- 🌅 Tageszeit ändern: Morgen / Mittag / Abend / Nacht
-- 🌦️ Wetter: Sonnig / Bewölkt / Regen / Magischer Nebel
-- 🗺️ Zone wechseln: Schnellreise zu allen vier Reichen
-- 🔊 Sound: Lautstärke, Musik an/aus
-- 🥽 Modus: VR / Mixed Reality umschalten
+| Plattform | Bewegung | Kamera |
+|-----------|----------|--------|
+| Quest 3 | Linker Thumbstick (Smooth) | Rechter Thumbstick (Snap 45°) |
+| Desktop | WASD | Maus |
+| Mobile | Linker Touch-Joystick | Rechter Touch-Joystick |
 
 ---
 
-## 6. Mixed Reality Modus (Geplant)
+## 6. UI & Panel
 
-> 📌 Wird nach Fertigstellung der VR-Welt als optionaler Modus eingebaut.
+### Öffnen/Schließen
+- **Quest 3:** Menu-Button (Options) am linken Controller
+- **Desktop:** Taste `M`
+- **Mobile:** Schwebender Button unten rechts
 
-Die Meta Quest 3 bietet einen der besten Passthrough-Sensoren am Markt. Mixed Reality wird als optionaler Modus per UI-Knopf zuschaltbar sein.
-
-### Technologie
-- **API:** WebXR Depth Sensing + Plane Detection
-- **Aktivierung:** Per UI-Knopf im Hauptmenü umschaltbar
-- **Raumerkennung:** Quest 3 erkennt automatisch Flächen (Tisch, Boden, Wände)
-
-### Geplante MR-Elemente
-
-#### 🧚 Feen im echten Zimmer
-- Kleine Feen fliegen durch den realen Raum
-- Landen auf echten Oberflächen wie Tisch oder Regal
-- Hinterlassen leuchtende Partikelspuren im Raum
-
-#### 🌀 Portale in die vier Reiche
-- An echten Wänden öffnen sich leuchtende Portale
-- Durch das Portal sieht man das jeweilige Reich
-- Jedes Reich hat ein eigenes Portal-Design
-
-#### ✨ Magische Objekte auf echten Flächen
-- Leuchtende Kristalle erscheinen auf dem Tisch
-- Ein kleines Feen-Dorf wächst auf dem Boden
-- Magische Blumen sprießen aus echten Oberflächen
-
-#### 🌨️ Atmosphärische Effekte im Zimmer
-- Magische Partikel, Glühwürmchen oder Funken schweben durch den Raum
-- Passend zur aktiven Zone
+### Panel-Inhalt
+- Aktive Zone wird angezeigt
+- Tageszeit: Morgen / Tag / Abend / Nacht (nur Kesselstadt)
+- Sound Kesselstadt: An/Aus
+- Sound Feenreich: An/Aus
 
 ---
 
-## 7. Geschichte & Narrative (Geplant)
+## 7. Mixed Reality Modus (Geplant)
 
-> 📌 Wird zu einem späteren Zeitpunkt ausgearbeitet – nach Fertigstellung der visuellen Welt.
+> 📌 Wird nach Fertigstellung der VR-Welt eingebaut.
 
-### Konzept-Ideen (noch offen)
-- Was verbindet die vier Reiche mit der Kesselstadt?
-- Welches Geheimnis verbirgt jedes Reich?
-- Gibt es einen Konflikt oder eine Bedrohung die alle Reiche betrifft?
-- Wer hat die Kesselstadt erbaut – und warum verbinden Dampfmaschinen und Magie sich hier?
-
-### Geplante Storytelling-Methoden
-- **Environmental Storytelling:** Geschichte durch Ruinen, Artefakte, mysteriöse Orte
-- **NPC-Dialoge:** Bewohner erzählen Fragmente der Geschichte
-- **Questgegenstände:** Tagebuchseiten, magische Kristalle, alte Briefe
-- **Narrative UI:** Kurzer atmosphärischer Text beim Betreten einer neuen Zone
+- Feen im echten Zimmer
+- Portale in die vier Reiche an echten Wänden
+- Magische Objekte auf echten Flächen
+- Atmosphärische Partikeleffekte im Zimmer
+- Per UI-Knopf zwischen VR und MR umschaltbar
 
 ---
 
-## 8. Entwicklungs-Roadmap
+## 8. Geschichte & Narrative (Geplant)
 
-| Phase | Was | Details |
-|-------|-----|---------|
-| 1 | Leveldesign ✅ | GDD fertiggestellt, alle Zonen konzipiert |
-| 2 | Kesselstadt Basis | Terrain, Gebäude, Tag/Nacht-System |
-| 3 | Feenreich Terrain | Landschaft, Pilze, Wiese, Bäume |
-| 4 | Feenreich Leben | Kreaturen, Animationen, Sounds |
-| 5 | UI System | In-World-Menü, Navigation, Zonenauswahl |
-| 6 | Kulissen | Licht-, Schatten-, Sturmreich als Hintergründe |
-| 7 | Mixed Reality | Passthrough-Modus, Feen im Zimmer, Portale |
-| 8 | Geschichte | Narrative, NPCs, Fundstücke |
-| 9 | Polish | Partikel, Licht, Sound-Feintuning |
+> 📌 Wird nach Fertigstellung der visuellen Welt ausgearbeitet.
+
+- Environmental Storytelling
+- NPC-Dialoge
+- Questgegenstände (Tagebuchseiten, Kristalle)
+- Narrative UI beim Zonenbetreten
 
 ---
 
-## 9. Technische Hinweise für die Entwicklung
+## 9. Bekannte TODOs
 
-### Stack
-- **A-Frame** für WebXR/VR-Grundstruktur
-- **Three.js** für komplexere 3D-Elemente
-- **GitHub Pages** für Hosting
-- **Meta Quest 3 Browser** als Zielplattform
+| Priorität | Was |
+|-----------|-----|
+| 🔴 Mittel | Kollision Feenreich (Pilze, Bäume) |
+| 🟡 Niedrig | aframe-watcher funktioniert nicht mit modularer Struktur |
 
-### Performance-Regeln für Quest 3
-- Polygonanzahl pro Objekt möglichst niedrig halten
-- Texturen max. 1024x1024px
-- Wenige Draw Calls – Objekte zusammenfassen wo möglich
-- Partikeleffekte sparsam einsetzen
+---
 
-### Branch-Strategie
+## 10. Dateistruktur
+
 ```
-main                    → stabile, funktionierende Version
-├── feature/kesselstadt → Stadtentwicklung
-├── feature/feenreich   → Feenreich-Arbeit
-├── experiment/mr-modus → Mixed Reality testen
-└── experiment/story    → Narrative einbauen
+kingdoms/
+├── index.html              (64 lines – schlanker Einstiegspunkt)
+├── GDD.md                  (dieses Dokument)
+├── js/
+│   ├── textures.js         (prozedurale Canvas-Texturen)
+│   ├── sounds.js           (Web Audio Sound-Engine)
+│   ├── daynight.js         (Tag/Nacht + Steampunk-Animationen)
+│   ├── navigation.js       (Bewegung + Kollision)
+│   └── npcs.js             (NPCs, Tiere, Vögel)
+└── scenes/
+    ├── kesselstadt.js      (Kesselstadt: HTML + UI)
+    └── feenreich.js        (Feenreich: Terrain + Kreaturen + Sounds)
 ```
+
+---
+
+## 11. Entwicklungs-Roadmap
+
+| Phase | Was | Status |
+|-------|-----|--------|
+| 1 | Leveldesign & GDD | ✅ |
+| 2 | Setup (VS Code, GitHub, Quest) | ✅ |
+| 3 | Kesselstadt komplett | ✅ |
+| 4 | Feenreich Terrain + Texturen | ✅ |
+| 5 | Feenreich Kreaturen + Sounds | ✅ |
+| 6 | UI Panel | ✅ |
+| 7 | Kollision Feenreich | 🔲 |
+| 8 | Drei Kulissen-Reiche | 🔲 |
+| 9 | Mixed Reality Modus | 🔲 |
+| 10 | Geschichte & Narrative | 🔲 |
+| 11 | Polish & Optimierung | 🔲 |
+
+---
+
+## 12. Technische Hinweise & Erkenntnisse
+
+### Performance-Regeln Quest 3
+- shader:flat wo möglich
+- Kugeln max. 10×5, Zylinder max. 8 radial
+- Texturen max. 512×512px
+- Max. 9 aktive Punktlichter
+- Kein setAttribute in Tick-Schleifen
+- dt auf 50ms begrenzen
+
+### Wichtige Erkenntnisse
+- Scripts im `<head>` nie direkt `document.body` ansprechen – in A-Frame `init()` initialisieren
+- aframe-watcher funktioniert nur mit einzelner index.html
+- `rayOrigin: mouse` für kamera-relative UI-Panels verwenden
+- Zonenwechsel über Kamera-Weltposition prüfen, nicht Rig-Position
+- Canvas-Texturen einmalig zeichnen, per Clone wiederverwenden
