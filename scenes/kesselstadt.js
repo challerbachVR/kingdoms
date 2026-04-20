@@ -82,10 +82,6 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#c89070;roughness:1" tex="id:tex-tiles; repx:3; repy:1.5" shadow="cast:true"></a-box>
     <a-box position="0 7.35 0" width="5.6" height="0.2" depth="0.3"
       material="color:#7a4a28;roughness:1"></a-box>
-    <a-triangle vertex-a="-2.7 5.2 2.7" vertex-b="2.7 5.2 2.7" vertex-c="0 7.4 2.7"
-      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
-    <a-triangle vertex-a="2.7 5.2 -2.7" vertex-b="-2.7 5.2 -2.7" vertex-c="0 7.4 -2.7"
-      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
     <a-cylinder position="1 7.5 -1" radius="0.25" height="2"
       material="color:#2a2020;roughness:1" shadow="cast:true">
     </a-cylinder>
@@ -123,10 +119,6 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#c8a098;roughness:1" tex="id:tex-tiles; repx:3; repy:2" shadow="cast:true"></a-box>
     <a-box position="0 9.95 0" width="5.6" height="0.2" depth="0.3"
       material="color:#7a4a28;roughness:1"></a-box>
-    <a-triangle vertex-a="-2.7 7.0 2.7" vertex-b="2.7 7.0 2.7" vertex-c="0 10.0 2.7"
-      material="color:#ccc0b0;roughness:0.9;side:double"></a-triangle>
-    <a-triangle vertex-a="2.7 7.0 -2.7" vertex-b="-2.7 7.0 -2.7" vertex-c="0 10.0 -2.7"
-      material="color:#ccc0b0;roughness:0.9;side:double"></a-triangle>
     <a-box position="0 3.5 2.8" width="2.5" height="2" depth="1"
       material="color:#d8c8b0;roughness:0.9"
       tex="id:tex-stone; repx:1.2; repy:1">
@@ -192,10 +184,6 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#c09078;roughness:1" tex="id:tex-tiles; repx:3.5; repy:1.5" shadow="cast:true"></a-box>
     <a-box position="0 7.45 0" width="6.4" height="0.2" depth="0.3"
       material="color:#7a4a28;roughness:1"></a-box>
-    <a-triangle vertex-a="-3.1 5.0 2.7" vertex-b="3.1 5.0 2.7" vertex-c="0 7.5 2.7"
-      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
-    <a-triangle vertex-a="3.1 5.0 -2.7" vertex-b="-3.1 5.0 -2.7" vertex-c="0 7.5 -2.7"
-      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
     <a-box position="0 1.2 2.52" width="1.2" height="2.4" depth="0.06"
       material="color:#c09060;roughness:0.9"
       tex="id:tex-wood; repx:1; repy:1">
@@ -226,10 +214,6 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#a07868;roughness:1" tex="id:tex-tiles; repx:2.5; repy:1.5" shadow="cast:true"></a-box>
     <a-box position="0 6.95 0" width="4.9" height="0.2" depth="0.3"
       material="color:#7a4a28;roughness:1"></a-box>
-    <a-triangle vertex-a="-2.25 5.0 2.45" vertex-b="2.25 5.0 2.45" vertex-c="0 7.0 2.45"
-      material="color:#b8a898;roughness:0.9;side:double"></a-triangle>
-    <a-triangle vertex-a="2.25 5.0 -2.45" vertex-b="-2.25 5.0 -2.45" vertex-c="0 7.0 -2.45"
-      material="color:#b8a898;roughness:0.9;side:double"></a-triangle>
     <a-plane position="-1 3 2.26" width="0.8" height="1"
       material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
       class="window-pane">
