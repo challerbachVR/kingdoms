@@ -177,9 +177,9 @@
       };
       window.addEventListener('keydown', this._onKey);
 
-      // VR: Menu-Button linker Controller
+      // VR: X-Button linker Meta-Controller
       const lh = document.getElementById('leftHand');
-      if (lh) lh.addEventListener('menudown', () => this._toggle());
+      if (lh) lh.addEventListener('xbuttondown', () => this._toggle());
 
       // Mobile: schwebender FAB-Button
       this._buildMobileFAB();
