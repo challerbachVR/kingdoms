@@ -3,85 +3,81 @@
 // Erreichbar durch das Südtor (Welt-Z > 33).
 // ═══════════════════════════════════════════════════════════════════════════
 
-/* ── Prozeduraler Feenreich-Himmel (läuft beim Script-Load) ─────────────── */
-(function () {
-  function drawFeenSky(canvas) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
+/* ── Prozeduraler Feenreich-Himmel ──────────────────────────────────────────
+   Achtung: document.body existiert nicht wenn <script> im <head> läuft.
+   Deshalb: Funktion hier definieren, Canvas-Erstellung in feenreich-scene.init()
+   ─────────────────────────────────────────────────────────────────────────── */
+function _drawFeenSky(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
 
-    // Hauptgradient: tief-violett → lila → pink → pfirsich
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0,    '#0e001f');
-    bg.addColorStop(0.20, '#2d0055');
-    bg.addColorStop(0.48, '#8822aa');
-    bg.addColorStop(0.72, '#dd66bb');
-    bg.addColorStop(0.88, '#ffaacc');
-    bg.addColorStop(1,    '#ffd4a0');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
+  // Hauptgradient: tief-violett → lila → pink → pfirsich
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0,    '#0e001f');
+  bg.addColorStop(0.20, '#2d0055');
+  bg.addColorStop(0.48, '#8822aa');
+  bg.addColorStop(0.72, '#dd66bb');
+  bg.addColorStop(0.88, '#ffaacc');
+  bg.addColorStop(1,    '#ffd4a0');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-    // Aurora-Bänder (horizontal)
-    [
-      { y: 0.08, col: '#00ffcc', a: 0.28 },
-      { y: 0.18, col: '#aa44ff', a: 0.22 },
-      { y: 0.30, col: '#ff44aa', a: 0.18 },
-      { y: 0.42, col: '#44ffbb', a: 0.14 },
-    ].forEach(({ y, col, a }) => {
-      const yc = H * y;
-      const gr = ctx.createLinearGradient(0, yc - 45, 0, yc + 45);
-      gr.addColorStop(0,   'rgba(0,0,0,0)');
-      gr.addColorStop(0.5, col + Math.round(a * 255).toString(16).padStart(2, '0'));
-      gr.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = gr;
-      ctx.fillRect(0, yc - 45, W, 90);
-    });
+  // Aurora-Bänder (horizontal)
+  [
+    { y: 0.08, col: '#00ffcc', a: 0.28 },
+    { y: 0.18, col: '#aa44ff', a: 0.22 },
+    { y: 0.30, col: '#ff44aa', a: 0.18 },
+    { y: 0.42, col: '#44ffbb', a: 0.14 },
+  ].forEach(({ y, col, a }) => {
+    const yc = H * y;
+    const gr = ctx.createLinearGradient(0, yc - 45, 0, yc + 45);
+    gr.addColorStop(0,   'rgba(0,0,0,0)');
+    gr.addColorStop(0.5, col + Math.round(a * 255).toString(16).padStart(2, '0'));
+    gr.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.fillRect(0, yc - 45, W, 90);
+  });
 
-    // Sterne
-    const starPalette = ['#ffffff', '#ffccff', '#ccffff', '#ffffcc', '#ffbbee'];
-    for (let i = 0; i < 280; i++) {
-      const x = Math.random() * W;
-      const y = Math.random() * H * 0.62;
-      const r = 0.4 + Math.random() * 1.8;
-      ctx.fillStyle = starPalette[Math.floor(Math.random() * starPalette.length)];
-      ctx.globalAlpha = 0.35 + Math.random() * 0.65;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
+  // Sterne
+  const starPalette = ['#ffffff', '#ffccff', '#ccffff', '#ffffcc', '#ffbbee'];
+  for (let i = 0; i < 280; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H * 0.62;
+    const r = 0.4 + Math.random() * 1.8;
+    ctx.fillStyle = starPalette[Math.floor(Math.random() * starPalette.length)];
+    ctx.globalAlpha = 0.35 + Math.random() * 0.65;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 
-    // Magische Wolkenschimmer
-    const cloudCols = ['#ff88cc', '#aa88ff', '#88ccff', '#ffaa88', '#cc88ff'];
-    for (let i = 0; i < 12; i++) {
-      const x  = Math.random() * W;
-      const y  = H * (0.38 + Math.random() * 0.50);
-      const rw = 55 + Math.random() * 130;
-      const rh = rw * (0.22 + Math.random() * 0.18);
-      const col = cloudCols[i % cloudCols.length];
-      const gr = ctx.createRadialGradient(x, y, 0, x, y, rw);
-      gr.addColorStop(0, col + 'aa');
-      gr.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = gr;
-      ctx.beginPath(); ctx.ellipse(x, y, rw, rh, 0, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // Zwei magische Monde / Orbs
-    [
-      { x: W * 0.22, y: H * 0.20, r: 26, col: '#ffeedd' },
-      { x: W * 0.78, y: H * 0.13, r: 16, col: '#ddeeff' },
-    ].forEach(({ x, y, r, col }) => {
-      const gr = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 1, x, y, r * 1.4);
-      gr.addColorStop(0,   '#ffffff');
-      gr.addColorStop(0.4, col);
-      gr.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = gr;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    });
+  // Magische Wolkenschimmer
+  const cloudCols = ['#ff88cc', '#aa88ff', '#88ccff', '#ffaa88', '#cc88ff'];
+  for (let i = 0; i < 12; i++) {
+    const x  = Math.random() * W;
+    const y  = H * (0.38 + Math.random() * 0.50);
+    const rw = 55 + Math.random() * 130;
+    const rh = rw * (0.22 + Math.random() * 0.18);
+    const col = cloudCols[i % cloudCols.length];
+    const gr = ctx.createRadialGradient(x, y, 0, x, y, rw);
+    gr.addColorStop(0, col + 'aa');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.ellipse(x, y, rw, rh, 0, 0, Math.PI * 2); ctx.fill();
   }
 
-  const c = document.createElement('canvas');
-  c.id = 'fee-sky-canvas'; c.width = 1024; c.height = 512; c.style.display = 'none';
-  document.body.appendChild(c);
-  drawFeenSky(c);
-})();
+  // Zwei magische Monde / Orbs
+  [
+    { x: W * 0.22, y: H * 0.20, r: 26, col: '#ffeedd' },
+    { x: W * 0.78, y: H * 0.13, r: 16, col: '#ddeeff' },
+  ].forEach(({ x, y, r, col }) => {
+    const gr = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 1, x, y, r * 1.4);
+    gr.addColorStop(0,   '#ffffff');
+    gr.addColorStop(0.4, col);
+    gr.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  });
+}
 
 /* ── Bach: prozedurale Three.js-Geometrie als Schleife ──────────────────── */
 AFRAME.registerComponent('fairy-stream', {
@@ -207,6 +203,14 @@ AFRAME.registerComponent('fairy-dust', {
 /* ── Feenreich-Szene: Zone-Erkennung + Himmelswechsel ──────────────────── */
 AFRAME.registerComponent('feenreich-scene', {
   init() {
+    // Canvas hier erstellen – document.body existiert jetzt sicher
+    if (!document.getElementById('fee-sky-canvas')) {
+      const c = document.createElement('canvas');
+      c.id = 'fee-sky-canvas'; c.width = 1024; c.height = 512; c.style.display = 'none';
+      document.body.appendChild(c);
+      _drawFeenSky(c);
+    }
+
     this.el.insertAdjacentHTML('beforeend', FEENREICH_HTML);
     this._inFeen = false;
     this._cam    = null;

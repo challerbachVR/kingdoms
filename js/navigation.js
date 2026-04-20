@@ -242,3 +242,120 @@ AFRAME.registerComponent('vr-teleport', {
     });
   }
 });
+
+// ── Spieler-Kollisionserkennung ──────────────────────────────────────────────
+// Funktioniert sowohl mit Desktop-WASD (bewegt camera) als auch
+// mit Quest-3-vr-movement (bewegt rig). Push wird immer auf den Rig
+// angewendet – das verschiebt die Kamera-Weltposition in beiden Modi korrekt.
+// ─────────────────────────────────────────────────────────────────────────────
+AFRAME.registerComponent('player-collision', {
+  schema: { radius: { default: 0.38 } },
+
+  init() {
+    this._rig  = null;
+    this._cam  = null;
+    this._wp   = new THREE.Vector3();
+    this._push = new THREE.Vector3();
+
+    // ── Kreisförmige Hindernisse { cx, cz, r } ──────────────────────────────
+    // Brunnen, Türme, runde Gebäudeteile
+    this._circles = [
+      { cx:   0,   cz:   0,  r: 2.20 },  // Marktbrunnen
+      { cx: -14,   cz:  -2,  r: 2.50 },  // Uhrturm
+      { cx:  11.5, cz:   6,  r: 1.40 },  // Alchemisten-Ecke-Turm
+      // Tor-N Türme (gate entity z=-28, Türme bei local ±4)
+      { cx:  -4,   cz: -28,  r: 2.45 },
+      { cx:   4,   cz: -28,  r: 2.45 },
+      // Tor-S Türme (gate entity z=+28)
+      { cx:  -4,   cz:  28,  r: 2.45 },
+      { cx:   4,   cz:  28,  r: 2.45 },
+      // Tor-O Türme (gate entity x=+28, rotiert 90° → Türme bei world (28, ±4))
+      { cx:  28,   cz:   4,  r: 2.45 },
+      { cx:  28,   cz:  -4,  r: 2.45 },
+      // Tor-W Türme (gate entity x=-28)
+      { cx: -28,   cz:   4,  r: 2.45 },
+      { cx: -28,   cz:  -4,  r: 2.45 },
+    ];
+
+    // ── Rechteckige Hindernisse AABB { x0, x1, z0, z1 } ────────────────────
+    // Koordinaten sind Weltkoordinaten der Gebäude-Außenkanten
+    this._boxes = [
+      // Gebäude NW – Schmied   (entity -9,0,-8 · box 5×5)
+      { x0: -11.8, x1:  -6.2, z0: -10.8, z1:  -5.2 },
+      // Gebäude NO – Händler   (entity  9,0,-8 · box 5×5)
+      { x0:   6.2, x1:  11.8, z0: -10.8, z1:  -5.2 },
+      // Gebäude SW – Gasthaus  (entity -9,0, 8 · box 6×5)
+      { x0: -12.3, x1:  -5.7, z0:   5.2, z1:  10.8 },
+      // Gebäude SO – Alchemist (entity  9,0, 8 · box 4.5×4.5)
+      { x0:   6.5, x1:  11.5, z0:   5.8, z1:  10.2 },
+      // Dampfmaschine          (entity 13,0,-2 · grobe Hülle)
+      { x0:  10.8, x1:  15.5, z0:  -3.2, z1:   1.2 },
+
+      // ── Stadtmauern – je in zwei Hälften aufgeteilt (Durchgang freilassen) ──
+      // Jede Seite hat eine Lücke von x/z ∈ [-3, +3] für den Torweg.
+      // Tor-N  (z ≈ -28)
+      { x0: -45, x1:  -3.0, z0: -29.5, z1: -26.5 },
+      { x0:  3.0, x1:  45,  z0: -29.5, z1: -26.5 },
+      // Tor-S  (z ≈ +28)
+      { x0: -45, x1:  -3.0, z0:  26.5, z1:  29.5 },
+      { x0:  3.0, x1:  45,  z0:  26.5, z1:  29.5 },
+      // Tor-O  (x ≈ +28)
+      { x0:  26.5, x1:  29.5, z0: -45,  z1:  -3.0 },
+      { x0:  26.5, x1:  29.5, z0:  3.0,  z1:  45  },
+      // Tor-W  (x ≈ -28)
+      { x0: -29.5, x1: -26.5, z0: -45,  z1:  -3.0 },
+      { x0: -29.5, x1: -26.5, z0:  3.0,  z1:  45  },
+    ];
+  },
+
+  tick(t, dt) {
+    if (!dt || dt > 200) return;
+    if (!this._rig) this._rig = document.getElementById('rig');
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._rig || !this._cam) return;
+
+    // Kamera-Weltposition (korrekt in Desktop- und VR-Modus)
+    this._cam.object3D.getWorldPosition(this._wp);
+    const px = this._wp.x;
+    const pz = this._wp.z;
+    const R  = this.data.radius;
+    this._push.set(0, 0, 0);
+
+    // ── Kreise: radiale Ausstoßung ─────────────────────────────────────────
+    for (const c of this._circles) {
+      const dx = px - c.cx;
+      const dz = pz - c.cz;
+      const d  = Math.sqrt(dx * dx + dz * dz);
+      const minD = c.r + R;
+      if (d < minD && d > 1e-4) {
+        const pen = minD - d;
+        this._push.x += (dx / d) * pen;
+        this._push.z += (dz / d) * pen;
+      }
+    }
+
+    // ── Boxen: minimaler Ausstoß auf der flachsten Achse ──────────────────
+    for (const b of this._boxes) {
+      if (px <= b.x0 - R || px >= b.x1 + R) continue;
+      if (pz <= b.z0 - R || pz >= b.z1 + R) continue;
+
+      // Eindringtiefe je Seite
+      const dX0 = px - (b.x0 - R); // West-Seite
+      const dX1 = (b.x1 + R) - px; // Ost-Seite
+      const dZ0 = pz - (b.z0 - R); // Nord-Seite
+      const dZ1 = (b.z1 + R) - pz; // Süd-Seite
+
+      const m = Math.min(dX0, dX1, dZ0, dZ1);
+      if      (m === dX0) this._push.x -= dX0;
+      else if (m === dX1) this._push.x += dX1;
+      else if (m === dZ0) this._push.z -= dZ0;
+      else                this._push.z += dZ1;
+    }
+
+    // Push auf Rig anwenden (verschiebt Kamera-Weltposition in beiden Modi)
+    if (this._push.x !== 0 || this._push.z !== 0) {
+      this._rig.object3D.position.x += this._push.x;
+      this._rig.object3D.position.z += this._push.z;
+    }
+  },
+});

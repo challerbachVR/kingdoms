@@ -11,6 +11,7 @@ AFRAME.registerComponent('kesselstadt-scene', {
     // UI-Buttons und VR-Audio nach vollständigem Laden verdrahten
     this.el.addEventListener('loaded', () => {
       this.el.querySelectorAll('.ui-btn').forEach(btn => {
+        if (!btn.getAttribute('data-mode')) return; // Teleport-Button überspringen
         const setMode = () =>
           this.el.setAttribute('daynight', `mode: ${btn.getAttribute('data-mode')}`);
         btn.addEventListener('click',       setMode);
@@ -583,7 +584,7 @@ const KESSELSTADT_HTML = /* html */`
     <a-box position="0 0 0.02" width="2.85" height="0.57" depth="0.02"
       material="color:#2a6040;metalness:0.5;roughness:0.4"></a-box>
     <a-box id="btn-feenreich" position="0 0 0.06" width="2.6" height="0.40" depth="0.06"
-      material="color:#1a5c30;metalness:0.3"
+      material="color:#1a5c30;metalness:0.3" class="ui-btn"
       event-set__mouseenter="material.color: #2a8844"
       event-set__mouseleave="material.color: #1a5c30">
       <a-text value="Zum Feenreich (Test)" position="0 0 0.05" align="center" color="#88ffbb" width="2.6"></a-text>
