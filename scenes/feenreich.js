@@ -598,6 +598,12 @@ AFRAME.registerComponent('feenreich-scene', {
     this._amb    = null;
     this._sun    = null;
     this._camWP  = new THREE.Vector3();
+
+    // Standardhimmel einmalig beim Start anwenden (tick läuft nur bei Zonenänderung)
+    this.el.addEventListener('loaded', () => {
+      this._sky = document.getElementById('sky-sphere');
+      this._swapSkyTo('sky-canvas');
+    });
   },
 
   _swapSkyTo(canvasId) {
