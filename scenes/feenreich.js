@@ -631,6 +631,7 @@ AFRAME.registerComponent('feenreich-scene', {
     const feen = this._camWP.z > 33;
     if (feen === this._inFeen) return;
     this._inFeen = feen;
+    if (window._KS) window._KS.setZone(feen ? 'feen' : 'city');
 
     if (feen) {
       this._swapSkyTo('fee-sky-canvas');
@@ -668,7 +669,7 @@ const FEENREICH_HTML = /* html */`
   </a-plane>
 
   <!-- ═══ HAUPTWIESE ═══ -->
-  <a-plane position="0 0 82" rotation="-90 0 0" width="130" height="110"
+  <a-plane position="0 0.005 83" rotation="-90 0 0" width="130" height="108"
     tex="id:fee-grass;repx:18;repy:15"
     material="color:#ffffff;shader:flat">
   </a-plane>

@@ -54,7 +54,7 @@ const KESSELSTADT_HTML = /* html */`
   </a-entity>
 
   <!-- ═══ BODEN ═══ -->
-  <a-plane position="0 0 0" rotation="-90 0 0" width="80" height="80"
+  <a-plane position="0 0 -5.5" rotation="-90 0 0" width="80" height="69"
     material="color:#ffffff;roughness:1"
     tex="id:tex-cobble; repx:20; repy:20"
     shadow="receive:true">
@@ -589,6 +589,113 @@ const KESSELSTADT_HTML = /* html */`
       event-set__mouseleave="material.color: #1a5c30">
       <a-text value="Zum Feenreich (Test)" position="0 0 0.05" align="center" color="#88ffbb" width="2.6"></a-text>
     </a-box>
+  </a-entity>
+
+  <!-- ═══ MAUERERGÄNZUNGEN – Ecktürme und lückenschließende Wandsegmente ═══ -->
+  <!-- Lücken: N/S-Wand von x=±18 bis x=±26; O/W-Wand von z=±18 bis z=±26     -->
+  <!-- Ecktürme bei (±28, 0, ±28) schließen die verbleibenden Eckpunkte.        -->
+
+  <!-- ── Ecktürme ──────────────────────────────────────────────────────────── -->
+  <a-entity position="28 0 -28">
+    <a-cylinder position="0 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true"></a-cylinder>
+    <a-cone position="0 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
+  </a-entity>
+  <a-entity position="-28 0 -28">
+    <a-cylinder position="0 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true"></a-cylinder>
+    <a-cone position="0 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
+  </a-entity>
+  <a-entity position="28 0 28">
+    <a-cylinder position="0 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true"></a-cylinder>
+    <a-cone position="0 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
+  </a-entity>
+  <a-entity position="-28 0 28">
+    <a-cylinder position="0 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true"></a-cylinder>
+    <a-cone position="0 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
+  </a-entity>
+
+  <!-- ── N-Wand: x=−26…−18 bei z=−28 ──────────────────────────────────────── -->
+  <a-entity position="-22 0 -28">
+    <a-box position="0 3 0" width="8" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:4; repy:3" shadow="cast:true"></a-box>
+    <a-box position="-3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+  <!-- ── N-Wand: x=+18…+26 bei z=−28 ──────────────────────────────────────── -->
+  <a-entity position="22 0 -28">
+    <a-box position="0 3 0" width="8" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:4; repy:3" shadow="cast:true"></a-box>
+    <a-box position="-3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+
+  <!-- ── S-Wand: x=−26…−18 bei z=+28 ──────────────────────────────────────── -->
+  <a-entity position="-22 0 28">
+    <a-box position="0 3 0" width="8" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:4; repy:3" shadow="cast:true"></a-box>
+    <a-box position="-3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+  <!-- ── S-Wand: x=+18…+26 bei z=+28 ──────────────────────────────────────── -->
+  <a-entity position="22 0 28">
+    <a-box position="0 3 0" width="8" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:4; repy:3" shadow="cast:true"></a-box>
+    <a-box position="-3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 1 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position=" 3 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+
+  <!-- ── O-Wand: z=−26…−18 bei x=+28 ──────────────────────────────────────── -->
+  <!-- Zinnen laufen in Z-Richtung → width=1.8 (Wandtiefe), depth=1          -->
+  <a-entity position="28 0 -22">
+    <a-box position="0 3 0" width="1.6" height="6" depth="8"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:1; repy:3" shadow="cast:true"></a-box>
+    <a-box position="0 6.5 -3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5 -1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+  <!-- ── O-Wand: z=+18…+26 bei x=+28 ──────────────────────────────────────── -->
+  <a-entity position="28 0 22">
+    <a-box position="0 3 0" width="1.6" height="6" depth="8"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:1; repy:3" shadow="cast:true"></a-box>
+    <a-box position="0 6.5 -3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5 -1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+
+  <!-- ── W-Wand: z=−26…−18 bei x=−28 ──────────────────────────────────────── -->
+  <a-entity position="-28 0 -22">
+    <a-box position="0 3 0" width="1.6" height="6" depth="8"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:1; repy:3" shadow="cast:true"></a-box>
+    <a-box position="0 6.5 -3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5 -1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+  <!-- ── W-Wand: z=+18…+26 bei x=−28 ──────────────────────────────────────── -->
+  <a-entity position="-28 0 22">
+    <a-box position="0 3 0" width="1.6" height="6" depth="8"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:1; repy:3" shadow="cast:true"></a-box>
+    <a-box position="0 6.5 -3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5 -1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  1" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="0 6.5  3" width="1.8" height="1" depth="1" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
   </a-entity>
 
   <!-- ═══ STADTLEBEN ═══ -->

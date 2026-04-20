@@ -275,6 +275,11 @@ AFRAME.registerComponent('player-collision', {
       // Tor-W Türme (gate entity x=-28)
       { cx: -28,   cz:   4,  r: 2.45 },
       { cx: -28,   cz:  -4,  r: 2.45 },
+      // Ecktürme
+      { cx:  28,   cz: -28,  r: 2.45 },
+      { cx: -28,   cz: -28,  r: 2.45 },
+      { cx:  28,   cz:  28,  r: 2.45 },
+      { cx: -28,   cz:  28,  r: 2.45 },
     ];
 
     // ── Rechteckige Hindernisse AABB { x0, x1, z0, z1 } ────────────────────
