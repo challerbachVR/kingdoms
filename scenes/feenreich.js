@@ -1048,4 +1048,7 @@ const FEENREICH_HTML = /* html */`
   <a-entity position="0 8 75"  light="type:point;color:#cc88ff;intensity:0.45;distance:55"></a-entity>
   <a-entity position="0 6 75"  light="type:point;color:#88ccff;intensity:0.30;distance:35"></a-entity>
 
+  <!-- ═══ KREATUREN – Feen, Tiere, Geistwesen ═══ -->
+  <a-entity feenreich-life></a-entity>
+
 `;
