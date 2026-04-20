@@ -6,29 +6,19 @@
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; }
-    /* Mauszeiger als Pointer wenn er über UI-Buttons schwebt */
     .a-canvas { cursor: default; }
   </style>
 
-  <!-- Prozedurale Texturen + tex-Komponente -->
   <script src="js/textures.js"></script>
-  <!-- Web Audio Sound-Engine -->
   <script src="js/sounds.js"></script>
-  <!-- Tag/Nacht-System, Zahnräder, Dampf -->
   <script src="js/daynight.js"></script>
-  <!-- VR Controller-Navigation -->
   <script src="js/navigation.js"></script>
-  <!-- NPCs, Tiere, Vögel -->
   <script src="js/npcs.js"></script>
-  <!-- Kesselstadt-Szene -->
   <script src="scenes/kesselstadt.js"></script>
-  <!-- Feenreich-Szene -->
   <script src="scenes/feenreich.js"></script>
-  <!-- Feenreich Kreaturen (Feen, Tiere, Geistwesen) -->
+  <script src="scenes/lichtreich.js"></script>
   <script src="js/feenreich-creatures.js"></script>
-  <!-- Mobile Touch-Joysticks -->
   <script src="js/touch-controls.js"></script>
-  <!-- Holografisches UI-Panel (Tageszeit, Sound, Zone) -->
   <script src="js/ui-panel.js"></script>
 </head>
 <body>
@@ -41,29 +31,25 @@
   daynight="mode:day"
   kesselstadt-scene
   feenreich-scene
+  lichtreich-scene
   player-collision
   ui-panel-manager
   id="scene">
 
-  <!-- ═══════════════════ LICHT ═══════════════════ -->
   <a-entity id="sun" position="5 12 -8"
     light="type:directional;intensity:1.1;color:#fff5cc;castShadow:true;
            shadowCameraLeft:-40;shadowCameraRight:40;shadowCameraTop:40;shadowCameraBottom:-40;
            shadowMapWidth:2048;shadowMapHeight:2048">
   </a-entity>
-  <a-entity id="ambLight" light="type:ambient;intensity:0.7;color:#fff8f0"></a-entity>
 
-  <!-- ═══════════════════ SPIELER-RIG ═══════════════════ -->
-  <a-entity id="rig" position="0 0 10"
-    vr-movement
-    vr-teleport>
+  <a-entity id="ambLight"
+    light="type:ambient;intensity:0.7;color:#fff8f0">
+  </a-entity>
+
+  <a-entity light-beam-effect></a-entity>
+
+  <a-entity id="rig" position="0 0 10" vr-movement vr-teleport>
     <a-camera id="camera" wasd-controls="acceleration:20" look-controls>
-      <!--
-        rayOrigin:mouse → Strahl kommt vom echten Mauszeiger (kein Pointer-Lock nötig).
-        Das kamera-relative Panel hat dadurch feste Bildschirm-Positionen →
-        Desktop-Klicks landen korrekt auf den Buttons.
-        In VR übernimmt der Laser-Controller (rightHand), Ring-Cursor ist dort nicht nötig.
-      -->
       <a-cursor
         cursor="rayOrigin: mouse"
         raycaster="objects: .ui-btn; far: 20"
@@ -73,11 +59,13 @@
         position="0 0 -1">
       </a-cursor>
     </a-camera>
-    <!-- Linke Hand: Bewegung + Teleport -->
+
     <a-entity id="leftHand" oculus-touch-controls="hand:left"></a-entity>
-    <!-- Rechte Hand: Snap-Turn + UI-Laser -->
-    <a-entity id="rightHand" oculus-touch-controls="hand:right"
-      laser-controls="hand:right" raycaster="objects:.ui-btn;far:10">
+
+    <a-entity id="rightHand"
+      oculus-touch-controls="hand:right"
+      laser-controls="hand:right"
+      raycaster="objects:.ui-btn;far:10">
     </a-entity>
   </a-entity>
 

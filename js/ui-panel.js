@@ -116,7 +116,7 @@
   AFRAME.registerComponent('ui-panel-manager', {
     init() {
       this._vis       = false;
-      this._inFeen    = false;
+      this._zone      = 'city';
       this._cityMuted = false;
       this._feenMuted = false;
       this._panel     = null;
@@ -138,7 +138,7 @@
         const btn = document.getElementById('ui-btn-' + mode);
         if (!btn) return;
         const act = () => {
-          if (this._inFeen) return;                          // im Feenreich gesperrt
+          if (this._zone !== 'city') return;                 // nur in Kesselstadt aktiv
           this.el.setAttribute('daynight', 'mode: ' + mode);
           if (window._KS) window._KS.setMode(mode);
         };
@@ -165,7 +165,7 @@
 
       // Zone-Wechsel (kommt von feenreich-scene)
       this.el.addEventListener('zone-changed', e => {
-        this._inFeen = (e.detail.zone === 'feen');
+        this._zone = e.detail.zone || 'city';
         this._updateZoneLabel();
         this._updateTimeBtns();
       });
@@ -195,8 +195,14 @@
     _updateZoneLabel() {
       const el = document.getElementById('ui-zone-text');
       if (!el) return;
-      el.setAttribute('value', this._inFeen ? 'Feenreich' : 'Kesselstadt');
-      el.setAttribute('color', this._inFeen ? '#88ffaa' : '#88ffcc');
+      const map = {
+        city:  { label: 'Kesselstadt', color: '#88ffcc' },
+        feen:  { label: 'Feenreich',   color: '#88ffaa' },
+        licht: { label: 'Lichtreich',  color: '#fff2a8' },
+      };
+      const zone = map[this._zone] || map.city;
+      el.setAttribute('value', zone.label);
+      el.setAttribute('color', zone.color);
     },
 
     // ── Tageszeit-Buttons: normal oder ausgegraut ────────────────────────────
@@ -204,7 +210,7 @@
       ['morning', 'day', 'evening', 'night'].forEach(m => {
         const btn = document.getElementById('ui-btn-' + m);
         if (!btn) return;
-        if (this._inFeen) {
+        if (this._zone !== 'city') {
           btn.setAttribute('material', GRAY_MAT);
         } else {
           btn.setAttribute('material',
