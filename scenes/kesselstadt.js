@@ -417,10 +417,14 @@ const KESSELSTADT_HTML = /* html */`
     <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
     <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
       material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.6; repy:0.4"></a-box>
+    <!-- Schild Südseite (sichtbar aus dem Feenreich) -->
     <a-box position="0 7.5 0.85" width="3" height="0.8" depth="0.2"
       material="color:#c8a060;roughness:0.9" tex="id:tex-wood; repx:2; repy:0.6"></a-box>
-    <a-text value="FEENREICH" position="0 7.5 0.96" align="center" color="#88ff88" width="3.5"
-      font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+    <a-text value="FEENREICH" position="0 7.5 0.96" align="center" color="#88ff88" width="3.5"></a-text>
+    <!-- Schild Nordseite (sichtbar aus der Kesselstadt) -->
+    <a-box position="0 7.5 -0.85" width="3" height="0.8" depth="0.2"
+      material="color:#c8a060;roughness:0.9" tex="id:tex-wood; repx:2; repy:0.6"></a-box>
+    <a-text value="FEENREICH" position="0 7.5 -0.96" rotation="0 180 0" align="center" color="#88ff88" width="3.5"></a-text>
     <a-box position="-12 3 0" width="12" height="6" depth="1.6"
       material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true"></a-box>
     <a-box position="12 3 0" width="12" height="6" depth="1.6"
