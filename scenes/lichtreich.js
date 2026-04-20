@@ -450,26 +450,17 @@ const LICHTREICH_HTML = /* html */ `
   
 <!-- ═══ SCHMALE GRENZMAUER ZUM FEENREICH ═══ -->
 
-<!-- Hauptwand (schmal!) -->
-<!-- LICHTREICH-SEITE -->
-<a-box
-  position="-36.2 7 40"
-  width="6"
-  height="14"
-  depth="70"
-  tex="id: tex-stone; repx: 1; repy: 3"
+<!-- Grenzmauer: zwei Planes mit ausreichend Abstand, kein gemeinsamer Strukturblock -->
+<!-- Lichtreich-Seite (Normale zeigt in -X, sichtbar von Westen) -->
+<a-plane position="-36.5 7 40" rotation="0 -90 0" width="70" height="14"
+  tex="id: tex-stone; repx: 5; repy: 3"
   material="color:#5b6670; shader:flat">
-</a-box>
-
-<!-- FEEN-SEITE -->
-<a-box
-  position="-35.8 7 40"
-  width="6"
-  height="14"
-  depth="70"
-  tex="id: tex-feen; repx: 2; repy: 2"
+</a-plane>
+<!-- Feenreich-Seite (Normale zeigt in +X, sichtbar von Osten) -->
+<a-plane position="-35.5 7 40" rotation="0 90 0" width="70" height="14"
+  tex="id: tex-feen; repx: 5; repy: 3"
   material="color:#ffffff; shader:flat">
-</a-box>
+</a-plane>
 
 <!-- Rundbastion vorne -->
 <a-cylinder
@@ -530,58 +521,56 @@ const LICHTREICH_HTML = /* html */ `
   material="color:#cfeeff; emissive:#aee9ff; emissiveIntensity:0.12; shader:flat">
 </a-cone>
 
-  <!-- FEEN-WURZELN -->
-<a-entity position="-36 0 0">
+  <!-- FEEN-WURZELN – wachsen von der Mauerseite in das Feenreich (+X-Richtung) -->
 
-  <a-cone position="0 3 20" rotation="0 0 12" scale="1 1 1"
-    radius-bottom="1.5" radius-top="0.2" height="6"
-    material="color:#8bbf6a; shader:flat"></a-cone>
+  <!-- Wurzelgruppe bei z≈38 (Feenreich-Eingang) -->
+  <a-entity position="-35.6 0 38">
+    <!-- Hauptwurzel: horizontal in +X -->
+    <a-cylinder radius="0.50" height="5.5" position="1.8 0.9 0"
+      rotation="0 0 -72" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
+    <!-- Seitenwurzel links-tief -->
+    <a-cylinder radius="0.38" height="4.0" position="0.8 0.5 1.4"
+      rotation="0 -22 -66" segments-radial="6" material="color:#42280e; shader:flat"></a-cylinder>
+    <!-- Seitenwurzel rechts -->
+    <a-cylinder radius="0.32" height="3.5" position="2.2 0.4 -1.2"
+      rotation="0 18 -62" segments-radial="6" material="color:#3c240c; shader:flat"></a-cylinder>
+    <!-- Moos-Boden -->
+    <a-plane position="1.5 0.02 0" rotation="-90 0 0" width="5" height="4"
+      tex="id:fee-moss;repx:2;repy:1.5"
+      material="color:#ffffff;shader:flat;opacity:0.80;transparent:true"></a-plane>
+  </a-entity>
 
-  <a-cone position="0 2.5 32" rotation="0 0 -18" scale="0.8 0.9 0.8"
-    radius-bottom="1.2" radius-top="0.2" height="5"
-    material="color:#7fb85f; shader:flat"></a-cone>
+  <!-- Wurzelgruppe bei z≈52 (Mitte der Mauer) -->
+  <a-entity position="-35.6 0 52">
+    <a-cylinder radius="0.55" height="6.0" position="2.0 1.0 0"
+      rotation="0 0 -70" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
+    <a-cylinder radius="0.40" height="4.5" position="1.0 0.6 1.8"
+      rotation="0 -28 -65" segments-radial="6" material="color:#42280e; shader:flat"></a-cylinder>
+    <a-cylinder radius="0.35" height="3.8" position="2.5 0.4 -0.8"
+      rotation="0 14 -60" segments-radial="6" material="color:#3c240c; shader:flat"></a-cylinder>
+    <a-cylinder radius="0.28" height="3.0" position="0.6 0.3 -1.5"
+      rotation="0 32 -58" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
+    <a-plane position="1.8 0.02 0" rotation="-90 0 0" width="6" height="4.5"
+      tex="id:fee-moss;repx:2;repy:1.5"
+      material="color:#ffffff;shader:flat;opacity:0.82;transparent:true"></a-plane>
+  </a-entity>
 
-  <a-cone position="0 4 45" rotation="0 0 8" scale="1.1 1 1"
-    radius-bottom="1.6" radius-top="0.2" height="6.5"
-    material="color:#90c770; shader:flat"></a-cone>
-
-</a-entity>
-
-<a-entity position="-36 0 40">
-
-  <a-cone position="0 3 20" rotation="0 0 12" scale="1 1 1"
-    radius-bottom="1.5" radius-top="0.2" height="6"
-    material="color:#8bbf6a; shader:flat"></a-cone>
-
-  <a-cone position="0 2.5 32" rotation="0 0 -18" scale="0.8 0.9 0.8"
-    radius-bottom="1.2" radius-top="0.2" height="5"
-    material="color:#7fb85f; shader:flat"></a-cone>
-
-  <a-cone position="0 4 45" rotation="0 0 8" scale="1.1 1 1"
-    radius-bottom="1.6" radius-top="0.2" height="6.5"
-    material="color:#90c770; shader:flat"></a-cone>
-
-</a-entity>
-
-<a-entity position="-36 0 -40">
-
-  <a-cone position="0 3 20" rotation="0 0 12" scale="1 1 1"
-    radius-bottom="1.5" radius-top="0.2" height="6"
-    material="color:#8bbf6a; shader:flat"></a-cone>
-
-  <a-cone position="0 2.5 32" rotation="0 0 -18" scale="0.8 0.9 0.8"
-    radius-bottom="1.2" radius-top="0.2" height="5"
-    material="color:#7fb85f; shader:flat"></a-cone>
-
-  <a-cone position="0 4 45" rotation="0 0 8" scale="1.1 1 1"
-    radius-bottom="1.6" radius-top="0.2" height="6.5"
-    material="color:#90c770; shader:flat"></a-cone>
-
-</a-entity>
+  <!-- Wurzelgruppe bei z≈67 (hinten, in Richtung tiefer Feenreich) -->
+  <a-entity position="-35.6 0 67">
+    <a-cylinder radius="0.60" height="7.0" position="2.2 1.2 0"
+      rotation="0 0 -74" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
+    <a-cylinder radius="0.45" height="5.0" position="1.2 0.7 2.0"
+      rotation="0 -25 -67" segments-radial="6" material="color:#42280e; shader:flat"></a-cylinder>
+    <a-cylinder radius="0.38" height="4.2" position="2.8 0.5 -1.0"
+      rotation="0 20 -63" segments-radial="6" material="color:#3c240c; shader:flat"></a-cylinder>
+    <a-plane position="2.0 0.02 0" rotation="-90 0 0" width="6" height="5"
+      tex="id:fee-moss;repx:2;repy:2"
+      material="color:#ffffff;shader:flat;opacity:0.78;transparent:true"></a-plane>
+  </a-entity>
 
   <!-- ═══ HAUPTFLÄCHE ═══ -->
   <a-plane
-    position="-86 0.6 0"
+    position="-86 0.01 0"
     rotation="-90 0 0"
     width="106"
     height="132"
