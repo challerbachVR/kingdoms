@@ -894,6 +894,18 @@ const FEENREICH_HTML = /* html */`
     </a-sphere>
 
     <!-- Feendorf in den Wurzeln -->
+    <a-box width="0.10" height="0.06" depth="4.0" position=" 0.2 0.65  1.2" rotation="0 -20 0"
+      material="color:#8a6540;shader:flat">
+    </a-box>
+    <a-box width="0.10" height="0.06" depth="3.2" position="-1.0 0.60  2.9" rotation="0 40 0"
+      material="color:#8a6540;shader:flat">
+    </a-box>
+    <a-box width="0.10" height="0.06" depth="2.6" position=" 3.7 0.52  1.3" rotation="0 28 0"
+      material="color:#8a6540;shader:flat"></a-box>
+    <a-box width="0.10" height="0.06" depth="2.2" position="-4.1 0.50  2.1" rotation="0 -32 0"
+      material="color:#8a6540;shader:flat"></a-box>
+    <a-cylinder radius="0.22" height="0.14" position=" 3.8 0.18  0.8" segments-radial="6"
+      material="color:#d8caa0;shader:flat"></a-cylinder>
     <a-box width="0.55" height="0.70" depth="0.55" position=" 3.8 0.40  0.8"
       material="color:#c8a870;shader:flat">
     </a-box>
@@ -903,6 +915,14 @@ const FEENREICH_HTML = /* html */`
     <a-box width="0.12" height="0.12" depth="0.02" position=" 3.8 0.42  1.09"
       material="color:#ffee88;emissive:#ffcc00;emissiveIntensity:1.2;shader:flat">
     </a-box>
+    <a-cylinder radius="0.18" height="0.10" position=" 5.0 0.15  1.4" segments-radial="6"
+      material="color:#d8caa0;shader:flat"></a-cylinder>
+    <a-box width="0.42" height="0.50" depth="0.42" position=" 5.0 0.30  1.4"
+      material="color:#d2ba88;shader:flat"></a-box>
+    <a-cone radius-bottom="0.30" radius-top="0" height="0.32" position=" 5.0 0.71  1.4"
+      material="color:#c84a7a;shader:flat"></a-cone>
+    <a-box width="0.08" height="0.08" depth="0.02" position=" 5.0 0.30  1.62"
+      material="color:#ffeeaa;emissive:#ffdd55;emissiveIntensity:1.3;shader:flat"></a-box>
     <a-box width="0.48" height="0.60" depth="0.48" position="-3.5 0.38  1.6"
       material="color:#b89060;shader:flat">
     </a-box>
@@ -912,6 +932,14 @@ const FEENREICH_HTML = /* html */`
     <a-box width="0.10" height="0.10" depth="0.02" position="-3.5 0.40  1.87"
       material="color:#ffee88;emissive:#ffcc00;emissiveIntensity:1.2;shader:flat">
     </a-box>
+    <a-cylinder radius="0.20" height="0.12" position="-4.7 0.16  2.6" segments-radial="6"
+      material="color:#ccb88a;shader:flat"></a-cylinder>
+    <a-box width="0.44" height="0.52" depth="0.44" position="-4.7 0.32  2.6"
+      material="color:#b89066;shader:flat"></a-box>
+    <a-cone radius-bottom="0.30" radius-top="0" height="0.34" position="-4.7 0.75  2.6"
+      material="color:#6d3fb5;shader:flat"></a-cone>
+    <a-box width="0.08" height="0.08" depth="0.02" position="-4.7 0.32  2.82"
+      material="color:#ffeeaa;emissive:#ffdd55;emissiveIntensity:1.2;shader:flat"></a-box>
     <a-box width="0.42" height="0.55" depth="0.42" position=" 1.2 0.35  4.0"
       material="color:#c0a880;shader:flat">
     </a-box>
@@ -921,6 +949,14 @@ const FEENREICH_HTML = /* html */`
     <a-box width="0.10" height="0.10" depth="0.02" position=" 1.2 0.36  4.23"
       material="color:#ffee88;emissive:#ffcc00;emissiveIntensity:1.2;shader:flat">
     </a-box>
+    <a-cylinder radius="0.17" height="0.10" position=" 2.6 0.14  5.0" segments-radial="6"
+      material="color:#d8c8a0;shader:flat"></a-cylinder>
+    <a-box width="0.36" height="0.42" depth="0.36" position=" 2.6 0.27  5.0"
+      material="color:#d4c090;shader:flat"></a-box>
+    <a-cone radius-bottom="0.25" radius-top="0" height="0.28" position=" 2.6 0.62  5.0"
+      material="color:#cc6a22;shader:flat"></a-cone>
+    <a-box width="0.07" height="0.07" depth="0.02" position=" 2.6 0.27  5.19"
+      material="color:#ffeeaa;emissive:#ffdd55;emissiveIntensity:1.1;shader:flat"></a-box>
     <a-box width="0.50" height="0.65" depth="0.50" position="-1.5 0.37 -3.5"
       material="color:#b89868;shader:flat">
     </a-box>
@@ -930,12 +966,20 @@ const FEENREICH_HTML = /* html */`
     <a-box width="0.10" height="0.10" depth="0.02" position="-1.5 0.38 -3.23"
       material="color:#ffee88;emissive:#ffcc00;emissiveIntensity:1.2;shader:flat">
     </a-box>
-    <a-box width="0.10" height="0.06" depth="4.0" position=" 0.2 0.65  1.2" rotation="0 -20 0"
-      material="color:#8a6540;shader:flat">
-    </a-box>
-    <a-box width="0.10" height="0.06" depth="3.2" position="-1.0 0.60  2.9" rotation="0 40 0"
-      material="color:#8a6540;shader:flat">
-    </a-box>
+    <a-cylinder radius="0.24" height="0.16" position="-0.1 0.20 -1.8" segments-radial="6"
+      material="color:#d6c596;shader:flat"></a-cylinder>
+    <a-cylinder radius="0.06" height="0.60" position="-0.1 0.48 -1.8" segments-radial="6"
+      material="color:#8e6a42;shader:flat"></a-cylinder>
+    <a-cone radius-bottom="0.30" radius-top="0.06" height="0.40" position="-0.1 0.84 -1.8"
+      material="color:#f3d37a;emissive:#5a3a12;emissiveIntensity:0.25;shader:flat"></a-cone>
+    <a-cylinder radius="0.04" height="0.46" position=" 0.7 0.28  0.5" segments-radial="4"
+      material="color:#6a5840;shader:flat"></a-cylinder>
+    <a-sphere radius="0.07" position=" 0.7 0.56  0.5"
+      material="color:#aaffee;emissive:#66ffdd;emissiveIntensity:1.7;shader:flat;opacity:0.95;transparent:true"></a-sphere>
+    <a-cylinder radius="0.04" height="0.42" position=" 2.4 0.26  3.7" segments-radial="4"
+      material="color:#6a5840;shader:flat"></a-cylinder>
+    <a-sphere radius="0.07" position=" 2.4 0.52  3.7"
+      material="color:#ffbbff;emissive:#ff66ee;emissiveIntensity:1.7;shader:flat;opacity:0.95;transparent:true"></a-sphere>
     <a-cylinder radius="0.04" height="0.60" position=" 3.0 0.38  0.0" segments-radial="4" material="color:#555544;shader:flat"></a-cylinder>
     <a-sphere radius="0.08" position=" 3.0 0.70  0.0" material="color:#ffffcc;emissive:#ffdd44;emissiveIntensity:1.5;shader:flat"></a-sphere>
     <a-cylinder radius="0.04" height="0.60" position="-3.0 0.38  2.2" segments-radial="4" material="color:#555544;shader:flat"></a-cylinder>
@@ -982,12 +1026,29 @@ const FEENREICH_HTML = /* html */`
       material="color:#226030;emissive:#082210;emissiveIntensity:0.2;shader:flat">
     </a-sphere>
     <!-- Mini-Feendorf -->
+    <a-box width="0.10" height="0.05" depth="3.2" position=" 0.2 0.50  1.0" rotation="0 18 0"
+      material="color:#8a6540;shader:flat"></a-box>
+    <a-box width="0.10" height="0.05" depth="2.2" position="-1.5 0.48  2.4" rotation="0 -28 0"
+      material="color:#8a6540;shader:flat"></a-box>
     <a-box width="0.50" height="0.62" depth="0.50" position=" 3.4 0.38  0.5" material="color:#c4a468;shader:flat"></a-box>
     <a-cone radius-bottom="0.36" radius-top="0" height="0.40" position=" 3.4 0.80  0.5" material="color:#992211;shader:flat"></a-cone>
     <a-box width="0.10" height="0.10" depth="0.02" position=" 3.4 0.38  0.78" material="color:#ffee88;emissive:#ffcc00;emissiveIntensity:1.2;shader:flat"></a-box>
     <a-box width="0.44" height="0.56" depth="0.44" position="-3.0 0.36  1.2" material="color:#b89060;shader:flat"></a-box>
     <a-cone radius-bottom="0.32" radius-top="0" height="0.36" position="-3.0 0.78  1.2" material="color:#772211;shader:flat"></a-cone>
     <a-box width="0.10" height="0.10" depth="0.02" position="-3.0 0.36  1.46" material="color:#ffee88;emissive:#ffcc00;emissiveIntensity:1.2;shader:flat"></a-box>
+    <a-cylinder radius="0.18" height="0.10" position=" 1.7 0.15  2.8" segments-radial="6"
+      material="color:#ccb88a;shader:flat"></a-cylinder>
+    <a-box width="0.38" height="0.42" depth="0.38" position=" 1.7 0.27  2.8" material="color:#ccb27a;shader:flat"></a-box>
+    <a-cone radius-bottom="0.26" radius-top="0" height="0.30" position=" 1.7 0.62  2.8" material="color:#b34a8f;shader:flat"></a-cone>
+    <a-box width="0.08" height="0.08" depth="0.02" position=" 1.7 0.27  3.0" material="color:#ffeeaa;emissive:#ffdd55;emissiveIntensity:1.2;shader:flat"></a-box>
+    <a-cylinder radius="0.16" height="0.46" position=" 0.1 0.30 -1.1" segments-radial="6"
+      material="color:#8e6a42;shader:flat"></a-cylinder>
+    <a-cone radius-bottom="0.24" radius-top="0.04" height="0.34" position=" 0.1 0.66 -1.1"
+      material="color:#e7cf76;emissive:#5c4418;emissiveIntensity:0.22;shader:flat"></a-cone>
+    <a-cylinder radius="0.04" height="0.42" position="-0.6 0.26  1.7" segments-radial="4"
+      material="color:#6a5840;shader:flat"></a-cylinder>
+    <a-sphere radius="0.07" position="-0.6 0.52  1.7"
+      material="color:#aaffee;emissive:#66ffdd;emissiveIntensity:1.6;shader:flat;opacity:0.95;transparent:true"></a-sphere>
     <a-entity position="0 0.5 0" light="type:point;color:#ffcc55;intensity:0.6;distance:7"></a-entity>
     <a-entity position="0 22 0" fairy-dust="count:7;spread:5;color:#ffaaee;height:3"></a-entity>
   </a-entity>
@@ -1024,6 +1085,35 @@ const FEENREICH_HTML = /* html */`
     <a-sphere radius="4"  position=" 2 20 -1" scale="1 0.76 1" segments-width="8" segments-height="6"
       material="color:#1c4824;emissive:#08180a;emissiveIntensity:0.2;shader:flat">
     </a-sphere>
+    <!-- Kleines Wurzel-Dorf -->
+    <a-box width="0.10" height="0.05" depth="2.6" position=" 0.6 0.46  1.4" rotation="0 14 0"
+      material="color:#8a6540;shader:flat"></a-box>
+    <a-box width="0.10" height="0.05" depth="1.8" position="-1.5 0.44  2.2" rotation="0 -26 0"
+      material="color:#8a6540;shader:flat"></a-box>
+    <a-cylinder radius="0.18" height="0.10" position=" 3.0 0.15  0.6" segments-radial="6"
+      material="color:#d3bd8c;shader:flat"></a-cylinder>
+    <a-box width="0.40" height="0.46" depth="0.40" position=" 3.0 0.28  0.6"
+      material="color:#cfb57c;shader:flat"></a-box>
+    <a-cone radius-bottom="0.28" radius-top="0" height="0.30" position=" 3.0 0.66  0.6"
+      material="color:#9642aa;shader:flat"></a-cone>
+    <a-box width="0.08" height="0.08" depth="0.02" position=" 3.0 0.28  0.81"
+      material="color:#ffeeaa;emissive:#ffdd55;emissiveIntensity:1.2;shader:flat"></a-box>
+    <a-cylinder radius="0.17" height="0.10" position="-2.5 0.14  1.8" segments-radial="6"
+      material="color:#c7ae78;shader:flat"></a-cylinder>
+    <a-box width="0.36" height="0.40" depth="0.36" position="-2.5 0.25  1.8"
+      material="color:#c3aa72;shader:flat"></a-box>
+    <a-cone radius-bottom="0.24" radius-top="0" height="0.28" position="-2.5 0.58  1.8"
+      material="color:#c65b27;shader:flat"></a-cone>
+    <a-box width="0.07" height="0.07" depth="0.02" position="-2.5 0.25  1.99"
+      material="color:#ffeeaa;emissive:#ffdd55;emissiveIntensity:1.1;shader:flat"></a-box>
+    <a-cylinder radius="0.14" height="0.40" position=" 0.5 0.26 -1.2" segments-radial="6"
+      material="color:#8a6540;shader:flat"></a-cylinder>
+    <a-cone radius-bottom="0.22" radius-top="0.04" height="0.30" position=" 0.5 0.58 -1.2"
+      material="color:#f2d77c;emissive:#5a4212;emissiveIntensity:0.22;shader:flat"></a-cone>
+    <a-cylinder radius="0.04" height="0.36" position="-0.2 0.22  0.9" segments-radial="4"
+      material="color:#6a5840;shader:flat"></a-cylinder>
+    <a-sphere radius="0.06" position="-0.2 0.46  0.9"
+      material="color:#88ffee;emissive:#44ffdd;emissiveIntensity:1.5;shader:flat;opacity:0.95;transparent:true"></a-sphere>
     <a-entity position="0 19 0" fairy-dust="count:6;spread:4;color:#88ffee;height:2.5"></a-entity>
   </a-entity>
 
