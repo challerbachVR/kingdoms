@@ -2,178 +2,1268 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kingdoms - WebXR Testszene</title>
+  <title>Kingdoms – Kesselstadt</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; }
-  </style>
+  <style>body { margin: 0; overflow: hidden; }</style>
+  <script>
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PROZEDURALE TEXTUR-FUNKTIONEN
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function drawCobblestone(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const cols = 7, rows = 9;
+    const cw = W / cols, ch = H / rows;
+
+    // Fugenmörtel
+    ctx.fillStyle = '#262018';
+    ctx.fillRect(0, 0, W, H);
+
+    for (let row = 0; row < rows; row++) {
+      const xOff = (row % 2) * cw * 0.5;
+      for (let col = -1; col <= cols; col++) {
+        const bx = col * cw + xOff + cw / 2;
+        const by = row * ch + ch / 2;
+        const jx = (Math.random() - 0.5) * cw * 0.22;
+        const jy = (Math.random() - 0.5) * ch * 0.22;
+        const rx = cw * (0.36 + Math.random() * 0.09);
+        const ry = ch * (0.34 + Math.random() * 0.09);
+        const angle = (Math.random() - 0.5) * 0.28;
+        const v = 88 + Math.floor(Math.random() * 48);
+        const r = Math.floor(v * 0.84), g = Math.floor(v * 0.78), b = Math.floor(v * 0.73);
+
+        ctx.save();
+        ctx.translate(bx + jx, by + jy);
+        ctx.rotate(angle);
+
+        // Schatten
+        ctx.fillStyle = 'rgba(0,0,0,0.42)';
+        ctx.beginPath();
+        ctx.ellipse(3, 5, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stein mit Radial-Gradient für 3D-Wirkung
+        const grd = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 2, 0, 0, Math.max(rx, ry) * 1.05);
+        grd.addColorStop(0,   `rgb(${Math.min(255,r+38)},${Math.min(255,g+34)},${Math.min(255,b+29)})`);
+        grd.addColorStop(0.55,`rgb(${r},${g},${b})`);
+        grd.addColorStop(1,   `rgb(${Math.max(0,r-28)},${Math.max(0,g-24)},${Math.max(0,b-20)})`);
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Oberflächen-Detail: leichte Textur
+        if (Math.random() > 0.55) {
+          ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo((Math.random()-0.5)*rx, (Math.random()-0.5)*ry);
+          ctx.lineTo((Math.random()-0.5)*rx*0.8, (Math.random()-0.5)*ry*0.8);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawStoneWall(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const bW = 82, bH = 38, gap = 5;
+
+    ctx.fillStyle = '#3e3830';
+    ctx.fillRect(0, 0, W, H);
+
+    for (let row = 0; row * (bH + gap) < H + bH; row++) {
+      const xOff = (row % 2) * (bW + gap) * 0.5;
+      const y = row * (bH + gap);
+      for (let col = -1; col * (bW + gap) < W + bW; col++) {
+        const x = col * (bW + gap) + xOff;
+        const v = 100 + Math.floor(Math.random() * 45);
+        const r = Math.floor(v * 0.77), g = Math.floor(v * 0.72), b = Math.floor(v * 0.69);
+
+        // Stein-Grundfläche
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x, y, bW, bH);
+
+        // Leichte Innentextur
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(x + 5, y + 5, bW - 10, bH - 10);
+
+        // Oben-links Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.11)';
+        ctx.fillRect(x, y, bW, 3);
+        ctx.fillRect(x, y, 3, bH);
+
+        // Unten-rechts Schatten
+        ctx.fillStyle = 'rgba(0,0,0,0.20)';
+        ctx.fillRect(x, y + bH - 4, bW, 4);
+        ctx.fillRect(x + bW - 4, y, 4, bH);
+
+        // Gelegentliche Risse
+        if (Math.random() > 0.62) {
+          ctx.strokeStyle = 'rgba(0,0,0,0.09)';
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          const lx1 = x + 10 + Math.random() * (bW - 20);
+          const ly1 = y + 8 + Math.random() * (bH - 16);
+          ctx.moveTo(lx1, ly1);
+          ctx.lineTo(lx1 + (Math.random()-0.5)*22, ly1 + (Math.random()-0.5)*14);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function drawWood(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const plankH = 72;
+    const numPlanks = Math.ceil(H / plankH) + 1;
+
+    ctx.fillStyle = '#3d1c08';
+    ctx.fillRect(0, 0, W, H);
+
+    for (let p = 0; p < numPlanks; p++) {
+      const py = p * plankH;
+      const v = 92 + Math.floor(Math.random() * 34);
+      const pr = Math.floor(v * 0.83), pg = Math.floor(v * 0.54), pb = Math.floor(v * 0.31);
+
+      ctx.fillStyle = `rgb(${pr},${pg},${pb})`;
+      ctx.fillRect(0, py + 3, W, plankH - 3);
+
+      // Maserungslinien
+      const grains = 14 + Math.floor(Math.random() * 10);
+      for (let g = 0; g < grains; g++) {
+        let gx = Math.random() * W;
+        const alpha = 0.05 + Math.random() * 0.13;
+        ctx.strokeStyle = Math.random() > 0.5
+          ? `rgba(0,0,0,${alpha})`
+          : `rgba(220,160,80,${alpha * 0.6})`;
+        ctx.lineWidth = 0.6 + Math.random() * 1.8;
+        ctx.beginPath();
+        ctx.moveTo(gx, py + 3);
+        for (let sy = py + 3; sy < py + plankH; sy += 10) {
+          gx += (Math.random() - 0.5) * 7;
+          ctx.lineTo(gx, sy);
+        }
+        ctx.stroke();
+      }
+
+      // Dielen-Trennfuge
+      ctx.fillStyle = '#230e04';
+      ctx.fillRect(0, py, W, 3);
+
+      // Highlight oben
+      ctx.fillStyle = 'rgba(255,210,130,0.10)';
+      ctx.fillRect(0, py + 3, W, 5);
+
+      // Schatten unten
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.fillRect(0, py + plankH - 6, W, 6);
+
+      // Ast-Knoten (zufällig)
+      if (Math.random() > 0.52) {
+        const kx = 30 + Math.random() * (W - 60);
+        const ky = py + 15 + Math.random() * (plankH - 30);
+        for (let ring = 6; ring > 0; ring--) {
+          ctx.strokeStyle = `rgba(0,0,0,${0.03 + (7-ring) * 0.013})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(kx, ky, ring * 5.5, ring * 3.2, 0.15, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Kern
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky, 5, 3, 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawRoofTiles(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const tW = 64, tH = 52;
+
+    ctx.fillStyle = '#1e0a04';
+    ctx.fillRect(0, 0, W, H);
+
+    // Von unten nach oben – Überlappungseffekt
+    for (let row = Math.ceil(H / tH) + 2; row >= -1; row--) {
+      const xOff = (row % 2) * tW * 0.5;
+      const y = row * tH;
+      for (let col = -1; col * tW < W + tW; col++) {
+        const x = col * tW + xOff;
+        const v = 72 + Math.floor(Math.random() * 38);
+        const r = Math.floor(v * 0.79), g = Math.floor(v * 0.38), b = Math.floor(v * 0.20);
+
+        // Oberer Rechteck-Teil der Ziegel
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x + 2, y, tW - 4, tH * 0.52);
+
+        // Runder unterer Abschluss
+        ctx.beginPath();
+        ctx.arc(x + tW / 2, y + tH * 0.52, (tW - 4) / 2, 0, Math.PI);
+        ctx.fill();
+
+        // Oben-Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.13)';
+        ctx.fillRect(x + 2, y, tW - 4, 4);
+
+        // Links-Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(x + 2, y, 4, tH * 0.52);
+
+        // Rechts/Unten-Schatten
+        ctx.fillStyle = 'rgba(0,0,0,0.24)';
+        ctx.fillRect(x + tW - 6, y, 4, tH * 0.52);
+        ctx.beginPath();
+        ctx.arc(x + tW / 2, y + tH * 0.52, (tW - 4) / 2, 0.4, Math.PI - 0.4);
+        ctx.fill();
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PROZEDURALE SKY-TEXTUR
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Weicher Radial-Blob für Wolken (ctx.scale erzeugt Ellipse)
+  function _skyBlob(ctx, cx, cy, rx, ry, rgb, alpha) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0,    `rgba(${rgb},${alpha})`);
+    g.addColorStop(0.55, `rgba(${rgb},${alpha * 0.42})`);
+    g.addColorStop(1,    'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Eine Wolke aus 5 Blob-Schichten (Schatten / Körper / Highlight)
+  function _skyCloud(ctx, cx, cy, sc, L, M, D, al) {
+    const B = [
+      { dx: 0,   dy: 0,   rx: 88, ry: 46 },
+      { dx: -78, dy: 12,  rx: 65, ry: 35 },
+      { dx:  78, dy: 10,  rx: 62, ry: 34 },
+      { dx: -44, dy: -22, rx: 52, ry: 28 },
+      { dx:  42, dy: -20, rx: 50, ry: 27 },
+    ];
+    // Schatten (versetzt nach unten-rechts)
+    B.forEach(b => _skyBlob(ctx, cx+b.dx*sc+4, cy+(b.dy+9)*sc, b.rx*sc, b.ry*sc*0.50, D, al*0.42));
+    // Wolkenkörper
+    B.forEach(b => _skyBlob(ctx, cx+b.dx*sc,   cy+b.dy*sc,     b.rx*sc, b.ry*sc,      M, al*0.66));
+    // Highlight (oben)
+    B.forEach(b => _skyBlob(ctx, cx+b.dx*sc,   cy+b.dy*sc-6,   b.rx*sc*0.80, b.ry*sc*0.62, L, al*0.55));
+  }
+
+  // Hauptfunktion: zeichnet den kompletten Himmel auf das Canvas
+  function drawSky(canvas, mode) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const HZ = Math.floor(H * 0.5); // Horizont-Y im Canvas
+
+    // Canvas y=0 → Zenith, y=HZ → Horizont, y=H → Nadir (nicht sichtbar)
+    const MODES = {
+      morning: {
+        grad: [[0,'#182850'],[0.24,'#3a6888'],[0.60,'#d07030'],[1.0,'#f0b050']],
+        hGlow: 'rgba(255,148,38,0.68)',
+        sun: { nx:0.22, ny:0.45, r:20, c:'255,200,80',  ray:7 },
+        cL:'255,225,195', cM:'245,178,128', cD:'178,108,58', cA:0.72,
+        stars:false, moon:false,
+      },
+      day: {
+        grad: [[0,'#0c3680'],[0.20,'#1858b0'],[0.58,'#3a90cc'],[1.0,'#a0ccec']],
+        hGlow: null,
+        sun: { nx:0.65, ny:0.26, r:28, c:'255,255,210', ray:5 },
+        cL:'255,255,255', cM:'224,232,240', cD:'182,200,215', cA:0.80,
+        stars:false, moon:false,
+      },
+      evening: {
+        grad: [[0,'#050720'],[0.22,'#380f08'],[0.60,'#bb3800'],[1.0,'#ff8820']],
+        hGlow: 'rgba(255,70,0,0.84)',
+        sun: { nx:0.78, ny:0.46, r:22, c:'255,85,10',   ray:9 },
+        cL:'238,132,68', cM:'172,68,20', cD:'106,26,7', cA:0.86,
+        stars:false, moon:false,
+      },
+      night: {
+        grad: [[0,'#010306'],[0.35,'#020810'],[0.75,'#060e1a'],[1.0,'#0c1626']],
+        hGlow: null, sun: null,
+        cL:null, cM:null, cD:null, cA:0,
+        stars:true, moon:true,
+      },
+    };
+
+    const cfg = MODES[mode] || MODES.day;
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Gradient-Hintergrund (Zenith → Horizont) ──────────────────────────
+    const grad = ctx.createLinearGradient(0, 0, 0, HZ);
+    cfg.grad.forEach(([s, c]) => grad.addColorStop(s, c));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, HZ + 2);
+
+    // Unter dem Horizont (Nadir – kaum sichtbar, aber gepflegt)
+    const below = ctx.createLinearGradient(0, HZ, 0, H);
+    below.addColorStop(0, cfg.grad[cfg.grad.length - 1][1]);
+    below.addColorStop(1, '#050505');
+    ctx.fillStyle = below;
+    ctx.fillRect(0, HZ, W, H - HZ);
+
+    // ── Horizont-Glühen (Morgen / Abend) ──────────────────────────────────
+    if (cfg.hGlow) {
+      const hg = ctx.createLinearGradient(0, HZ * 0.52, 0, HZ);
+      hg.addColorStop(0, 'rgba(0,0,0,0)');
+      hg.addColorStop(1, cfg.hGlow);
+      ctx.fillStyle = hg;
+      ctx.fillRect(0, 0, W, HZ + 2);
+    }
+
+    // ── Sterne (Nacht) ─────────────────────────────────────────────────────
+    if (cfg.stars) {
+      for (let i = 0; i < 320; i++) {
+        const sx = Math.random() * W;
+        const sy = Math.random() * HZ * 0.93;
+        const br = 0.22 + Math.random() * 0.78;
+        const sr = Math.random() > 0.90 ? 1.4 + Math.random() * 0.9 : 0.4 + Math.random() * 0.8;
+        if (Math.random() > 0.80) {
+          // Leuchtender Stern mit Glow
+          const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 3.8);
+          sg.addColorStop(0,   `rgba(210,225,255,${br})`);
+          sg.addColorStop(0.5, `rgba(170,195,255,${br * 0.28})`);
+          sg.addColorStop(1,   'rgba(0,0,0,0)');
+          ctx.fillStyle = sg;
+          ctx.beginPath(); ctx.arc(sx, sy, sr * 3.8, 0, Math.PI * 2); ctx.fill();
+        }
+        const wb = 200 + Math.floor(Math.random() * 55);
+        ctx.fillStyle = `rgba(255,255,${wb},${br})`;
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // ── Mond (Nacht) ───────────────────────────────────────────────────────
+    if (cfg.moon) {
+      const mx = W * 0.72, my = HZ * 0.28, mr = 22;
+      // Mondschein-Aura
+      const mg = ctx.createRadialGradient(mx, my, mr, mx, my, mr * 5.5);
+      mg.addColorStop(0,    'rgba(195,215,255,0.38)');
+      mg.addColorStop(0.45, 'rgba(150,185,255,0.11)');
+      mg.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr * 5.5, 0, Math.PI * 2); ctx.fill();
+      // Mondscheibe
+      const mb = ctx.createRadialGradient(mx - mr * 0.22, my - mr * 0.22, 0, mx, my, mr);
+      mb.addColorStop(0, '#eaecff'); mb.addColorStop(0.65, '#c8d4f0'); mb.addColorStop(1, '#9ab0d8');
+      ctx.fillStyle = mb; ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+      // Krater
+      ctx.fillStyle = 'rgba(92,112,162,0.22)';
+      [[mx+mr*.25,my+mr*.12,mr*.17],[mx-mr*.30,my-mr*.22,mr*.11],[mx+mr*.08,my-mr*.35,mr*.09]].forEach(([cx,cy,cr]) => {
+        ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    // ── Sonne (Morgen / Tag / Abend) ──────────────────────────────────────
+    if (cfg.sun) {
+      const { nx, ny, r: sr, c: sc, ray } = cfg.sun;
+      const sx = nx * W, sy = ny * HZ;
+      // Strahlenkranz
+      const so = ctx.createRadialGradient(sx, sy, sr, sx, sy, sr * ray);
+      so.addColorStop(0,    `rgba(${sc},0.46)`);
+      so.addColorStop(0.35, `rgba(${sc},0.14)`);
+      so.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = so; ctx.beginPath(); ctx.arc(sx, sy, sr * ray, 0, Math.PI * 2); ctx.fill();
+      // Innerer Kern-Glow
+      const si = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 1.9);
+      si.addColorStop(0,   'rgba(255,255,255,0.94)');
+      si.addColorStop(0.5, `rgba(${sc},0.78)`);
+      si.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = si; ctx.beginPath(); ctx.arc(sx, sy, sr * 1.9, 0, Math.PI * 2); ctx.fill();
+      // Sonnenscheibe
+      ctx.fillStyle = 'rgba(255,255,255,1)';
+      ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // ── Wolken ────────────────────────────────────────────────────────────
+    if (cfg.cL) {
+      // Feste Positionen (normalisiert: nx=0..1, ny=0..1 relativ zur Sky-Höhe HZ)
+      const CP = [
+        { nx:0.10, ny:0.20, sc:1.10 },
+        { nx:0.31, ny:0.14, sc:0.85 },
+        { nx:0.55, ny:0.29, sc:1.28 },
+        { nx:0.74, ny:0.17, sc:0.96 },
+        { nx:0.92, ny:0.24, sc:1.04 },
+      ];
+      CP.forEach(c => _skyCloud(ctx, c.nx * W, c.ny * HZ, c.sc, cfg.cL, cfg.cM, cfg.cD, cfg.cA));
+      // Nahtlose Randwiederholung (links + rechts)
+      _skyCloud(ctx, (CP[0].nx + 1) * W, CP[0].ny * HZ, CP[0].sc, cfg.cL, cfg.cM, cfg.cD, cfg.cA);
+      _skyCloud(ctx, (CP[4].nx - 1) * W, CP[4].ny * HZ, CP[4].sc, cfg.cL, cfg.cM, cfg.cD, cfg.cA);
+    }
+  }
+
+  // Aktualisiert die THREE.js-Textur nach Canvas-Neuzeichnung
+  function _updateSkyTex() {
+    const s = document.getElementById('sky-sphere');
+    if (!s || !s.object3D) return;
+    s.object3D.traverse(n => {
+      if (n.isMesh && n.material && n.material.map) n.material.map.needsUpdate = true;
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // A-FRAME KOMPONENTEN
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Canvas-Textur-Komponente mit Caching pro Canvas-ID
+  AFRAME.registerComponent('tex', {
+    schema: {
+      id:   { type: 'string' },
+      repx: { type: 'number', default: 1 },
+      repy: { type: 'number', default: 1 }
+    },
+    init() {
+      if (!window._KC_TEX) window._KC_TEX = {};
+      const id = this.data.id;
+      if (!window._KC_TEX[id]) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const t = new THREE.CanvasTexture(canvas);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.anisotropy = 4;
+        window._KC_TEX[id] = t;
+      }
+      this._tex = window._KC_TEX[id].clone();
+      this._tex.wrapS = this._tex.wrapT = THREE.RepeatWrapping;
+      this._tex.repeat.set(this.data.repx, this.data.repy);
+      this._tex.needsUpdate = true;
+
+      this._apply = () => {
+        const mesh = this.el.getObject3D('mesh');
+        if (!mesh) return;
+        const tex = this._tex;
+        mesh.traverse(n => {
+          if (n.isMesh && n.material) {
+            n.material.map = tex;
+            n.material.needsUpdate = true;
+          }
+        });
+      };
+      this.el.addEventListener('object3dset', this._apply);
+      this._apply();
+    },
+    remove() {
+      this.el.removeEventListener('object3dset', this._apply);
+      if (this._tex) this._tex.dispose();
+    }
+  });
+
+  // Tag/Nacht-System
+  AFRAME.registerComponent('daynight', {
+    schema: { mode: { type: 'string', default: 'day' } },
+    init()   { this.apply(this.data.mode); },
+    update() { this.apply(this.data.mode); },
+    apply(mode) {
+      const sun = document.getElementById('sun');
+      const amb = document.getElementById('ambLight');
+      const modes = {
+        morning: { sun:'#ffddaa', sunPos:'-5 4 -10',  amb:0.50 },
+        day:     { sun:'#fff5cc', sunPos:' 5 12 -8',  amb:0.70 },
+        evening: { sun:'#ff8c42', sunPos:'-8 3 -5',   amb:0.35 },
+        night:   { sun:'#334488', sunPos:' 0 8 10',   amb:0.15 },
+      };
+      const cfg = modes[mode] || modes.day;
+      // Himmel-Canvas neu zeichnen
+      const skyCanvas = document.getElementById('sky-canvas');
+      if (skyCanvas) { drawSky(skyCanvas, mode); _updateSkyTex(); }
+      if (sun) {
+        sun.setAttribute('light', `type:directional;intensity:1.1;color:${cfg.sun}`);
+        sun.setAttribute('position', cfg.sunPos);
+      }
+      if (amb) amb.setAttribute('light', `type:ambient;intensity:${cfg.amb};color:#fff8f0`);
+      document.querySelectorAll('.lantern-light').forEach(l =>
+        l.setAttribute('light', `type:point;intensity:${mode==='night'?1.2:0};color:#ffaa33;distance:6`)
+      );
+      document.querySelectorAll('.lantern-glow').forEach(l =>
+        l.setAttribute('material',
+          `color:${mode==='night'?'#ffcc44':'#886633'};emissive:${mode==='night'?'#ffaa22':'#000'};emissiveIntensity:1`)
+      );
+    }
+  });
+
+  // Zahnrad-Rotation
+  AFRAME.registerComponent('gear-spin', {
+    schema: { speed: { default: 1 }, reverse: { default: false } },
+    tick(t) {
+      this.el.object3D.rotation.z = (this.data.reverse ? -1 : 1) * t * 0.001 * this.data.speed;
+    }
+  });
+
+  // Dampfwolken
+  AFRAME.registerComponent('steam', {
+    init() {
+      this.particles = [];
+      for (let i = 0; i < 5; i++) this.spawnParticle(i * 800);
+    },
+    spawnParticle(delay) {
+      const p = document.createElement('a-sphere');
+      p.setAttribute('radius', 0.18 + Math.random() * 0.12);
+      p.setAttribute('material', 'color:#ccddee;opacity:0.45;transparent:true;shader:flat');
+      p.setAttribute('position', `${(Math.random()-.5)*.3} 0 ${(Math.random()-.5)*.3}`);
+      this.el.appendChild(p);
+      this.particles.push({ el: p, life: 0, delay, speed: 0.8 + Math.random() * 0.6 });
+    },
+    tick(t, dt) {
+      this.particles.forEach(p => {
+        p.life += dt;
+        if (p.life < p.delay) return;
+        const age = (p.life - p.delay) / 2000;
+        if (age > 1) {
+          p.life = p.delay;
+          p.el.setAttribute('position', `${(Math.random()-.5)*.3} 0 ${(Math.random()-.5)*.3}`);
+          return;
+        }
+        p.el.object3D.position.y = age * 3 * p.speed;
+        p.el.object3D.scale.setScalar(0.5 + age * 1.5);
+        p.el.setAttribute('material',
+          `color:#ccddee;opacity:${Math.max(0, 0.5 - age * 0.5)};transparent:true;shader:flat`);
+      });
+    }
+  });
+  </script>
 </head>
 <body>
-  <a-scene
-    webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking, layers"
-    renderer="antialias: true; colorManagement: true"
-    shadow="type: pcfsoft"
-    background="color: #87CEEB"
-  >
 
-    <!-- Assets -->
-    <a-assets>
-    </a-assets>
+<!-- ═══════════════════ CANVAS-TEXTUREN (vor der Szene gezeichnet) ═══════════════════ -->
+<canvas id="sky-canvas" width="1024" height="512" style="display:none"></canvas>
+<canvas id="tex-cobble" width="512"  height="512" style="display:none"></canvas>
+<canvas id="tex-stone"  width="512"  height="512" style="display:none"></canvas>
+<canvas id="tex-wood"   width="512"  height="512" style="display:none"></canvas>
+<canvas id="tex-tiles"  width="512"  height="512" style="display:none"></canvas>
+<script>
+  // Synchron zeichnen – bevor A-Frame die Szene initialisiert
+  drawSky        (document.getElementById('sky-canvas'), 'day');
+  drawCobblestone(document.getElementById('tex-cobble'));
+  drawStoneWall  (document.getElementById('tex-stone'));
+  drawWood       (document.getElementById('tex-wood'));
+  drawRoofTiles  (document.getElementById('tex-tiles'));
+</script>
 
-    <!-- Himmel -->
-    <a-sky color="#87CEEB"></a-sky>
+<a-scene
+  webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking"
+  renderer="antialias:true;colorManagement:true;physicallyCorrectLights:true"
+  shadow="type:pcfsoft;autoUpdate:true"
+  daynight="mode:day"
+  id="scene">
 
-    <!-- Sonne / Licht -->
-    <a-light type="directional"
-      position="3 10 -5"
-      intensity="1.2"
-      cast-shadow="true"
-      shadow-camera-left="-20"
-      shadow-camera-right="20"
-      shadow-camera-top="20"
-      shadow-camera-bottom="-20">
-    </a-light>
-    <a-light type="ambient" intensity="0.5" color="#fff5e0"></a-light>
+  <!-- ═══════════════════ LICHT ═══════════════════ -->
+  <a-entity id="sun" position="5 12 -8"
+    light="type:directional;intensity:1.1;color:#fff5cc;castShadow:true;
+           shadowCameraLeft:-40;shadowCameraRight:40;shadowCameraTop:40;shadowCameraBottom:-40;
+           shadowMapWidth:2048;shadowMapHeight:2048">
+  </a-entity>
+  <a-entity id="ambLight" light="type:ambient;intensity:0.7;color:#fff8f0"></a-entity>
 
-    <!-- Boden -->
-    <a-plane
-      position="0 0 0"
-      rotation="-90 0 0"
-      width="40"
-      height="40"
-      color="#4a7c3f"
-      shadow="receive: true"
-      material="roughness: 0.9; metalness: 0.0">
-    </a-plane>
+  <!-- ═══════════════════ HIMMEL – prozedurale Sky-Sphere ═══════════════════ -->
+  <!-- side:back = von innen sichtbar; shader:flat = kein Lichteinfluss      -->
+  <a-entity id="sky-sphere"
+    geometry="primitive:sphere; radius:4900; segmentsWidth:36; segmentsHeight:18"
+    material="shader:flat; color:#ffffff; side:back"
+    tex="id:sky-canvas; repx:1; repy:1">
+  </a-entity>
 
-    <!-- Gitter-Raster auf dem Boden (zur Orientierung) -->
-    <a-entity position="0 0.01 0" rotation="-90 0 0">
-      <a-plane
-        width="40"
-        height="40"
-        material="color: #3a6c2f; wireframe: true; opacity: 0.3; transparent: true">
-      </a-plane>
-    </a-entity>
+  <!-- ═══════════════════ BODEN – Kopfsteinpflaster ═══════════════════ -->
+  <a-plane position="0 0 0" rotation="-90 0 0" width="80" height="80"
+    material="color:#ffffff;roughness:1"
+    tex="id:tex-cobble; repx:20; repy:20"
+    shadow="receive:true">
+  </a-plane>
+  <!-- Marktplatz – etwas hellere Pflastersteine -->
+  <a-plane position="0 0.01 0" rotation="-90 0 0" width="14" height="14"
+    material="color:#e8ddd0;roughness:1"
+    tex="id:tex-cobble; repx:5; repy:5"
+    shadow="receive:true">
+  </a-plane>
 
-    <!-- Zentrum-Marker -->
-    <a-cylinder
-      position="0 0.05 0"
-      radius="0.1"
-      height="0.1"
-      color="#ffffff"
-      opacity="0.8">
-    </a-cylinder>
+  <!-- ═══════════════════ MARKTBRUNNEN (Zentrum) ═══════════════════ -->
+  <a-cylinder position="0 0.4 0" radius="2" height="0.8"
+    material="color:#d8cfc0;roughness:0.9"
+    tex="id:tex-stone; repx:3; repy:0.5"
+    shadow="cast:true;receive:true">
+  </a-cylinder>
+  <a-cylinder position="0 0.82 0" radius="1.9" height="0.05"
+    material="color:#b0a090;roughness:0.9">
+  </a-cylinder>
+  <a-cylinder position="0 0.76 0" radius="1.75" height="0.04"
+    material="color:#4488aa;opacity:0.7;transparent:true;metalness:0.3;roughness:0.1">
+  </a-cylinder>
+  <a-cylinder position="0 1.4 0" radius="0.12" height="1.2"
+    material="color:#c0b0a0;roughness:0.9"
+    tex="id:tex-stone; repx:1; repy:1"
+    shadow="cast:true">
+  </a-cylinder>
+  <a-sphere position="0 2.05 0" radius="0.22"
+    material="color:#aabbcc;metalness:0.6;roughness:0.3" shadow="cast:true">
+  </a-sphere>
 
-    <!-- Objekt 1: Roter Würfel -->
-    <a-box
-      position="-2 0.75 -3"
-      width="1.5"
-      height="1.5"
-      depth="1.5"
-      color="#e74c3c"
-      shadow="cast: true; receive: true"
-      animation="property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear">
+  <!-- ═══════════════════ GEBÄUDE N-W: Schmied / Werkstatt ═══════════════════ -->
+  <a-entity position="-9 0 -8">
+    <a-box position="0 2 0" width="5" height="4" depth="5"
+      material="color:#d8c8b8;roughness:0.9"
+      tex="id:tex-stone; repx:2.5; repy:2"
+      shadow="cast:true;receive:true">
     </a-box>
-
-    <!-- Objekt 2: Blaue Kugel -->
-    <a-sphere
-      position="2 1 -3"
-      radius="1"
-      color="#3498db"
-      shadow="cast: true; receive: true"
-      animation="property: position; to: 2 1.8 -3; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine">
-    </a-sphere>
-
-    <!-- Objekt 3: Gelber Zylinder -->
-    <a-cylinder
-      position="0 1 -4"
-      radius="0.6"
-      height="2"
-      color="#f1c40f"
-      shadow="cast: true; receive: true">
-    </a-cylinder>
-
-    <!-- Objekt 4: Grüner Kegel -->
-    <a-cone
-      position="-3.5 1 -2"
-      radius-bottom="0.8"
-      radius-top="0"
-      height="2"
-      color="#2ecc71"
-      shadow="cast: true; receive: true">
+    <a-box position="0 4.6 0" width="5.4" height="1.2" depth="5.4"
+      material="color:#c8b8a8;roughness:0.9"
+      tex="id:tex-stone; repx:2.7; repy:0.6"
+      shadow="cast:true">
+    </a-box>
+    <a-cone position="0 6 0" radius-bottom="3.2" radius-top="0" height="2.5"
+      material="color:#d0a090;roughness:1"
+      tex="id:tex-tiles; repx:3.5; repy:2"
+      shadow="cast:true">
     </a-cone>
-
-    <!-- Objekt 5: Lila Torus -->
-    <a-torus
-      position="3.5 1.2 -2"
-      radius="0.8"
-      radius-tubular="0.2"
-      color="#9b59b6"
-      shadow="cast: true; receive: true"
-      animation="property: rotation; to: 360 0 0; loop: true; dur: 4000; easing: linear">
-    </a-torus>
-
-    <!-- Wand / Hintergrundstruktur -->
-    <a-box
-      position="0 2 -8"
-      width="16"
-      height="4"
-      depth="0.3"
-      color="#8e6b3e"
-      shadow="cast: true; receive: true">
+    <a-cylinder position="1 7.5 -1" radius="0.25" height="2"
+      material="color:#2a2020;roughness:1" shadow="cast:true">
+    </a-cylinder>
+    <a-entity position="1 8.6 -1" steam></a-entity>
+    <!-- Fenster -->
+    <a-plane position="1.5 2.5 2.51" width="0.8" height="1"
+      material="color:#cc9944;emissive:#cc9944;emissiveIntensity:0.3;opacity:0.85;transparent:true">
+    </a-plane>
+    <a-plane position="-1.2 2.5 2.51" width="0.8" height="1"
+      material="color:#cc9944;emissive:#cc9944;emissiveIntensity:0.3;opacity:0.85;transparent:true">
+    </a-plane>
+    <!-- Tür -->
+    <a-box position="0 1.1 2.52" width="1" height="2.2" depth="0.06"
+      material="color:#c8a070;roughness:0.9"
+      tex="id:tex-wood; repx:0.9; repy:1">
     </a-box>
+  </a-entity>
 
-    <!-- Text-Label über Objekten -->
-    <a-text
-      value="WebXR Testszene"
-      position="0 3.5 -5"
-      align="center"
-      color="#ffffff"
-      width="6"
-      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
-    </a-text>
+  <!-- ═══════════════════ GEBÄUDE N-O: Händlerhaus ═══════════════════ -->
+  <a-entity position="9 0 -8">
+    <a-box position="0 3 0" width="5" height="6" depth="5"
+      material="color:#ddd0be;roughness:0.9"
+      tex="id:tex-stone; repx:2.5; repy:3"
+      shadow="cast:true;receive:true">
+    </a-box>
+    <a-box position="0 6.5 0" width="5.4" height="1" depth="5.4"
+      material="color:#ccc0aa;roughness:0.9"
+      tex="id:tex-stone; repx:2.7; repy:0.5"
+      shadow="cast:true">
+    </a-box>
+    <a-cone position="0 8 0" radius-bottom="3.2" radius-top="0" height="3"
+      material="color:#c8a898;roughness:1"
+      tex="id:tex-tiles; repx:3.5; repy:2.5"
+      shadow="cast:true">
+    </a-cone>
+    <!-- Erker -->
+    <a-box position="0 3.5 2.8" width="2.5" height="2" depth="1"
+      material="color:#d8c8b0;roughness:0.9"
+      tex="id:tex-stone; repx:1.2; repy:1">
+    </a-box>
+    <a-plane position="1.5 4.5 2.51" width="0.9" height="1.2"
+      material="color:#bbddff;emissive:#aaccff;emissiveIntensity:0.2;opacity:0.8;transparent:true">
+    </a-plane>
+    <a-plane position="-1.5 4.5 2.51" width="0.9" height="1.2"
+      material="color:#bbddff;emissive:#aaccff;emissiveIntensity:0.2;opacity:0.8;transparent:true">
+    </a-plane>
+    <a-box position="0 1.1 2.52" width="1.1" height="2.2" depth="0.06"
+      material="color:#b89060;roughness:0.9"
+      tex="id:tex-wood; repx:1; repy:1">
+    </a-box>
+    <!-- Ladenschild -->
+    <a-box position="0 2.8 2.58" width="2" height="0.6" depth="0.1"
+      material="color:#c8a060;roughness:0.9"
+      tex="id:tex-wood; repx:1.5; repy:0.5">
+    </a-box>
+  </a-entity>
 
-    <a-text
-      value="Meta Quest 3"
-      position="0 3 -5"
-      align="center"
-      color="#f0e68c"
-      width="4"
-      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
-    </a-text>
-
-    <!-- Kamera & Controller -->
-    <a-entity id="rig" position="0 0 2">
-      <a-camera
-        id="camera"
-        wasd-controls-enabled="true"
-        look-controls="pointerLockEnabled: false">
-
-        <!-- Fadenkreuz für Desktop-Test -->
-        <a-cursor
-          fuse="false"
-          material="color: white; shader: flat"
-          geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
-          position="0 0 -1">
-        </a-cursor>
-      </a-camera>
-
-      <!-- Meta Quest 3 Controller (links) -->
-      <a-entity
-        id="leftHand"
-        oculus-touch-controls="hand: left"
-        laser-controls="hand: left">
-      </a-entity>
-
-      <!-- Meta Quest 3 Controller (rechts) -->
-      <a-entity
-        id="rightHand"
-        oculus-touch-controls="hand: right"
-        laser-controls="hand: right">
-      </a-entity>
+  <!-- ═══════════════════ GEBÄUDE S-W: Gasthaus ═══════════════════ -->
+  <a-entity position="-9 0 8">
+    <a-box position="0 2.5 0" width="6" height="5" depth="5"
+      material="color:#d8ccba;roughness:0.9"
+      tex="id:tex-stone; repx:3; repy:2.5"
+      shadow="cast:true;receive:true">
+    </a-box>
+    <!-- Vordach (Holz) -->
+    <a-box position="0 5.2 2.8" width="6.5" height="0.2" depth="1.5"
+      material="color:#b89060;roughness:0.9"
+      tex="id:tex-wood; repx:3; repy:0.5"
+      shadow="cast:true">
+    </a-box>
+    <a-box position="-2.5 4.7 3.5" width="0.14" height="1.2" depth="0.14"
+      material="color:#8a5530;roughness:1"
+      tex="id:tex-wood; repx:0.5; repy:1">
+    </a-box>
+    <a-box position="2.5 4.7 3.5" width="0.14" height="1.2" depth="0.14"
+      material="color:#8a5530;roughness:1"
+      tex="id:tex-wood; repx:0.5; repy:1">
+    </a-box>
+    <!-- Laternen Gasthaus -->
+    <a-entity position="-2.5 4.5 2.55">
+      <a-cylinder radius="0.08" height="0.3" material="color:#333;roughness:0.8"></a-cylinder>
+      <a-box position="0 -0.25 0" width="0.2" height="0.35" depth="0.2"
+        material="color:#ffcc44;emissive:#ffaa22;emissiveIntensity:1;opacity:0.9;transparent:true"
+        class="lantern-glow">
+      </a-box>
+      <a-entity class="lantern-light" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
     </a-entity>
+    <a-entity position="2.5 4.5 2.55">
+      <a-cylinder radius="0.08" height="0.3" material="color:#333;roughness:0.8"></a-cylinder>
+      <a-box position="0 -0.25 0" width="0.2" height="0.35" depth="0.2"
+        material="color:#ffcc44;emissive:#ffaa22;emissiveIntensity:1;opacity:0.9;transparent:true"
+        class="lantern-glow">
+      </a-box>
+      <a-entity class="lantern-light" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
+    </a-entity>
+    <a-cone position="0 7 0" radius-bottom="3.8" radius-top="0" height="2.5"
+      material="color:#c0907a;roughness:1"
+      tex="id:tex-tiles; repx:4; repy:2"
+      shadow="cast:true">
+    </a-cone>
+    <a-box position="0 1.2 2.52" width="1.2" height="2.4" depth="0.06"
+      material="color:#c09060;roughness:0.9"
+      tex="id:tex-wood; repx:1; repy:1">
+    </a-box>
+  </a-entity>
 
-  </a-scene>
+  <!-- ═══════════════════ GEBÄUDE S-O: Alchemistenladen ═══════════════════ -->
+  <a-entity position="9 0 8">
+    <a-box position="0 2.5 0" width="4.5" height="5" depth="4.5"
+      material="color:#c8cdb8;roughness:0.9"
+      tex="id:tex-stone; repx:2.2; repy:2.5"
+      shadow="cast:true;receive:true">
+    </a-box>
+    <!-- Turm-Anbau -->
+    <a-cylinder position="2.5 3.5 -2" radius="1.2" height="7"
+      material="color:#b8bda8;roughness:0.9"
+      tex="id:tex-stone; repx:2; repy:3.5"
+      shadow="cast:true">
+    </a-cylinder>
+    <a-cone position="2.5 7.5 -2" radius-bottom="1.5" radius-top="0" height="2"
+      material="color:#a07868;roughness:1"
+      tex="id:tex-tiles; repx:2; repy:1.5"
+      shadow="cast:true">
+    </a-cone>
+    <a-cone position="0 7 0" radius-bottom="2.8" radius-top="0" height="2.2"
+      material="color:#a07868;roughness:1"
+      tex="id:tex-tiles; repx:3; repy:2"
+      shadow="cast:true">
+    </a-cone>
+    <!-- Leuchtende Alchemistenfenster -->
+    <a-plane position="-1 3 2.26" width="0.8" height="1"
+      material="color:#44ff88;emissive:#22cc44;emissiveIntensity:0.6;opacity:0.85;transparent:true">
+    </a-plane>
+    <a-plane position="1 3 2.26" width="0.8" height="1"
+      material="color:#aa44ff;emissive:#8822cc;emissiveIntensity:0.6;opacity:0.85;transparent:true">
+    </a-plane>
+    <a-box position="0 1.1 2.27" width="1" height="2.2" depth="0.06"
+      material="color:#a08860;roughness:0.9"
+      tex="id:tex-wood; repx:0.9; repy:1">
+    </a-box>
+  </a-entity>
+
+  <!-- ═══════════════════ UHRTURM ═══════════════════ -->
+  <a-entity position="-14 0 -2">
+    <!-- Sockel -->
+    <a-box position="0 1 0" width="4.5" height="2" depth="4.5"
+      material="color:#c8c0b8;roughness:0.9"
+      tex="id:tex-stone; repx:2.2; repy:1"
+      shadow="cast:true;receive:true">
+    </a-box>
+    <!-- Schaft -->
+    <a-cylinder position="0 8 0" radius="1.8" height="12"
+      material="color:#d0c8c0;roughness:0.9"
+      tex="id:tex-stone; repx:4; repy:5"
+      shadow="cast:true">
+    </a-cylinder>
+    <!-- Zwischenplattform -->
+    <a-cylinder position="0 14.2 0" radius="2.3" height="0.4"
+      material="color:#b0a8a0;roughness:0.9"
+      tex="id:tex-stone; repx:2; repy:0.2"
+      shadow="cast:true">
+    </a-cylinder>
+    <!-- Uhrkammer -->
+    <a-cylinder position="0 16 0" radius="2" height="3"
+      material="color:#c8c0b8;roughness:0.9"
+      tex="id:tex-stone; repx:3; repy:1.5"
+      shadow="cast:true">
+    </a-cylinder>
+    <!-- Zifferblätter (4 Seiten) -->
+    <a-circle position="0 16 2.02" radius="1.5"
+      material="color:#ddccaa;emissive:#ccbb88;emissiveIntensity:0.15">
+    </a-circle>
+    <a-circle position="0 16 -2.02" rotation="0 180 0" radius="1.5"
+      material="color:#ddccaa;emissive:#ccbb88;emissiveIntensity:0.15">
+    </a-circle>
+    <a-circle position="2.02 16 0" rotation="0 -90 0" radius="1.5"
+      material="color:#ddccaa;emissive:#ccbb88;emissiveIntensity:0.15">
+    </a-circle>
+    <a-circle position="-2.02 16 0" rotation="0 90 0" radius="1.5"
+      material="color:#ddccaa;emissive:#ccbb88;emissiveIntensity:0.15">
+    </a-circle>
+    <!-- Spitze -->
+    <a-cone position="0 19.5 0" radius-bottom="2.2" radius-top="0" height="3"
+      material="color:#b08070;roughness:1"
+      tex="id:tex-tiles; repx:2.5; repy:2"
+      shadow="cast:true">
+    </a-cone>
+    <a-cylinder position="0 22.3 0" radius="0.08" height="1.5"
+      material="color:#888;metalness:0.8">
+    </a-cylinder>
+    <!-- Zahnräder -->
+    <a-torus position="2.1 10 0" rotation="0 90 0" radius="1.1" radius-tubular="0.12"
+      material="color:#7a6a40;metalness:0.5;roughness:0.6" gear-spin="speed:0.5">
+    </a-torus>
+    <a-torus position="-2.1 10 0" rotation="0 90 0" radius="0.75" radius-tubular="0.1"
+      material="color:#6a5a30;metalness:0.5;roughness:0.6" gear-spin="speed:0.75;reverse:true">
+    </a-torus>
+    <!-- Schornstein -->
+    <a-cylinder position="0.8 14 -1.5" radius="0.22" height="4"
+      material="color:#2a2020;roughness:1">
+    </a-cylinder>
+    <a-entity position="0.8 16.1 -1.5" steam></a-entity>
+  </a-entity>
+
+  <!-- ═══════════════════ DAMPFMASCHINE ═══════════════════ -->
+  <a-entity position="13 0 -2">
+    <a-cylinder position="0 1.5 0" rotation="0 0 90" radius="0.9" height="3"
+      material="color:#7a5530;metalness:0.4;roughness:0.6" shadow="cast:true">
+    </a-cylinder>
+    <a-box position="-1 0.5 0.5" width="0.2" height="1" depth="0.2" material="color:#4a3820"></a-box>
+    <a-box position="1 0.5 0.5"  width="0.2" height="1" depth="0.2" material="color:#4a3820"></a-box>
+    <a-box position="-1 0.5 -0.5" width="0.2" height="1" depth="0.2" material="color:#4a3820"></a-box>
+    <a-box position="1 0.5 -0.5"  width="0.2" height="1" depth="0.2" material="color:#4a3820"></a-box>
+    <a-torus position="1.7 1.5 0" rotation="0 90 0" radius="1.2" radius-tubular="0.15"
+      material="color:#8a7040;metalness:0.6;roughness:0.5" gear-spin="speed:0.4">
+    </a-torus>
+    <a-torus position="1.7 1.5 0" rotation="0 90 0" radius="0.6" radius-tubular="0.1"
+      material="color:#6a5030;metalness:0.5;roughness:0.5" gear-spin="speed:0.8;reverse:true">
+    </a-torus>
+    <a-cylinder position="-0.5 3.5 0" radius="0.2" height="2.5"
+      material="color:#2a2020;roughness:1" shadow="cast:true">
+    </a-cylinder>
+    <a-entity position="-0.5 4.8 0" steam></a-entity>
+    <a-cylinder position="0 2.5 0.95" radius="0.25" height="0.1"
+      material="color:#ccbb88;metalness:0.5">
+    </a-cylinder>
+    <a-circle position="0 2.5 1.01" radius="0.22"
+      material="color:#ddccaa;emissive:#ccbb88;emissiveIntensity:0.2">
+    </a-circle>
+  </a-entity>
+
+  <!-- ═══════════════════ STADTLATERNEN (Marktplatz-Ring) ═══════════════════ -->
+  <a-entity position="-6 0 -6">
+    <a-cylinder position="0 2.5 0" radius="0.06" height="5" material="color:#3a3030"></a-cylinder>
+    <a-cylinder position="0.4 4.8 0" rotation="0 0 20" radius="0.04" height="0.8" material="color:#3a3030"></a-cylinder>
+    <a-box position="0.55 5.05 0" width="0.25" height="0.35" depth="0.25"
+      class="lantern-glow" material="color:#886633;roughness:0.6">
+    </a-box>
+    <a-entity class="lantern-light" position="0.55 5.05 0" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
+  </a-entity>
+  <a-entity position="6 0 -6">
+    <a-cylinder position="0 2.5 0" radius="0.06" height="5" material="color:#3a3030"></a-cylinder>
+    <a-cylinder position="-0.4 4.8 0" rotation="0 0 -20" radius="0.04" height="0.8" material="color:#3a3030"></a-cylinder>
+    <a-box position="-0.55 5.05 0" width="0.25" height="0.35" depth="0.25"
+      class="lantern-glow" material="color:#886633;roughness:0.6">
+    </a-box>
+    <a-entity class="lantern-light" position="-0.55 5.05 0" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
+  </a-entity>
+  <a-entity position="-6 0 6">
+    <a-cylinder position="0 2.5 0" radius="0.06" height="5" material="color:#3a3030"></a-cylinder>
+    <a-cylinder position="0.4 4.8 0" rotation="0 0 20" radius="0.04" height="0.8" material="color:#3a3030"></a-cylinder>
+    <a-box position="0.55 5.05 0" width="0.25" height="0.35" depth="0.25"
+      class="lantern-glow" material="color:#886633;roughness:0.6">
+    </a-box>
+    <a-entity class="lantern-light" position="0.55 5.05 0" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
+  </a-entity>
+  <a-entity position="6 0 6">
+    <a-cylinder position="0 2.5 0" radius="0.06" height="5" material="color:#3a3030"></a-cylinder>
+    <a-cylinder position="-0.4 4.8 0" rotation="0 0 -20" radius="0.04" height="0.8" material="color:#3a3030"></a-cylinder>
+    <a-box position="-0.55 5.05 0" width="0.25" height="0.35" depth="0.25"
+      class="lantern-glow" material="color:#886633;roughness:0.6">
+    </a-box>
+    <a-entity class="lantern-light" position="-0.55 5.05 0" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
+  </a-entity>
+
+  <!-- ═══════════════════ MARKTSTÄNDE ═══════════════════ -->
+  <!-- Stand N-W (Obst/Gemüse) -->
+  <a-entity position="-3.5 0 -4.5">
+    <a-box position="0 0.9 0" width="2.5" height="0.15" depth="1.5"
+      material="color:#c8a870;roughness:0.9"
+      tex="id:tex-wood; repx:1.5; repy:1">
+    </a-box>
+    <a-box position="-1.1 0.45 0" width="0.12" height="0.9" depth="0.12"
+      material="color:#8a5530;roughness:1"
+      tex="id:tex-wood; repx:0.5; repy:1">
+    </a-box>
+    <a-box position="1.1 0.45 0" width="0.12" height="0.9" depth="0.12"
+      material="color:#8a5530;roughness:1"
+      tex="id:tex-wood; repx:0.5; repy:1">
+    </a-box>
+    <!-- Stoffdach -->
+    <a-box position="0 1.5 0" width="2.8" height="0.12" depth="1.8" rotation="5 0 0"
+      material="color:#c84444;roughness:1">
+    </a-box>
+    <!-- Waren -->
+    <a-sphere position="-0.5 1.1 0"   radius="0.15" material="color:#ff6644"></a-sphere>
+    <a-sphere position="0   1.1 0.1"  radius="0.13" material="color:#ffaa22"></a-sphere>
+    <a-sphere position="0.5 1.1 -0.1" radius="0.14" material="color:#cc4444"></a-sphere>
+  </a-entity>
+
+  <!-- Stand N-O (Bücher/Karten) -->
+  <a-entity position="3.5 0 -4.5">
+    <a-box position="0 0.9 0" width="2.5" height="0.15" depth="1.5"
+      material="color:#c8a870;roughness:0.9"
+      tex="id:tex-wood; repx:1.5; repy:1">
+    </a-box>
+    <a-box position="-1.1 0.45 0" width="0.12" height="0.9" depth="0.12"
+      material="color:#8a5530;roughness:1"
+      tex="id:tex-wood; repx:0.5; repy:1">
+    </a-box>
+    <a-box position="1.1 0.45 0" width="0.12" height="0.9" depth="0.12"
+      material="color:#8a5530;roughness:1"
+      tex="id:tex-wood; repx:0.5; repy:1">
+    </a-box>
+    <a-box position="0 1.5 0" width="2.8" height="0.12" depth="1.8" rotation="-5 0 0"
+      material="color:#4488cc;roughness:1">
+    </a-box>
+    <!-- Waren -->
+    <a-box position="-0.5 1.08 0" width="0.3" height="0.2" depth="0.4" material="color:#4a3010"></a-box>
+    <a-box position="0.2 1.08 0"  width="0.25" height="0.22" depth="0.35" material="color:#5a4020"></a-box>
+  </a-entity>
+
+  <!-- ═══════════════════ STADTTOR-MAKRO (wiederverwendbare Struktur) ═══════════════════ -->
+
+  <!-- TOR NORD → Sturmreich -->
+  <a-entity position="0 0 -28">
+    <a-cylinder position="-4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9"
+      tex="id:tex-stone; repx:2.5; repy:4"
+      shadow="cast:true">
+    </a-cylinder>
+    <a-cylinder position="4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9"
+      tex="id:tex-stone; repx:2.5; repy:4"
+      shadow="cast:true">
+    </a-cylinder>
+    <a-cone position="-4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1"
+      tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1"
+      tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <!-- Verbindungsbogen -->
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+      theta-length="180" theta-start="0"
+      material="color:#c0b8b0;roughness:0.9"
+      tex="id:tex-stone; repx:2; repy:1"
+      shadow="cast:true">
+    </a-torus>
+    <a-box position="0 3 0" width="6" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9"
+      tex="id:tex-stone; repx:3; repy:3"
+      shadow="cast:true">
+    </a-box>
+    <!-- Tordurchfahrt -->
+    <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
+    <!-- Schlussstein -->
+    <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9"
+      tex="id:tex-stone; repx:0.6; repy:0.4">
+    </a-box>
+    <!-- Torschild -->
+    <a-box position="0 7.5 0.85" width="3" height="0.8" depth="0.2"
+      material="color:#c8a060;roughness:0.9"
+      tex="id:tex-wood; repx:2; repy:0.6">
+    </a-box>
+    <a-text value="STURMREICH" position="0 7.5 0.96" align="center" color="#ddccaa" width="3.5"
+      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
+    </a-text>
+    <!-- Stadtmauer links/rechts -->
+    <a-box position="-12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9"
+      tex="id:tex-stone; repx:6; repy:3"
+      shadow="cast:true">
+    </a-box>
+    <a-box position="12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9"
+      tex="id:tex-stone; repx:6; repy:3"
+      shadow="cast:true">
+    </a-box>
+    <!-- Zinnen -->
+    <a-box position="-15 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="-13 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="-11 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="-9 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="9 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="11 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="13 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+    <a-box position="15 6.5 0" width="1" height="1" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:0.5">
+    </a-box>
+  </a-entity>
+
+  <!-- TOR SÜD → Feenreich -->
+  <a-entity position="0 0 28">
+    <a-cylinder position="-4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true">
+    </a-cylinder>
+    <a-cylinder position="4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true">
+    </a-cylinder>
+    <a-cone position="-4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+      theta-length="180" theta-start="0"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true">
+    </a-torus>
+    <a-box position="0 3 0" width="6" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:3; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
+    <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.6; repy:0.4">
+    </a-box>
+    <a-box position="0 7.5 0.85" width="3" height="0.8" depth="0.2"
+      material="color:#c8a060;roughness:0.9" tex="id:tex-wood; repx:2; repy:0.6">
+    </a-box>
+    <a-text value="FEENREICH" position="0 7.5 0.96" align="center" color="#88ff88" width="3.5"
+      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
+    </a-text>
+    <a-box position="-12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="-15 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-13 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-11 6.5 0" width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="-9 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="9 6.5 0"   width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="11 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="13 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <a-box position="15 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+  </a-entity>
+
+  <!-- TOR OST → Schattenreich -->
+  <a-entity position="28 0 0" rotation="0 90 0">
+    <a-cylinder position="-4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true">
+    </a-cylinder>
+    <a-cylinder position="4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true">
+    </a-cylinder>
+    <a-cone position="-4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+      theta-length="180" theta-start="0"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true">
+    </a-torus>
+    <a-box position="0 3 0" width="6" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:3; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
+    <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.6; repy:0.4">
+    </a-box>
+    <a-box position="0 7.5 0.85" width="3.5" height="0.8" depth="0.2"
+      material="color:#c8a060;roughness:0.9" tex="id:tex-wood; repx:2.5; repy:0.6">
+    </a-box>
+    <a-text value="SCHATTENREICH" position="0 7.5 0.96" align="center" color="#aaaaff" width="3.8"
+      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
+    </a-text>
+    <a-box position="-12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true">
+    </a-box>
+  </a-entity>
+
+  <!-- TOR WEST → Lichtreich -->
+  <a-entity position="-28 0 0" rotation="0 -90 0">
+    <a-cylinder position="-4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true">
+    </a-cylinder>
+    <a-cylinder position="4 4 0" radius="2" height="8"
+      material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true">
+    </a-cylinder>
+    <a-cone position="-4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+      material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2">
+    </a-cone>
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+      theta-length="180" theta-start="0"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true">
+    </a-torus>
+    <a-box position="0 3 0" width="6" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:3; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
+    <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
+      material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.6; repy:0.4">
+    </a-box>
+    <a-box position="0 7.5 0.85" width="3" height="0.8" depth="0.2"
+      material="color:#c8a060;roughness:0.9" tex="id:tex-wood; repx:2; repy:0.6">
+    </a-box>
+    <a-text value="LICHTREICH" position="0 7.5 0.96" align="center" color="#ffffaa" width="3.5"
+      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
+    </a-text>
+    <a-box position="-12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true">
+    </a-box>
+    <a-box position="12 3 0" width="12" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:6; repy:3" shadow="cast:true">
+    </a-box>
+  </a-entity>
+
+  <!-- ═══════════════════ LUFTSCHIFFE ═══════════════════ -->
+  <a-entity position="10 22 -15"
+    animation="property:position; to:-20 24 -10; dur:30000; loop:true; dir:alternate; easing:easeInOutSine">
+    <a-box position="0 0 0" width="3.5" height="1.2" depth="1.2"
+      material="color:#c8a070;roughness:0.8"
+      tex="id:tex-wood; repx:2; repy:0.8"
+      shadow="cast:true">
+    </a-box>
+    <a-sphere position="0 2 0" radius="2.2" scale="1 1.3 1"
+      material="color:#aa3322;roughness:0.8;metalness:0.1" shadow="cast:true">
+    </a-sphere>
+    <a-cylinder position="-0.8 0.9 0" radius="0.05" height="1.5" rotation="15 0 0"
+      material="color:#3a2a10">
+    </a-cylinder>
+    <a-cylinder position="0.8 0.9 0" radius="0.05" height="1.5" rotation="-15 0 0"
+      material="color:#3a2a10">
+    </a-cylinder>
+    <a-cylinder position="-0.6 0.8 0" radius="0.1" height="0.8" material="color:#2a1a10"></a-cylinder>
+    <a-entity position="-0.6 1.25 0" steam></a-entity>
+    <a-box position="1.9 0 0" width="0.1" height="1.8" depth="0.3"
+      material="color:#5a4020"
+      animation="property:rotation; to:0 0 360; loop:true; dur:1000; easing:linear">
+    </a-box>
+  </a-entity>
+
+  <!-- Zweites Luftschiff (Kulisse) -->
+  <a-entity position="-20 28 -30"
+    animation="property:position; to:15 26 -35; dur:45000; loop:true; dir:alternate; easing:easeInOutSine">
+    <a-box position="0 0 0" width="2.5" height="0.9" depth="0.9"
+      material="color:#a08060;roughness:0.8"
+      tex="id:tex-wood; repx:1.5; repy:0.6">
+    </a-box>
+    <a-sphere position="0 1.6 0" radius="1.6" scale="1 1.25 1"
+      material="color:#224466;roughness:0.8">
+    </a-sphere>
+  </a-entity>
+
+  <!-- ═══════════════════ IN-WORLD UI (Tag/Nacht) ═══════════════════ -->
+  <a-entity id="ui-panel" position="0 2.5 -4">
+    <a-box position="0 0 0" width="2.8" height="1.6" depth="0.06"
+      material="color:#1a1a2e;opacity:0.88;transparent:true;metalness:0.2">
+    </a-box>
+    <a-box position="0 0 0.02" width="2.85" height="1.65" depth="0.02"
+      material="color:#8a7040;metalness:0.6;roughness:0.4">
+    </a-box>
+    <a-text value="TAGESZEIT" position="0 0.55 0.05" align="center" color="#ddcc88"
+      width="3" font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
+    </a-text>
+    <a-box id="btn-morning" position="-1.0 0.1 0.06" width="0.58" height="0.38" depth="0.06"
+      material="color:#cc8833;metalness:0.3" class="ui-btn" data-mode="morning"
+      event-set__mouseenter="material.color: #ffaa44"
+      event-set__mouseleave="material.color: #cc8833">
+      <a-text value="Morgen" position="0 0 0.05" align="center" color="#fff" width="1.5"
+        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+    </a-box>
+    <a-box id="btn-day" position="-0.33 0.1 0.06" width="0.58" height="0.38" depth="0.06"
+      material="color:#3388cc;metalness:0.3" class="ui-btn" data-mode="day"
+      event-set__mouseenter="material.color: #44aaff"
+      event-set__mouseleave="material.color: #3388cc">
+      <a-text value="Tag" position="0 0 0.05" align="center" color="#fff" width="1.5"
+        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+    </a-box>
+    <a-box id="btn-evening" position="0.33 0.1 0.06" width="0.58" height="0.38" depth="0.06"
+      material="color:#cc5522;metalness:0.3" class="ui-btn" data-mode="evening"
+      event-set__mouseenter="material.color: #ff7744"
+      event-set__mouseleave="material.color: #cc5522">
+      <a-text value="Abend" position="0 0 0.05" align="center" color="#fff" width="1.5"
+        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+    </a-box>
+    <a-box id="btn-night" position="1.0 0.1 0.06" width="0.58" height="0.38" depth="0.06"
+      material="color:#222266;metalness:0.3" class="ui-btn" data-mode="night"
+      event-set__mouseenter="material.color: #4444aa"
+      event-set__mouseleave="material.color: #222266">
+      <a-text value="Nacht" position="0 0 0.05" align="center" color="#fff" width="1.5"
+        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+    </a-box>
+    <a-text value="[Controller Trigger = auswählen]" position="0 -0.55 0.05"
+      align="center" color="#888877" width="2.5"
+      font="https://cdn.aframe.io/fonts/Roboto-msdf.json">
+    </a-text>
+  </a-entity>
+
+  <!-- ═══════════════════ SPIELER-RIG ═══════════════════ -->
+  <a-entity id="rig" position="0 0 10">
+    <a-camera id="camera" wasd-controls="acceleration:20" look-controls>
+      <a-cursor
+        raycaster="objects: .ui-btn"
+        fuse="false"
+        material="color:white;shader:flat;opacity:0.8"
+        geometry="primitive:ring;radiusInner:0.01;radiusOuter:0.015"
+        position="0 0 -1">
+      </a-cursor>
+    </a-camera>
+    <a-entity id="leftHand"  oculus-touch-controls="hand:left"
+      laser-controls="hand:left"  raycaster="objects:.ui-btn;far:8">
+    </a-entity>
+    <a-entity id="rightHand" oculus-touch-controls="hand:right"
+      laser-controls="hand:right" raycaster="objects:.ui-btn;far:8">
+    </a-entity>
+  </a-entity>
+
+</a-scene>
+
+<script>
+  document.querySelectorAll('.ui-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('scene').setAttribute('daynight', `mode: ${btn.getAttribute('data-mode')}`);
+    });
+    btn.addEventListener('triggerdown', () => {
+      document.getElementById('scene').setAttribute('daynight', `mode: ${btn.getAttribute('data-mode')}`);
+    });
+  });
+</script>
 </body>
 </html>
