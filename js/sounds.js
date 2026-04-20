@@ -15,6 +15,8 @@
   let _live = false;
   let _pendingMode = 'day';
   let _pendingZone = 'city';
+  let _cityMuted   = false;
+  let _feenMuted   = false;
 
   const _rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -466,15 +468,22 @@
     _city.gain.setValueAtTime(_city.gain.value, t);
     _feen.gain.setValueAtTime(_feen.gain.value, t);
 
-    _city.gain.linearRampToValueAtTime(inFeen ? 0.12 : 1.0, t + dur);
-    _feen.gain.linearRampToValueAtTime(inFeen ? 1.0  : 0.0, t + dur);
+    const cityTarget = _cityMuted ? 0 : (inFeen ? 0.12 : 1.0);
+    const feenTarget = _feenMuted ? 0 : (inFeen ? 1.0  : 0.0);
+    _city.gain.linearRampToValueAtTime(cityTarget, t + dur);
+    _feen.gain.linearRampToValueAtTime(feenTarget, t + dur);
   }
+
+  function _setCityMute(muted) { _cityMuted = muted; _setZone(_pendingZone, true); }
+  function _setFeenMute(muted) { _feenMuted = muted; _setZone(_pendingZone, true); }
 
   /* ── Öffentliche API ─────────────────────────────────────────────────── */
   window._KS = {
-    start:   _start,
-    setMode: _applyMode,
-    setZone: _setZone,
+    start:        _start,
+    setMode:      _applyMode,
+    setZone:      _setZone,
+    setCityMute:  _setCityMute,
+    setFeenMute:  _setFeenMute,
     setVol(v) { if (_m) _m.gain.value = Math.max(0, Math.min(1, v)); },
   };
 

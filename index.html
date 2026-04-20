@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <title>Kingdoms – Kesselstadt</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <style>body { margin: 0; overflow: hidden; }</style>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    /* Mauszeiger als Pointer wenn er über UI-Buttons schwebt */
+    .a-canvas { cursor: default; }
+  </style>
 
   <!-- Prozedurale Texturen + tex-Komponente -->
   <script src="js/textures.js"></script>
@@ -24,6 +28,8 @@
   <script src="js/feenreich-creatures.js"></script>
   <!-- Mobile Touch-Joysticks -->
   <script src="js/touch-controls.js"></script>
+  <!-- Holografisches UI-Panel (Tageszeit, Sound, Zone) -->
+  <script src="js/ui-panel.js"></script>
 </head>
 <body>
 <script>initTextures();</script>
@@ -36,6 +42,7 @@
   kesselstadt-scene
   feenreich-scene
   player-collision
+  ui-panel-manager
   id="scene">
 
   <!-- ═══════════════════ LICHT ═══════════════════ -->
@@ -51,10 +58,17 @@
     vr-movement
     vr-teleport>
     <a-camera id="camera" wasd-controls="acceleration:20" look-controls>
+      <!--
+        rayOrigin:mouse → Strahl kommt vom echten Mauszeiger (kein Pointer-Lock nötig).
+        Das kamera-relative Panel hat dadurch feste Bildschirm-Positionen →
+        Desktop-Klicks landen korrekt auf den Buttons.
+        In VR übernimmt der Laser-Controller (rightHand), Ring-Cursor ist dort nicht nötig.
+      -->
       <a-cursor
-        raycaster="objects: .ui-btn"
+        cursor="rayOrigin: mouse"
+        raycaster="objects: .ui-btn; far: 20"
         fuse="false"
-        material="color:white;shader:flat;opacity:0.8"
+        material="shader:flat;opacity:0;transparent:true"
         geometry="primitive:ring;radiusInner:0.01;radiusOuter:0.015"
         position="0 0 -1">
       </a-cursor>

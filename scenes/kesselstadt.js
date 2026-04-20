@@ -8,31 +8,8 @@ AFRAME.registerComponent('kesselstadt-scene', {
     // Szene-HTML einmalig einfügen, sobald A-Frame bereit ist
     this.el.insertAdjacentHTML('beforeend', KESSELSTADT_HTML);
 
-    // UI-Buttons und VR-Audio nach vollständigem Laden verdrahten
+    // VR-Audio starten sobald VR-Session beginnt
     this.el.addEventListener('loaded', () => {
-      this.el.querySelectorAll('.ui-btn').forEach(btn => {
-        if (!btn.getAttribute('data-mode')) return; // Teleport-Button überspringen
-        const setMode = () =>
-          this.el.setAttribute('daynight', `mode: ${btn.getAttribute('data-mode')}`);
-        btn.addEventListener('click',       setMode);
-        btn.addEventListener('triggerdown', setMode);
-      });
-
-      // Temporärer Feenreich-Teleport-Button
-      const feenBtn = document.getElementById('btn-feenreich');
-      if (feenBtn) {
-        const doTP = () => {
-          const rig = document.getElementById('rig');
-          const cam = document.getElementById('camera');
-          if (!rig) return;
-          // Kamera-Offset berücksichtigen (WASD verschiebt camera, nicht rig)
-          const off = cam ? cam.object3D.position : { x: 0, z: 0 };
-          rig.object3D.position.set(-off.x, 0, 45 - off.z);
-        };
-        feenBtn.addEventListener('click',       doTP);
-        feenBtn.addEventListener('triggerdown', doTP);
-      }
-
       this.el.addEventListener('enter-vr', () => {
         if (window._KS) window._KS.start();
       });
@@ -550,61 +527,6 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#a08060;roughness:0.8" tex="id:tex-wood; repx:1.5; repy:0.6"></a-box>
     <a-sphere position="0 1.6 0" radius="1.6" scale="1 1.25 1"
       material="color:#224466;roughness:0.8"></a-sphere>
-  </a-entity>
-
-  <!-- ═══ IN-WORLD UI (Tag/Nacht) ═══ -->
-  <a-entity id="ui-panel" position="0 2.5 -4">
-    <a-box position="0 0 0" width="2.8" height="1.6" depth="0.06"
-      material="color:#1a1a2e;opacity:0.88;transparent:true;metalness:0.2"></a-box>
-    <a-box position="0 0 0.02" width="2.85" height="1.65" depth="0.02"
-      material="color:#8a7040;metalness:0.6;roughness:0.4"></a-box>
-    <a-text value="TAGESZEIT" position="0 0.55 0.05" align="center" color="#ddcc88"
-      width="3" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-    <a-box id="btn-morning" position="-1.0 0.1 0.06" width="0.58" height="0.38" depth="0.06"
-      material="color:#cc8833;metalness:0.3" class="ui-btn" data-mode="morning"
-      event-set__mouseenter="material.color: #ffaa44"
-      event-set__mouseleave="material.color: #cc8833">
-      <a-text value="Morgen" position="0 0 0.05" align="center" color="#fff" width="1.5"
-        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-    </a-box>
-    <a-box id="btn-day" position="-0.33 0.1 0.06" width="0.58" height="0.38" depth="0.06"
-      material="color:#3388cc;metalness:0.3" class="ui-btn" data-mode="day"
-      event-set__mouseenter="material.color: #44aaff"
-      event-set__mouseleave="material.color: #3388cc">
-      <a-text value="Tag" position="0 0 0.05" align="center" color="#fff" width="1.5"
-        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-    </a-box>
-    <a-box id="btn-evening" position="0.33 0.1 0.06" width="0.58" height="0.38" depth="0.06"
-      material="color:#cc5522;metalness:0.3" class="ui-btn" data-mode="evening"
-      event-set__mouseenter="material.color: #ff7744"
-      event-set__mouseleave="material.color: #cc5522">
-      <a-text value="Abend" position="0 0 0.05" align="center" color="#fff" width="1.5"
-        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-    </a-box>
-    <a-box id="btn-night" position="1.0 0.1 0.06" width="0.58" height="0.38" depth="0.06"
-      material="color:#222266;metalness:0.3" class="ui-btn" data-mode="night"
-      event-set__mouseenter="material.color: #4444aa"
-      event-set__mouseleave="material.color: #222266">
-      <a-text value="Nacht" position="0 0 0.05" align="center" color="#fff" width="1.5"
-        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-    </a-box>
-    <a-text value="R-Trigger: Menü | L-Trigger: Teleport | L-Stick: Laufen | R-Stick: Drehen"
-      position="0 -0.55 0.05" align="center" color="#888877" width="2.8"
-      font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-  </a-entity>
-
-  <!-- ═══ TEMP: Feenreich-Schnellreise ═══ -->
-  <a-entity position="0 1.72 -4">
-    <a-box position="0 0 0" width="2.8" height="0.52" depth="0.06"
-      material="color:#0d1f12;opacity:0.90;transparent:true;metalness:0.2"></a-box>
-    <a-box position="0 0 0.02" width="2.85" height="0.57" depth="0.02"
-      material="color:#2a6040;metalness:0.5;roughness:0.4"></a-box>
-    <a-box id="btn-feenreich" position="0 0 0.06" width="2.6" height="0.40" depth="0.06"
-      material="color:#1a5c30;metalness:0.3" class="ui-btn"
-      event-set__mouseenter="material.color: #2a8844"
-      event-set__mouseleave="material.color: #1a5c30">
-      <a-text value="Zum Feenreich (Test)" position="0 0 0.05" align="center" color="#88ffbb" width="2.6"></a-text>
-    </a-box>
   </a-entity>
 
   <!-- ═══ MAUERERGÄNZUNGEN – Ecktürme und lückenschließende Wandsegmente ═══ -->

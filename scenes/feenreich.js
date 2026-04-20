@@ -632,6 +632,7 @@ AFRAME.registerComponent('feenreich-scene', {
     if (feen === this._inFeen) return;
     this._inFeen = feen;
     if (window._KS) window._KS.setZone(feen ? 'feen' : 'city');
+    this.el.emit('zone-changed', { zone: feen ? 'feen' : 'city' });
 
     if (feen) {
       this._swapSkyTo('fee-sky-canvas');
