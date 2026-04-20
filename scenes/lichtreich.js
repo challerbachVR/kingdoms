@@ -224,17 +224,14 @@ AFRAME.registerComponent('lichtreich-scene', {
   if (inLicht !== this._inLicht) {
     this._inLicht = inLicht;
     this.el.emit('zone-changed', { zone: inLicht ? 'licht' : 'city' });
-  }
-
-  // In der Stadt: Stadthimmel wiederherstellen, aber keine Lichtwerte überschreiben
-  if (!inLicht) {
-    this._swapSkyTo('sky-canvas');
-
-    if (this._scene) {
-      this._scene.removeAttribute('fog');
+    if (!inLicht) {
+      // Lichtreich verlassen: Sky nur zurücksetzen wenn nicht im Feenreich
+      if (this._camWP.z <= 33) this._swapSkyTo('sky-canvas');
+      if (this._scene) this._scene.removeAttribute('fog');
     }
-    return;
   }
+
+  if (!inLicht) return;
 
   // Im Übergang / Lichtreich
   if (t > 0.6) {
