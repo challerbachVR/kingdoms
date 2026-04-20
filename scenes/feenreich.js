@@ -848,7 +848,7 @@ const FEENREICH_HTML = /* html */`
   <!-- ═══ RIESENBAUM 1 – WESTLICHER ANKER (mit Feendorf) ═══ -->
   <a-entity position="-23 0 70">
     <!-- Moos-Boden unter den Wurzeln -->
-    <a-plane position="0 0.005 0" rotation="-90 0 0" width="12" height="12"
+    <a-plane position="0 0.02 0" rotation="-90 0 0" width="12" height="12"
       tex="id:fee-moss;repx:3;repy:3"
       material="color:#ffffff;shader:flat;opacity:0.92;transparent:true">
     </a-plane>
@@ -946,7 +946,7 @@ const FEENREICH_HTML = /* html */`
   <!-- ═══ RIESENBAUM 2 – ÖSTLICHER BAUM ═══ -->
   <a-entity position="23 0 79">
     <!-- Moos-Boden -->
-    <a-plane position="0 0.005 0" rotation="-90 0 0" width="10" height="10"
+    <a-plane position="0 0.02 0" rotation="-90 0 0" width="10" height="10"
       tex="id:fee-moss;repx:3;repy:3"
       material="color:#ffffff;shader:flat;opacity:0.90;transparent:true">
     </a-plane>
@@ -994,7 +994,7 @@ const FEENREICH_HTML = /* html */`
   <!-- ═══ RIESENBAUM 3 – TIEFER WALDBAUM ═══ -->
   <a-entity position="-10 0 109">
     <!-- Moos-Boden -->
-    <a-plane position="0 0.005 0" rotation="-90 0 0" width="9" height="9"
+    <a-plane position="0 0.02 0" rotation="-90 0 0" width="9" height="9"
       tex="id:fee-moss;repx:3;repy:3"
       material="color:#ffffff;shader:flat;opacity:0.88;transparent:true">
     </a-plane>
