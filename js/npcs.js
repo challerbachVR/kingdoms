@@ -1,6 +1,40 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CITY-LIFE COMPONENT – NPCs, Tiere, Vögel (prozedural, kein Asset)
 // ═══════════════════════════════════════════════════════════════════════════
+const CITY_COLLISION_CIRCLES = [
+  { cx:   0,   cz:   0,  r: 2.20 },
+  { cx: -14,   cz:  -2,  r: 2.50 },
+  { cx:  11.5, cz:   6,  r: 1.40 },
+  { cx:  -4,   cz: -28,  r: 2.45 },
+  { cx:   4,   cz: -28,  r: 2.45 },
+  { cx:  -4,   cz:  28,  r: 2.45 },
+  { cx:   4,   cz:  28,  r: 2.45 },
+  { cx:  28,   cz:   4,  r: 2.45 },
+  { cx:  28,   cz:  -4,  r: 2.45 },
+  { cx: -28,   cz:   4,  r: 2.45 },
+  { cx: -28,   cz:  -4,  r: 2.45 },
+  { cx:  28,   cz: -28,  r: 2.45 },
+  { cx: -28,   cz: -28,  r: 2.45 },
+  { cx:  28,   cz:  28,  r: 2.45 },
+  { cx: -28,   cz:  28,  r: 2.45 },
+];
+
+const CITY_COLLISION_BOXES = [
+  { x0: -11.8, x1:  -6.2, z0: -10.8, z1:  -5.2 },
+  { x0:   6.2, x1:  11.8, z0: -10.8, z1:  -5.2 },
+  { x0: -12.3, x1:  -5.7, z0:   5.2, z1:  10.8 },
+  { x0:   6.5, x1:  11.5, z0:   5.8, z1:  10.2 },
+  { x0:  10.8, x1:  15.5, z0:  -3.2, z1:   1.2 },
+  { x0: -45,  x1:  -3.0, z0: -29.5, z1: -26.5 },
+  { x0:  3.0, x1:  45,   z0: -29.5, z1: -26.5 },
+  { x0: -45,  x1:  -3.0, z0:  26.5, z1:  29.5 },
+  { x0:  3.0, x1:  45,   z0:  26.5, z1:  29.5 },
+  { x0:  26.5, x1: 29.5, z0: -45,   z1:  -3.0 },
+  { x0:  26.5, x1: 29.5, z0:  3.0,  z1:  45   },
+  { x0: -29.5, x1:-26.5, z0: -45,   z1:  -3.0 },
+  { x0: -29.5, x1:-26.5, z0:  3.0,  z1:  45   },
+];
+
 AFRAME.registerComponent('city-life', {
 
   init() {
@@ -54,6 +88,51 @@ AFRAME.registerComponent('city-life', {
     return res;
   },
 
+  _isBlocked(x, z, radius) {
+    for (const c of CITY_COLLISION_CIRCLES) {
+      const dx = x - c.cx;
+      const dz = z - c.cz;
+      const minD = radius + c.r;
+      if ((dx * dx + dz * dz) < minD * minD) return true;
+    }
+
+    for (const b of CITY_COLLISION_BOXES) {
+      if (x > b.x0 - radius && x < b.x1 + radius &&
+          z > b.z0 - radius && z < b.z1 + radius) return true;
+    }
+
+    return false;
+  },
+
+  _tryStep(agent, tx, tz, step) {
+    const p = agent.root.object3D.position;
+    const radius = agent.radius || 0.26;
+    const dx = tx - p.x;
+    const dz = tz - p.z;
+    const d  = Math.sqrt(dx * dx + dz * dz);
+    if (d < 1e-4) return { moved: false, heading: agent.angle };
+
+    const base = Math.atan2(dx, dz);
+    const offsets = [0, 0.55, -0.55, 1.05, -1.05, 1.55, -1.55, Math.PI];
+    let best = null;
+
+    for (const off of offsets) {
+      const ang = base + off;
+      const nx = p.x + Math.sin(ang) * step;
+      const nz = p.z + Math.cos(ang) * step;
+      if (this._isBlocked(nx, nz, radius)) continue;
+
+      const score = Math.hypot(tx - nx, tz - nz) + Math.abs(off) * 0.35;
+      if (!best || score < best.score) best = { nx, nz, heading: ang, score };
+      if (off === 0) break;
+    }
+
+    if (!best) return { moved: false, heading: base };
+    p.x = best.nx;
+    p.z = best.nz;
+    return { moved: true, heading: best.heading };
+  },
+
   /* ── Mesh-Hilfsfunktionen ───────────────────────────────────────────── */
   _box(w, h, d, col, px, py, pz) {
     const e = document.createElement('a-box');
@@ -105,6 +184,9 @@ AFRAME.registerComponent('city-life', {
         angle: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
         wait:  Math.random() * 2,
+        radius: 0.28,
+        reroute: 0,
+        stuck: 0,
       });
     }
   },
@@ -121,15 +203,33 @@ AFRAME.registerComponent('city-life', {
       if (d < 0.3) {
         n.wpIdx = (n.wpIdx + 1) % n.wps.length;
         n.wait  = 0.4 + Math.random() * 1.8;
+        n.reroute = 0;
+        n.stuck = 0;
         return;
       }
 
       const spd = n.speed * dt;
-      p.x += dx / d * spd;
-      p.z += dz / d * spd;
+      const move = this._tryStep(n, tx, tz, spd);
       p.y  = Math.sin(t * 0.008 + n.phase) * 0.04;
 
-      const ta = Math.atan2(dx, dz);
+      if (!move.moved) {
+        n.stuck += dt;
+        n.reroute += dt;
+      } else {
+        n.stuck = 0;
+        if (move.heading !== Math.atan2(dx, dz)) n.reroute += dt * 0.35;
+        else n.reroute = Math.max(0, n.reroute - dt);
+      }
+
+      if (n.reroute > 1.1 || n.stuck > 0.55) {
+        n.wpIdx = (n.wpIdx + 1) % n.wps.length;
+        n.reroute = 0;
+        n.stuck = 0;
+        n.wait = 0.15 + Math.random() * 0.35;
+        return;
+      }
+
+      const ta = move.moved ? move.heading : Math.atan2(dx, dz);
       let da   = ta - n.angle;
       if (da >  Math.PI) da -= Math.PI * 2;
       if (da < -Math.PI) da += Math.PI * 2;
