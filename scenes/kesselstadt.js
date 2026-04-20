@@ -17,6 +17,21 @@ AFRAME.registerComponent('kesselstadt-scene', {
         btn.addEventListener('triggerdown', setMode);
       });
 
+      // Temporärer Feenreich-Teleport-Button
+      const feenBtn = document.getElementById('btn-feenreich');
+      if (feenBtn) {
+        const doTP = () => {
+          const rig = document.getElementById('rig');
+          const cam = document.getElementById('camera');
+          if (!rig) return;
+          // Kamera-Offset berücksichtigen (WASD verschiebt camera, nicht rig)
+          const off = cam ? cam.object3D.position : { x: 0, z: 0 };
+          rig.object3D.position.set(-off.x, 0, 45 - off.z);
+        };
+        feenBtn.addEventListener('click',       doTP);
+        feenBtn.addEventListener('triggerdown', doTP);
+      }
+
       this.el.addEventListener('enter-vr', () => {
         if (window._KS) window._KS.start();
       });
@@ -559,6 +574,20 @@ const KESSELSTADT_HTML = /* html */`
     <a-text value="R-Trigger: Menü | L-Trigger: Teleport | L-Stick: Laufen | R-Stick: Drehen"
       position="0 -0.55 0.05" align="center" color="#888877" width="2.8"
       font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+  </a-entity>
+
+  <!-- ═══ TEMP: Feenreich-Schnellreise ═══ -->
+  <a-entity position="0 1.72 -4">
+    <a-box position="0 0 0" width="2.8" height="0.52" depth="0.06"
+      material="color:#0d1f12;opacity:0.90;transparent:true;metalness:0.2"></a-box>
+    <a-box position="0 0 0.02" width="2.85" height="0.57" depth="0.02"
+      material="color:#2a6040;metalness:0.5;roughness:0.4"></a-box>
+    <a-box id="btn-feenreich" position="0 0 0.06" width="2.6" height="0.40" depth="0.06"
+      material="color:#1a5c30;metalness:0.3"
+      event-set__mouseenter="material.color: #2a8844"
+      event-set__mouseleave="material.color: #1a5c30">
+      <a-text value="Zum Feenreich (Test)" position="0 0 0.05" align="center" color="#88ffbb" width="2.6"></a-text>
+    </a-box>
   </a-entity>
 
   <!-- ═══ STADTLEBEN ═══ -->
