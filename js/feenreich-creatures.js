@@ -285,16 +285,84 @@ AFRAME.registerComponent('feenreich-life', {
   _mkRabbits() {
     for (let i = 0; i < 3; i++) {
       const root = document.createElement('a-entity');
-      const W = '#f2f2f2';
+      const W  = '#f2f2f2';
+      const WW = '#e8e8e8';  // leicht dunklere Unterseite
+      const PK = '#ffbbcc';
 
-      root.appendChild(this._box( 0.28, 0.18, 0.22, W,    1,  0,    0.12,  0));     // Körper
-      root.appendChild(this._sph( 0.10, W, null, 0, 1,     0.17, 0.24,  0));     // Kopf
-      root.appendChild(this._box( 0.033, 0.22, 0.022, W, 1, 0.14, 0.41, -0.038)); // Ohr L
-      root.appendChild(this._box( 0.033, 0.22, 0.022, W, 1, 0.14, 0.41,  0.038)); // Ohr R
-      root.appendChild(this._sph( 0.017, '#aaffee', '#aaffee', 2.8, 1, 0.27, 0.26, -0.062)); // Auge L
-      root.appendChild(this._sph( 0.017, '#aaffee', '#aaffee', 2.8, 1, 0.27, 0.26,  0.062)); // Auge R
-      root.appendChild(this._sph( 0.012, '#ffbbcc', '#ffaacc', 1.0, 1, 0.28, 0.22,  0));     // Nase
-      root.appendChild(this._sph( 0.052, W, null, 0, 1, -0.17, 0.14,  0));     // Schwanz
+      // Hinterkörper (runder, tiefer)
+      root.appendChild(this._sph(0.130, W, null, 0, 1,  0,     0.155, -0.06));
+      // Vorderkörper (etwas kleiner)
+      root.appendChild(this._sph(0.105, W, null, 0, 1,  0,     0.170,  0.09));
+      // Bauch (heller)
+      root.appendChild(this._sph(0.095, '#fefefe', null, 0, 1,  0, 0.160,  0.06));
+
+      // Hinterbeine-Pivot (Hase: ausgeprägte Oberschenkel schräg nach hinten)
+      const makeHLeg = (side) => {
+        const piv = document.createElement('a-entity');
+        piv.setAttribute('position', `${side * 0.085} 0.135 -0.085`);
+        // Oberschenkel – schräg nach hinten/unten
+        const thigh = this._box(0.052, 0.130, 0.052, WW, 1, 0, -0.058, -0.028);
+        thigh.setAttribute('rotation', '30 0 0');
+        piv.appendChild(thigh);
+        // Unterschenkel – fast senkrecht
+        piv.appendChild(this._cyl(0.026, 0.115, WW, 0, -0.130, 0.010));
+        // Pfote (lang, nach vorn)
+        piv.appendChild(this._box(0.046, 0.020, 0.085, WW, 1, 0, -0.198, 0.030));
+        return piv;
+      };
+      const hLegL = makeHLeg(-1);
+      const hLegR = makeHLeg( 1);
+      root.appendChild(hLegL); root.appendChild(hLegR);
+
+      // Vorderbeine-Pivot
+      const makeFLeg = (side) => {
+        const piv = document.createElement('a-entity');
+        piv.setAttribute('position', `${side * 0.068} 0.148 0.095`);
+        piv.appendChild(this._cyl(0.022, 0.130, WW, 0, -0.065, 0));
+        piv.appendChild(this._box(0.042, 0.018, 0.060, WW, 1, 0, -0.138, 0.018));
+        return piv;
+      };
+      const fLegL = makeFLeg(-1);
+      const fLegR = makeFLeg( 1);
+      root.appendChild(fLegL); root.appendChild(fLegR);
+
+      // Hals
+      root.appendChild(this._cyl(0.042, 0.068, W, 0, 0.268, 0.120));
+
+      // Kopf
+      root.appendChild(this._sph(0.096, W, null, 0, 1, 0, 0.325, 0.155));
+      // Wangen (etwas breiter als Kopf)
+      root.appendChild(this._sph(0.062, W, null, 0, 1, -0.072, 0.310, 0.158));
+      root.appendChild(this._sph(0.062, W, null, 0, 1,  0.072, 0.310, 0.158));
+
+      // Ohren (lang, leicht gespreizt)
+      const earInner = (side) => {
+        const e = this._box(0.018, 0.155, 0.010, PK, 1, side * 0.038, 0.495, 0.148);
+        e.setAttribute('rotation', `0 0 ${side * -8}`);
+        return e;
+      };
+      const makeEar = (side) => {
+        const e = this._box(0.030, 0.185, 0.018, W, 1, side * 0.042, 0.490, 0.142);
+        e.setAttribute('rotation', `0 0 ${side * -8}`);
+        return e;
+      };
+      root.appendChild(makeEar(-1)); root.appendChild(makeEar(1));
+      root.appendChild(earInner(-1)); root.appendChild(earInner(1));
+
+      // Augen (cyan, leuchtend – magisches Feenreich-Tier)
+      root.appendChild(this._sph(0.019, '#aaffee', '#aaffee', 2.8, 1,  -0.058, 0.333, 0.242));
+      root.appendChild(this._sph(0.019, '#aaffee', '#aaffee', 2.8, 1,   0.058, 0.333, 0.242));
+      root.appendChild(this._sph(0.010, '#002818', null, 0, 1,          -0.058, 0.333, 0.249));
+      root.appendChild(this._sph(0.010, '#002818', null, 0, 1,           0.058, 0.333, 0.249));
+      root.appendChild(this._sph(0.005, '#ffffff', null, 0, 1,          -0.050, 0.338, 0.252));
+      root.appendChild(this._sph(0.005, '#ffffff', null, 0, 1,           0.050, 0.338, 0.252));
+
+      // Nase
+      root.appendChild(this._sph(0.014, PK, PK, 0.8, 1, 0, 0.315, 0.248));
+
+      // Flauschiger Schwanz
+      root.appendChild(this._sph(0.058, '#ffffff', null, 0, 1,  0, 0.192, -0.188));
+      root.appendChild(this._sph(0.038, '#fefefe', null, 0, 1,  0, 0.208, -0.218));
 
       this.el.appendChild(root);
       const wps = this._pickFWP(6);
@@ -302,6 +370,7 @@ AFRAME.registerComponent('feenreich-life', {
 
       this._animals.push({
         root, type: 'rabbit', wps, wpIdx: 0,
+        fLegL, fLegR, hLegL, hLegR,
         speed: 1.0 + Math.random() * 0.5,
         angle: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
@@ -315,18 +384,76 @@ AFRAME.registerComponent('feenreich-life', {
   _mkFoxes() {
     for (let i = 0; i < 2; i++) {
       const root = document.createElement('a-entity');
-      const FC = '#d46020', FD = '#a03808';
+      const FC = '#d46020';   // Fuchs-Orange
+      const FD = '#8c2c00';   // Dunkel (Schnauze, Pfoten)
+      const FW = '#f5f0e8';   // Weiß (Brust, Schwanzspitze)
 
-      root.appendChild(this._box( 0.36, 0.22, 0.20, FC, 1,  0,    0.18,  0));  // Körper
-      root.appendChild(this._sph( 0.12, FC, null, 0, 1,     0.22, 0.30,  0));  // Kopf
-      root.appendChild(this._box( 0.10, 0.07, 0.12, FD, 1,  0.32, 0.25,  0));  // Schnauze
-      root.appendChild(this._cone(0.035, 0.005, 0.10, FC, 0.18, 0.42, -0.07)); // Ohr L
-      root.appendChild(this._cone(0.035, 0.005, 0.10, FC, 0.18, 0.42,  0.07)); // Ohr R
-      root.appendChild(this._sph( 0.018, '#88ff44', '#88ff44', 2.2, 1, 0.31, 0.31, -0.068)); // Auge L
-      root.appendChild(this._sph( 0.018, '#88ff44', '#88ff44', 2.2, 1, 0.31, 0.31,  0.068)); // Auge R
-      // Schwanz – zwei überlagerte Kugeln für Buscheffekt
-      root.appendChild(this._sph( 0.095, '#e06828', '#cc5500', 0.38, 1, -0.24, 0.18,  0));
-      root.appendChild(this._sph( 0.065, '#f8f8f8', null, 0, 1,      -0.33, 0.19,  0));  // Schwanzspitze
+      // Rumpf
+      root.appendChild(this._sph(0.155, FC, null, 0, 1,  0, 0.240,  0.00));
+      // Brust (heller)
+      root.appendChild(this._sph(0.118, FW, null, 0, 1,  0, 0.240,  0.12));
+      // Hinterpartie (leicht angehoben)
+      root.appendChild(this._sph(0.130, FC, null, 0, 1,  0, 0.275, -0.09));
+
+      // 4 Bein-Pivots
+      const makeFoxLeg = (lx, lz, dark) => {
+        const piv = document.createElement('a-entity');
+        piv.setAttribute('position', `${lx} 0.225 ${lz}`);
+        piv.appendChild(this._cyl(0.032, 0.230, FC, 0, -0.115, 0));
+        // Pfote (dunkel)
+        piv.appendChild(this._box(0.060, 0.025, 0.078, dark ? FD : FC, 1, 0, -0.245, 0.018));
+        return piv;
+      };
+      const legFL = makeFoxLeg(-0.095,  0.12, true);
+      const legFR = makeFoxLeg( 0.095,  0.12, true);
+      const legRL = makeFoxLeg(-0.095, -0.12, true);
+      const legRR = makeFoxLeg( 0.095, -0.12, true);
+      root.appendChild(legFL); root.appendChild(legFR);
+      root.appendChild(legRL); root.appendChild(legRR);
+
+      // Hals
+      const neck = this._box(0.120, 0.145, 0.115, FC, 1, 0, 0.370, 0.155);
+      neck.setAttribute('rotation', '-18 0 0');
+      root.appendChild(neck);
+
+      // Kopf
+      root.appendChild(this._sph(0.118, FC, null, 0, 1,  0, 0.448, 0.220));
+      // Wangen (etwas breiter, weißlich)
+      root.appendChild(this._sph(0.072, FW, null, 0, 1, -0.088, 0.435, 0.225));
+      root.appendChild(this._sph(0.072, FW, null, 0, 1,  0.088, 0.435, 0.225));
+
+      // Spitze Schnauze
+      root.appendChild(this._box(0.072, 0.062, 0.115, FD, 1, 0, 0.425, 0.332));
+      root.appendChild(this._sph(0.022, FD, null, 0, 1,  0, 0.430, 0.388));  // Nase
+
+      // Spitze Ohren (Cone)
+      const earL = this._cone(0.038, 0.005, 0.120, FC, -0.090, 0.548, 0.208);
+      const earR = this._cone(0.038, 0.005, 0.120, FC,  0.090, 0.548, 0.208);
+      earL.setAttribute('rotation', '0 0  12'); earR.setAttribute('rotation', '0 0 -12');
+      root.appendChild(earL); root.appendChild(earR);
+      // Ohrinnen (dunkler)
+      const earIL = this._cone(0.020, 0.003, 0.078, FD, -0.090, 0.535, 0.210);
+      const earIR = this._cone(0.020, 0.003, 0.078, FD,  0.090, 0.535, 0.210);
+      earIL.setAttribute('rotation', '0 0  12'); earIR.setAttribute('rotation', '0 0 -12');
+      root.appendChild(earIL); root.appendChild(earIR);
+
+      // Augen (leuchtend grün – magisch)
+      root.appendChild(this._sph(0.020, '#88ff44', '#88ff44', 2.2, 1, -0.058, 0.460, 0.318));
+      root.appendChild(this._sph(0.020, '#88ff44', '#88ff44', 2.2, 1,  0.058, 0.460, 0.318));
+      root.appendChild(this._sph(0.011, '#061800', null, 0, 1,         -0.058, 0.460, 0.326));
+      root.appendChild(this._sph(0.011, '#061800', null, 0, 1,          0.058, 0.460, 0.326));
+      root.appendChild(this._sph(0.005, '#ffffff', null, 0, 1,         -0.050, 0.466, 0.330));
+      root.appendChild(this._sph(0.005, '#ffffff', null, 0, 1,          0.050, 0.466, 0.330));
+
+      // Buschiger Schwanz (Pivot für Wedeln)
+      const tailPiv = document.createElement('a-entity');
+      tailPiv.setAttribute('position', '0 0.290 -0.175');
+      tailPiv.setAttribute('rotation', '28 0 0');
+      tailPiv.appendChild(this._sph(0.110, '#e06828', '#cc5500', 0.30, 1,  0, 0.115, 0));
+      tailPiv.appendChild(this._sph(0.095, FC,         null,       0,   1,  0, 0.228, 0));
+      tailPiv.appendChild(this._sph(0.080, '#f0f0f0',  null,       0,   1,  0, 0.310, 0));  // Spitze
+      tailPiv.appendChild(this._sph(0.055, '#ffffff',  null,       0,   1,  0, 0.362, 0));
+      root.appendChild(tailPiv);
 
       this.el.appendChild(root);
       const wps = this._pickFWP(5);
@@ -334,13 +461,14 @@ AFRAME.registerComponent('feenreich-life', {
 
       this._animals.push({
         root, type: 'fox', wps, wpIdx: 0,
+        legFL, legFR, legRL, legRR,
+        tail: tailPiv,
         speed: 0.65 + Math.random() * 0.35,
         angle: Math.random() * Math.PI * 2,
-        phase: Math.random() * Math.random() * Math.PI * 2,
+        phase: Math.random() * Math.PI * 2,
         wait:  1.5 + Math.random() * 2.5,
         fleeing: false, fleeTimer: 0, FLEE_DIST: 5.5,
         shimmerPh: Math.random() * Math.PI * 2,
-        // Materialen für Fell-Shimmer (werden lazy gecached)
         _bodyMats: null,
       });
     }
@@ -348,37 +476,59 @@ AFRAME.registerComponent('feenreich-life', {
 
   // ── Schmetterlinge ───────────────────────────────────────────────────────
   _mkButterflies() {
-    // Blumenkoordinaten aus FEENREICH_HTML
     const FLOWERS = [
       { x:  3.5, z:  42 }, { x:  8,   z:  60 },
       { x: -6,   z:  68 }, { x: 10,   z:  75 },
       { x:  5,   z:  97 },
     ];
-    const COLS = ['#ff6699', '#44ccff', '#ffaa22', '#aa66ff', '#44ff88'];
+    const COLS  = ['#ff6699', '#44ccff', '#ffaa22', '#aa66ff', '#44ff88'];
+    const DARKS = ['#880022', '#004488', '#885500', '#440088', '#006622'];
+    const SPOTS = ['#ffddee', '#aaeeff', '#ffeeaa', '#ddaaff', '#ccffdd'];
 
     FLOWERS.forEach(({ x, z }, i) => {
       const root = document.createElement('a-entity');
       const col  = COLS[i];
-      const dark = '#221108';
+      const dark = DARKS[i];
+      const spot = SPOTS[i];
 
-      root.appendChild(this._cyl(0.012, 0.18, dark, 0, 0, 0)); // Körper
+      // Körper: Abdomen (unten) + Thorax + Kopf
+      root.appendChild(this._cyl(0.018, 0.130, dark,   0, -0.048, 0));  // Abdomen
+      root.appendChild(this._cyl(0.016, 0.072, dark,   0,  0.040, 0));  // Thorax
+      root.appendChild(this._sph(0.024, dark, null, 0, 1, 0, 0.092, 0)); // Kopf
+      // Augen
+      root.appendChild(this._sph(0.010, '#ffffaa', '#ffff44', 1.5, 1, -0.018, 0.096, 0.018));
+      root.appendChild(this._sph(0.010, '#ffffaa', '#ffff44', 1.5, 1,  0.018, 0.096, 0.018));
+      // Fühler (zwei dünne Stäbe + Knubbel)
+      const antL = this._cyl(0.004, 0.095, dark, -0.022, 0.152, 0);
+      const antR = this._cyl(0.004, 0.095, dark,  0.022, 0.152, 0);
+      antL.setAttribute('rotation', '0 0  22'); antR.setAttribute('rotation', '0 0 -22');
+      root.appendChild(antL); root.appendChild(antR);
+      root.appendChild(this._sph(0.012, col, col, 0.8, 1, -0.052, 0.192, 0));
+      root.appendChild(this._sph(0.012, col, col, 0.8, 1,  0.052, 0.192, 0));
 
-      // Flügel – Rotations-z wird in tick gesteuert (Radiant)
-      // Initiale Rotation (Grad) gibt die Spreizung vor, z wird überschrieben
-      const wUL = this._wing(0.22, 0.16, col, 0.72, -0.11, 0.025, 0, -12, 20,  0);
-      const wUR = this._wing(0.22, 0.16, col, 0.72,  0.11, 0.025, 0, -12,-20,  0);
-      const wLL = this._wing(0.16, 0.12, col, 0.55, -0.09,-0.045, 0,  -5, 18,  0);
-      const wLR = this._wing(0.16, 0.12, col, 0.55,  0.09,-0.045, 0,  -5,-18,  0);
+      // Oberflügel (groß, abgerundet via plane)
+      const wUL = this._wing(0.230, 0.170, col,  0.78, -0.115, 0.028, 0, -12, 22,  0);
+      const wUR = this._wing(0.230, 0.170, col,  0.78,  0.115, 0.028, 0, -12,-22,  0);
+      // Flügelmuster: dunklere Ränder (kleinere Planes leicht versetzt)
+      const wULd = this._wing(0.190, 0.140, spot, 0.28, -0.112, 0.028, 0, -12, 22,  0);
+      const wURd = this._wing(0.190, 0.140, spot, 0.28,  0.112, 0.028, 0, -12,-22,  0);
+      // Unterflügel
+      const wLL = this._wing(0.165, 0.130, col,  0.65, -0.095,-0.042, 0,  -5, 19,  0);
+      const wLR = this._wing(0.165, 0.130, col,  0.65,  0.095,-0.042, 0,  -5,-19,  0);
+      const wLLd = this._wing(0.120, 0.095, dark, 0.15, -0.093,-0.042, 0,  -5, 19,  0);
+      const wLRd = this._wing(0.120, 0.095, dark, 0.15,  0.093,-0.042, 0,  -5,-19,  0);
 
       root.appendChild(wUL); root.appendChild(wUR);
+      root.appendChild(wULd); root.appendChild(wURd);
       root.appendChild(wLL); root.appendChild(wLR);
+      root.appendChild(wLLd); root.appendChild(wLRd);
       this.el.appendChild(root);
 
       root.object3D.position.set(x, 1.8 + Math.random() * 0.6, z);
 
       this._animals.push({
         root, type: 'butterfly',
-        wUL, wUR, wLL, wLR,
+        wUL, wUR, wULd, wURd, wLL, wLR, wLLd, wLRd,
         cx: x, cz: z,
         figA:    Math.random() * Math.PI * 2,
         figSpd:  0.50 + Math.random() * 0.35,
@@ -425,7 +575,22 @@ AFRAME.registerComponent('feenreich-life', {
       }
 
       // ── Normales Wandern ──
-      if (a.wait > 0) { a.wait -= dt; return; }
+      if (a.wait > 0) {
+        a.wait -= dt;
+        // Beine dämpfen; Fuchsschwanz wippen
+        if (a.fLegL && a.fLegL.object3D) {
+          a.fLegL.object3D.rotation.x *= 0.88; a.fLegR.object3D.rotation.x *= 0.88;
+          a.hLegL.object3D.rotation.x *= 0.88; a.hLegR.object3D.rotation.x *= 0.88;
+        }
+        if (a.legFL && a.legFL.object3D) {
+          a.legFL.object3D.rotation.x *= 0.88; a.legFR.object3D.rotation.x *= 0.88;
+          a.legRL.object3D.rotation.x *= 0.88; a.legRR.object3D.rotation.x *= 0.88;
+        }
+        if (a.tail && a.tail.object3D) {
+          a.tail.object3D.rotation.z = Math.sin(ts * 0.9 + a.phase) * 0.35;
+        }
+        return;
+      }
 
       const [tx, tz] = a.wps[a.wpIdx];
       const dx = tx - p.x, dz = tz - p.z;
@@ -443,23 +608,27 @@ AFRAME.registerComponent('feenreich-life', {
       p.x += dx / d * spd;
       p.z += dz / d * spd;
 
-      // Hase hoppelt sanft
       if (a.type === 'rabbit') {
-        p.y = Math.abs(Math.sin(ts * 5 + a.phase)) * 0.055;
-      } else {
-        p.y = Math.sin(ts * 1.2 + a.phase) * 0.012;
-        // Fuchs-Fell-Shimmer (lazy material cache)
-        if (!a._bodyMats) {
-          a._bodyMats = [];
-          a.root.object3D.traverse(n => {
-            if (n.isMesh && n.material) a._bodyMats.push(n.material);
-          });
+        // Hase hoppelt: Körper auf/ab + Beinpivots synchron
+        p.y = Math.abs(Math.sin(ts * 5.5 + a.phase)) * 0.062;
+        if (a.fLegL && a.fLegL.object3D) {
+          const hop = Math.sin(ts * 5.5 + a.phase);
+          const fSwing = hop * 0.55;
+          const hSwing = -hop * 0.65;
+          a.fLegL.object3D.rotation.x =  fSwing; a.fLegR.object3D.rotation.x =  fSwing;
+          a.hLegL.object3D.rotation.x =  hSwing; a.hLegR.object3D.rotation.x =  hSwing;
         }
-        if (a._bodyMats.length) {
-          const em = 0.15 + Math.abs(Math.sin(ts * 2.2 + a.shimmerPh)) * 0.25;
-          a._bodyMats.forEach(m => {
-            if (m.emissiveIntensity !== undefined) m.emissiveIntensity = em;
-          });
+      } else {
+        // Fuchs: sanfter Trab
+        p.y = Math.sin(ts * 1.4 + a.phase) * 0.014;
+        if (a.legFL && a.legFL.object3D) {
+          const sw = Math.sin(ts * 4.5 * a.speed + a.phase) * 0.48;
+          a.legFL.object3D.rotation.x =  sw; a.legFR.object3D.rotation.x = -sw;
+          a.legRL.object3D.rotation.x = -sw; a.legRR.object3D.rotation.x =  sw;
+        }
+        // Schwanz wedelt beim Gehen
+        if (a.tail && a.tail.object3D) {
+          a.tail.object3D.rotation.z = Math.sin(ts * 2.5 + a.phase) * 0.42;
         }
       }
 
@@ -497,12 +666,18 @@ AFRAME.registerComponent('feenreich-life', {
       p.y = a.baseY + Math.sin(a.figA * 1.7)  * 0.35;
     }
 
-    // Flügelschlag (Radiant: ±0.65 rad = ±37°)
+    // Flügelschlag (Radiant: ±0.65 rad = ±37°) – alle Lagen synchron
     const flap = Math.sin(ts * a.flapSpd + a.flapPh) * 0.65;
-    if (a.wUL.object3D) a.wUL.object3D.rotation.z =  ( 0.45 + flap);
-    if (a.wUR.object3D) a.wUR.object3D.rotation.z = -( 0.45 + flap);
-    if (a.wLL.object3D) a.wLL.object3D.rotation.z =  ( 0.80 + flap * 0.55);
-    if (a.wLR.object3D) a.wLR.object3D.rotation.z = -( 0.80 + flap * 0.55);
+    const fU =  ( 0.45 + flap);
+    const fL =  ( 0.80 + flap * 0.55);
+    if (a.wUL.object3D)  a.wUL.object3D.rotation.z  =  fU;
+    if (a.wUR.object3D)  a.wUR.object3D.rotation.z  = -fU;
+    if (a.wULd.object3D) a.wULd.object3D.rotation.z =  fU;
+    if (a.wURd.object3D) a.wURd.object3D.rotation.z = -fU;
+    if (a.wLL.object3D)  a.wLL.object3D.rotation.z  =  fL;
+    if (a.wLR.object3D)  a.wLR.object3D.rotation.z  = -fL;
+    if (a.wLLd.object3D) a.wLLd.object3D.rotation.z =  fL;
+    if (a.wLRd.object3D) a.wLRd.object3D.rotation.z = -fL;
 
     // Leichte Neigung in Flugrichtung
     a.root.object3D.rotation.y = Math.atan2(
@@ -513,53 +688,114 @@ AFRAME.registerComponent('feenreich-life', {
   },
 
   /* ══════════════════════════════════════════════════════════════════════
-     ✦ MYSTERIÖSE GEISTWESEN
-     3 halbtransparente Erscheinungen. Reagieren NICHT auf den Spieler.
-     Gleiten in langsamen Bögen, Opacity pulsiert (0.15 – 0.48).
+     ✦ GEISTWESEN  –  klar erkennbare Geist-Silhouette:
+       Kopf (oben) · Augen · Torso · Schleier (nach unten) · Arme
+       Gleiten in langsamen Bögen, Opacity pulsiert.
      ══════════════════════════════════════════════════════════════════════ */
+
+  // Erzeugt einen halbtransparenten Geist-Cone (Schleier)
+  _veilCone(rb, rt, h, col, em, op, px, py, pz, seg) {
+    const e = this._el('a-cone', {
+      'radius-bottom': rb, 'radius-top': rt, height: h,
+      position: `${px} ${py} ${pz}`,
+      'segments-radial': seg || 6,
+      material: `color:${col};emissive:${em};emissiveIntensity:0.55;` +
+                `shader:flat;transparent:true;opacity:${op}`,
+    });
+    return e;
+  },
+
   _mkSpirits() {
     const DEFS = [
-      { col: '#c0ccff', cx: -18, cz:  65, pathR:  7, pathSpd: 0.055 },
-      { col: '#cceeff', cx:   6, cz:  90, pathR:  9, pathSpd: 0.042 },
-      { col: '#e0c0ff', cx:  19, cz:  75, pathR:  6, pathSpd: 0.068 },
+      { col: '#c0ccff', em: '#8899ff', eye: '#aabbff', cx: -18, cz:  65, pathR:  7, pathSpd: 0.055 },
+      { col: '#cceeff', em: '#44aadd', eye: '#88ddff', cx:   6, cz:  90, pathR:  9, pathSpd: 0.042 },
+      { col: '#e0c0ff', em: '#cc88ff', eye: '#ddaaff', cx:  19, cz:  75, pathR:  6, pathSpd: 0.068 },
     ];
 
     DEFS.forEach(def => {
       const root = document.createElement('a-entity');
-      const col  = def.col;
+      const col = def.col, em = def.em, eye = def.eye;
 
-      // Äußere Aura – sehr transparent
-      const aura = this._sph(0.75, col, col, 0.25, 0.08, 0, 0, 0);
-      aura.setAttribute('segments-width',  5);
-      aura.setAttribute('segments-height', 4);
+      // ── KOPF ─────────────────────────────────────────────────────────
+      // Äußerer Kopfschein
+      const headGlow = this._sph(0.290, col, em, 0.20, 0.08, 0, 0.880, 0);
+      headGlow.setAttribute('segments-width', 5); headGlow.setAttribute('segments-height', 4);
 
-      // Hauptkörper – langgestreckt (scale via Three.js gesetzt)
-      const body = document.createElement('a-sphere');
-      body.setAttribute('radius', 0.38);
-      body.setAttribute('position', '0 0 0');
-      body.setAttribute('segments-width',  5);
-      body.setAttribute('segments-height', 4);
-      body.setAttribute('material',
-        `color:${col};emissive:${col};emissiveIntensity:0.55;` +
-        `shader:flat;transparent:true;opacity:0.32`);
+      // Hauptkopf
+      const head = this._sph(0.195, col, em, 0.58, 0.40, 0, 0.880, 0);
+      head.setAttribute('segments-width', 6); head.setAttribute('segments-height', 5);
 
-      // Innerer leuchtender Kern
-      const core = this._sph(0.14, '#ffffff', col, 1.2, 0.55, 0, 0.15, 0);
+      // Augen (vorne, z > 0 = Blickrichtung des Geistes)
+      const eyeL = this._sph(0.044, '#ffffff', eye, 3.0, 0.82, -0.085, 0.902, 0.155);
+      const eyeR = this._sph(0.044, '#ffffff', eye, 3.0, 0.82,  0.085, 0.902, 0.155);
+      // Pupillen
+      const pupL = this._sph(0.022, '#060010', null, 0, 0.90, -0.085, 0.902, 0.168);
+      const pupR = this._sph(0.022, '#060010', null, 0, 0.90,  0.085, 0.902, 0.168);
 
-      root.appendChild(aura);
-      root.appendChild(body);
+      // ── HALS (kurzes Verbindungsstück) ───────────────────────────────
+      const neck = this._sph(0.110, col, em, 0.48, 0.32, 0, 0.655, 0);
+
+      // ── TORSO ────────────────────────────────────────────────────────
+      const torso = this._sph(0.200, col, em, 0.44, 0.32, 0, 0.440, 0);
+      torso.setAttribute('segments-width', 5); torso.setAttribute('segments-height', 4);
+
+      // ── LEUCHTENDER SEELENKERN ───────────────────────────────────────
+      const core = this._sph(0.088, '#ffffff', em, 2.2, 0.72, 0, 0.490, 0.020);
+
+      // ── ARME (seitlich ausgestreckte Tentakel-Cones) ─────────────────
+      // rotation Z=+90° → Cone-Achse zeigt nach -X (links)
+      // radius-bottom (Ursprung -Y → jetzt +X, körpernah) = breit
+      // radius-top    (Ursprung +Y → jetzt -X, außen)     = spitz
+      const armL = this._veilCone(0.038, 0.005, 0.320, col, em, 0.38,  0, 0.455, 0);
+      armL.setAttribute('rotation', '0 0  90');
+      const armR = this._veilCone(0.038, 0.005, 0.320, col, em, 0.38,  0, 0.455, 0);
+      armR.setAttribute('rotation', '0 0 -90');
+
+      // ── SCHLEIER / GEWAND (Kegel nach unten, breit oben → spitz unten) ─
+      // In A-Frame: radius-top = obere Kante (+Y), radius-bottom = untere Kante (-Y)
+      // Für Geisterschleier: radius-top=breit (Taille oben), radius-bottom=spitz (unten)
+      // Mittelpunkt des Kegels bei py → obere Kante bei py+h/2, untere bei py-h/2
+
+      // Haupt-Schleier:  Taille bei y=+0.22, Spitze bei y≈-0.56 → Mitte y=-0.17
+      const veil0 = this._veilCone(0.010, 0.230, 0.780, col, em, 0.34, 0, -0.170, 0, 6);
+
+      // Zweiter (äußerer) Schleier: etwas breiter, kürzer
+      const veil1 = this._veilCone(0.008, 0.295, 0.520, col, em, 0.18, 0, -0.040, 0, 6);
+
+      // Drei versetzt-schwebende Seitenstreifen (Fetzen)
+      const shreds = [
+        this._veilCone(0.006, 0.085, 0.560, col, em, 0.20, -0.115, -0.085, 0.050, 4),
+        this._veilCone(0.006, 0.075, 0.480, col, em, 0.20,  0.120, -0.050,-0.040, 4),
+        this._veilCone(0.006, 0.065, 0.420, col, em, 0.18,  0.015, -0.070, 0.110, 4),
+      ];
+      shreds[0].setAttribute('rotation', '10 0 -8');
+      shreds[1].setAttribute('rotation', '-8 0  6');
+      shreds[2].setAttribute('rotation',  '5 0  4');
+
+      // ── ORBITIERENDE PARTIKEL ────────────────────────────────────────
+      const orbs = [];
+      for (let oi = 0; oi < 3; oi++) {
+        const orb = this._sph(0.036, col, em, 1.4, 0.58, 0, 0.500, 0);
+        root.appendChild(orb);
+        orbs.push({ el: orb, phase: (oi / 3) * Math.PI * 2, r: 0.58 + oi * 0.14, oy: 0.42 + oi * 0.18 });
+      }
+
+      // Alles anhängen
+      root.appendChild(headGlow); root.appendChild(head);
+      root.appendChild(eyeL);    root.appendChild(eyeR);
+      root.appendChild(pupL);    root.appendChild(pupR);
+      root.appendChild(neck);    root.appendChild(torso);
       root.appendChild(core);
+      root.appendChild(armL);    root.appendChild(armR);
+      root.appendChild(veil0);   root.appendChild(veil1);
+      shreds.forEach(s => root.appendChild(s));
       this.el.appendChild(root);
 
-      root.object3D.position.set(def.cx, 2.8, def.cz);
-      // Gestreckte Form ohne a-sphere scale-Attribut-Bugs: direkt Three.js
-      body.addEventListener('object3dset', () => {
-        body.object3D.scale.set(0.62, 1.75, 0.55);
-      });
+      root.object3D.position.set(def.cx, 2.6, def.cz);
 
-      // Material-Cache für Opacity-Puls (lazy, ersten Tick)
       this._spirits.push({
-        root, aura, body, core,
+        root, headGlow, head, eyeL, eyeR, pupL, pupR,
+        neck, torso, core, armL, armR, veil0, veil1, shreds, orbs,
         baseX: def.cx, baseZ: def.cz,
         pathA:   Math.random() * Math.PI * 2,
         pathR:   def.pathR,
@@ -579,28 +815,77 @@ AFRAME.registerComponent('feenreich-life', {
 
       const x = sp.baseX + Math.cos(sp.pathA)          * sp.pathR;
       const z = sp.baseZ + Math.sin(sp.pathA * 0.65)   * sp.pathR * 0.85;
-      const y = 2.5      + Math.sin(ts * 0.45 + sp.bobPh) * 1.1;
+      const y = 2.6      + Math.sin(ts * 0.45 + sp.bobPh) * 0.90;
 
       sp.root.object3D.position.set(x, y, z);
+      // Dreht sich in Fahrtrichtung
       sp.root.object3D.rotation.y = sp.pathA + Math.PI * 0.5;
-      // Sanftes Neigen
-      sp.root.object3D.rotation.z = Math.sin(sp.pathA * 1.3) * 0.12;
+      // Leichte Neigung beim Gleiten
+      sp.root.object3D.rotation.z = Math.sin(sp.pathA * 1.3) * 0.09;
 
-      // Opacity-Puls (Geisterhauch: 0.13 – 0.46)
-      const op     = 0.13 + Math.abs(Math.sin(ts * 0.32 + sp.opPh)) * 0.33;
-      const auraOp = op * 0.30;
-      const coreOp = Math.min(0.82, op * 1.9);
+      // ── Opacity-Puls (Hauch: 0.14 – 0.50) ──
+      const op = 0.14 + Math.abs(Math.sin(ts * 0.30 + sp.opPh)) * 0.36;
 
-      // Lazy-cache: Materials erst holen wenn object3D bereit
+      // Lazy material cache
       if (!sp._mats) {
-        sp._mats = { body: [], aura: [], core: [] };
-        sp.body.object3D.traverse(n => { if (n.isMesh) sp._mats.body.push(n.material); });
-        sp.aura.object3D.traverse(n => { if (n.isMesh) sp._mats.aura.push(n.material); });
-        sp.core.object3D.traverse(n => { if (n.isMesh) sp._mats.core.push(n.material); });
+        const col = el => { const ms = []; el.object3D.traverse(n => { if (n.isMesh && n.material) ms.push(n.material); }); return ms; };
+        sp._mats = {
+          headGlow: col(sp.headGlow),
+          head:     col(sp.head),
+          eyeL:     col(sp.eyeL), eyeR: col(sp.eyeR),
+          pupL:     col(sp.pupL), pupR: col(sp.pupR),
+          neck:     col(sp.neck),
+          torso:    col(sp.torso),
+          core:     col(sp.core),
+          armL:     col(sp.armL), armR: col(sp.armR),
+          veil0:    col(sp.veil0), veil1: col(sp.veil1),
+          shreds:   sp.shreds.map(s => col(s)),
+        };
       }
-      sp._mats.body.forEach(m => { m.opacity = op;     m.needsUpdate = true; });
-      sp._mats.aura.forEach(m => { m.opacity = auraOp; m.needsUpdate = true; });
-      sp._mats.core.forEach(m => { m.opacity = coreOp; m.needsUpdate = true; });
+
+      const set = (mats, o) => mats.forEach(m => { m.opacity = Math.max(0, o); m.needsUpdate = true; });
+      set(sp._mats.headGlow, op * 0.22);
+      set(sp._mats.head,     op * 0.82);
+      set(sp._mats.eyeL,     Math.min(0.96, op * 2.4));
+      set(sp._mats.eyeR,     Math.min(0.96, op * 2.4));
+      set(sp._mats.pupL,     Math.min(0.92, op * 2.2));
+      set(sp._mats.pupR,     Math.min(0.92, op * 2.2));
+      set(sp._mats.neck,     op * 0.68);
+      set(sp._mats.torso,    op * 0.72);
+      set(sp._mats.core,     Math.min(0.94, op * 2.8));
+      set(sp._mats.armL,     op * 0.65);
+      set(sp._mats.armR,     op * 0.65);
+      set(sp._mats.veil0,    op * 0.72);
+      set(sp._mats.veil1,    op * 0.40);
+      sp._mats.shreds.forEach(ms => set(ms, op * 0.48));
+
+      // ── Arm-Wellen ──
+      if (sp.armL.object3D) {
+        const wave = Math.sin(ts * 0.75 + sp.bobPh) * 0.30;
+        // Arm-Pivot um Z animieren: Geist-Arme heben sich leicht
+        sp.armL.object3D.rotation.z =  Math.PI * 0.5 + wave;
+        sp.armR.object3D.rotation.z = -Math.PI * 0.5 - wave;
+        sp.armL.object3D.rotation.x = Math.sin(ts * 0.55 + sp.opPh) * 0.20;
+        sp.armR.object3D.rotation.x = Math.cos(ts * 0.55 + sp.opPh) * 0.20;
+      }
+
+      // ── Schleierfetzen wehen ──
+      sp.shreds.forEach((s, si) => {
+        if (s.object3D) {
+          s.object3D.rotation.x = Math.sin(ts * 0.65 + si * 1.1 + sp.bobPh) * 0.16;
+          s.object3D.rotation.z = Math.cos(ts * 0.50 + si * 0.9 + sp.opPh)  * 0.14;
+        }
+      });
+
+      // ── Orb-Kreisen ──
+      sp.orbs.forEach(orb => {
+        if (orb.el.object3D) {
+          const ox = Math.cos(ts * 0.85 + orb.phase) * orb.r;
+          const oy = orb.oy + Math.sin(ts * 1.25 + orb.phase) * 0.20;
+          const oz = Math.sin(ts * 0.85 + orb.phase) * orb.r;
+          orb.el.object3D.position.set(ox, oy, oz);
+        }
+      });
     });
   },
 });
