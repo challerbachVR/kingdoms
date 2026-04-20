@@ -282,6 +282,42 @@ AFRAME.registerComponent('player-collision', {
       { cx: -28,   cz:  28,  r: 2.45 },
     ];
 
+    // ── Feenreich-Hindernisse (Pilze, Baumstämme, Wurzelbereiche) ──────────
+    this._feenCircles = [
+      // Riesenpilze
+      { cx: -13, cz:  51, r: 1.60 },
+      { cx:  17, cz:  57, r: 1.35 },
+      { cx: -22, cz:  74, r: 1.85 },
+      { cx:  15, cz:  83, r: 1.45 },
+      { cx:  -7, cz:  93, r: 1.20 },
+
+      // Kleine Pilzgruppen
+      { cx:  -5, cz:  42, r: 0.65 },
+      { cx:  -3, cz:  44, r: 0.50 },
+      { cx:  -7, cz:  46, r: 0.58 },
+      { cx:  10, cz:  62, r: 0.58 },
+      { cx:  12, cz:  65, r: 0.46 },
+      { cx:   4, cz: 100, r: 0.52 },
+      { cx:   2, cz: 104, r: 0.42 },
+      { cx:   6, cz:  98, r: 0.60 },
+
+      // Riesenbäume inkl. Wurzelzone
+      { cx: -23, cz:  70, r: 4.80 },
+      { cx:  23, cz:  79, r: 4.10 },
+      { cx: -10, cz: 109, r: 3.80 },
+    ];
+
+    // ── Feenreich-Hügel als kugelförmige Heightmap ─────────────────────────
+    // Die Hügel sind visuell halbe/teilweise versenkte Kugeln. Für begehbaren
+    // Boden verwenden wir deren obere Kugeloberfläche als Terrain-Höhe.
+    this._feenHills = [
+      { cx: -19, cy: -7, cz:  67, r:  9 },
+      { cx:  22, cy: -5, cz:  73, r:  7 },
+      { cx:  -6, cy: -9, cz: 102, r: 11 },
+      { cx:  12, cy: -4, cz:  57, r:  6 },
+      { cx: -14, cy: -6, cz:  88, r:  8 },
+    ];
+
     // ── Rechteckige Hindernisse AABB { x0, x1, z0, z1 } ────────────────────
     // Koordinaten sind Weltkoordinaten der Gebäude-Außenkanten
     this._boxes = [
@@ -313,6 +349,26 @@ AFRAME.registerComponent('player-collision', {
     ];
   },
 
+  _getTerrainHeight(px, pz) {
+    let y = 0;
+
+    // Feenreich beginnt südlich des Stadttores.
+    if (pz <= 33) return y;
+
+    for (const h of this._feenHills) {
+      const dx = px - h.cx;
+      const dz = pz - h.cz;
+      const d2 = dx * dx + dz * dz;
+      const r2 = h.r * h.r;
+      if (d2 >= r2) continue;
+
+      const topY = h.cy + Math.sqrt(r2 - d2);
+      if (topY > y) y = topY;
+    }
+
+    return y;
+  },
+
   tick(t, dt) {
     if (!dt || dt > 200) return;
     if (!this._rig) this._rig = document.getElementById('rig');
@@ -339,6 +395,20 @@ AFRAME.registerComponent('player-collision', {
       }
     }
 
+    if (pz > 33) {
+      for (const c of this._feenCircles) {
+        const dx = px - c.cx;
+        const dz = pz - c.cz;
+        const d  = Math.sqrt(dx * dx + dz * dz);
+        const minD = c.r + R;
+        if (d < minD && d > 1e-4) {
+          const pen = minD - d;
+          this._push.x += (dx / d) * pen;
+          this._push.z += (dz / d) * pen;
+        }
+      }
+    }
+
     // ── Boxen: minimaler Ausstoß auf der flachsten Achse ──────────────────
     for (const b of this._boxes) {
       if (px <= b.x0 - R || px >= b.x1 + R) continue;
@@ -362,5 +432,10 @@ AFRAME.registerComponent('player-collision', {
       this._rig.object3D.position.x += this._push.x;
       this._rig.object3D.position.z += this._push.z;
     }
+
+    // Rig-Höhe an das Terrain anpassen, damit Feenreich-Hügel begehbar sind.
+    const nextX = px + this._push.x;
+    const nextZ = pz + this._push.z;
+    this._rig.object3D.position.y = this._getTerrainHeight(nextX, nextZ);
   },
 });

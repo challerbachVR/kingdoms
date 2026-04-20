@@ -155,7 +155,7 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 ## 6. UI & Panel
 
 ### Öffnen/Schließen
-- **Quest 3:** Menu-Button (Options) am linken Controller
+- **Quest 3:** X-Button am linken Controller
 - **Desktop:** Taste `M`
 - **Mobile:** Schwebender Button unten rechts
 
@@ -194,7 +194,6 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 | Priorität | Was |
 |-----------|-----|
-| 🔴 Mittel | Kollision Feenreich (Pilze, Bäume) |
 | 🟡 Niedrig | aframe-watcher funktioniert nicht mit modularer Struktur |
 
 ---
@@ -228,7 +227,7 @@ kingdoms/
 | 4 | Feenreich Terrain + Texturen | ✅ |
 | 5 | Feenreich Kreaturen + Sounds | ✅ |
 | 6 | UI Panel | ✅ |
-| 7 | Kollision Feenreich | 🔲 |
+| 7 | Kollision Feenreich | ✅ |
 | 8 | Drei Kulissen-Reiche | 🔲 |
 | 9 | Mixed Reality Modus | 🔲 |
 | 10 | Geschichte & Narrative | 🔲 |
