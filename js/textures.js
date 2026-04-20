@@ -4,6 +4,45 @@
 // PROZEDURALE TEXTUREN + TEX-KOMPONENTE
 // ═══════════════════════════════════════════════════════════════════════════
 
+function drawFeenGround(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // Grundfarbe
+  ctx.fillStyle = '#cfe8b8';
+  ctx.fillRect(0, 0, W, H);
+
+  // leichte Farbvariation (organisch)
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const r = 20 + Math.random() * 40;
+
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, 'rgba(180,220,140,0.25)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // kleine "Blütenpunkte"
+  for (let i = 0; i < 80; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+
+    ctx.fillStyle = Math.random() > 0.5
+      ? 'rgba(255,200,220,0.4)'
+      : 'rgba(255,240,150,0.4)';
+
+    ctx.beginPath();
+    ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function drawCobblestone(canvas) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -572,6 +611,7 @@ function initTextures() {
     { id: 'tex-licht-crystal', w: 512,  h: 512, fn: drawLichtCrystal },
     { id: 'tex-licht-portal',  w: 512,  h: 512, fn: drawLichtPortal },
     { id: 'tex-licht-terrace', w: 512,  h: 512, fn: drawLichtTerrace },
+    { id: 'tex-feen', w: 512, h: 512, fn: drawFeenGround },
   ];
 
   CANVASES.forEach(({ id, w, h, fn }) => {

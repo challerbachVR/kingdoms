@@ -447,10 +447,141 @@ const LICHTREICH_HTML = /* html */ `
     tex="id: tex-licht-ground; repx: 2; repy: 2"
     material="color:#93a8b1; opacity:0.18; transparent:true; shader:flat">
   </a-plane>
+  
+<!-- ═══ SCHMALE GRENZMAUER ZUM FEENREICH ═══ -->
+
+<!-- Hauptwand (schmal!) -->
+<!-- LICHTREICH-SEITE -->
+<a-box
+  position="-36.2 7 40"
+  width="6"
+  height="14"
+  depth="70"
+  tex="id: tex-stone; repx: 1; repy: 3"
+  material="color:#5b6670; shader:flat">
+</a-box>
+
+<!-- FEEN-SEITE -->
+<a-box
+  position="-35.8 7 40"
+  width="6"
+  height="14"
+  depth="70"
+  tex="id: tex-feen; repx: 2; repy: 2"
+  material="color:#ffffff; shader:flat">
+</a-box>
+
+<!-- Rundbastion vorne -->
+<a-cylinder
+  position="-36 8 10"
+  radius="5"
+  height="16"
+  segments-radial="12"
+  tex="id: tex-stone; repx: 1; repy: 3"
+  material="color:#66737d; shader:flat">
+</a-cylinder>
+
+<!-- Rundbastion hinten -->
+<a-cylinder
+  position="-36 8 70"
+  radius="5"
+  height="16"
+  segments-radial="12"
+  tex="id: tex-stone; repx: 1; repy: 3"
+  material="color:#66737d; shader:flat">
+</a-cylinder>
+
+<!-- mittlere Bastion -->
+<a-cylinder
+  position="-40 9 40"
+  radius="4"
+  height="18"
+  segments-radial="12"
+  tex="id: tex-stone; repx: 1; repy: 3"
+  material="color:#5c6871; shader:flat">
+</a-cylinder>
+
+<!-- oberer Steg -->
+<a-box
+  position="-38 15 40"
+  width="4"
+  height="2"
+  depth="60"
+  tex="id: tex-stone; repx: 1; repy: 1"
+  material="color:#73808a; shader:flat">
+</a-box>
+
+<!-- dezente Kristalle -->
+<a-cone
+  position="-36 18 20"
+  radius-bottom="0.9"
+  radius-top="0.08"
+  height="4"
+  tex="id: tex-licht-crystal"
+  material="color:#d9f5ff; emissive:#bdf1ff; emissiveIntensity:0.15; shader:flat">
+</a-cone>
+
+<a-cone
+  position="-36 18 55"
+  radius-bottom="0.9"
+  radius-top="0.08"
+  height="4"
+  tex="id: tex-licht-crystal"
+  material="color:#cfeeff; emissive:#aee9ff; emissiveIntensity:0.12; shader:flat">
+</a-cone>
+
+  <!-- FEEN-WURZELN -->
+<a-entity position="-36 0 0">
+
+  <a-cone position="0 3 20" rotation="0 0 12" scale="1 1 1"
+    radius-bottom="1.5" radius-top="0.2" height="6"
+    material="color:#8bbf6a; shader:flat"></a-cone>
+
+  <a-cone position="0 2.5 32" rotation="0 0 -18" scale="0.8 0.9 0.8"
+    radius-bottom="1.2" radius-top="0.2" height="5"
+    material="color:#7fb85f; shader:flat"></a-cone>
+
+  <a-cone position="0 4 45" rotation="0 0 8" scale="1.1 1 1"
+    radius-bottom="1.6" radius-top="0.2" height="6.5"
+    material="color:#90c770; shader:flat"></a-cone>
+
+</a-entity>
+
+<a-entity position="-36 0 40">
+
+  <a-cone position="0 3 20" rotation="0 0 12" scale="1 1 1"
+    radius-bottom="1.5" radius-top="0.2" height="6"
+    material="color:#8bbf6a; shader:flat"></a-cone>
+
+  <a-cone position="0 2.5 32" rotation="0 0 -18" scale="0.8 0.9 0.8"
+    radius-bottom="1.2" radius-top="0.2" height="5"
+    material="color:#7fb85f; shader:flat"></a-cone>
+
+  <a-cone position="0 4 45" rotation="0 0 8" scale="1.1 1 1"
+    radius-bottom="1.6" radius-top="0.2" height="6.5"
+    material="color:#90c770; shader:flat"></a-cone>
+
+</a-entity>
+
+<a-entity position="-36 0 -40">
+
+  <a-cone position="0 3 20" rotation="0 0 12" scale="1 1 1"
+    radius-bottom="1.5" radius-top="0.2" height="6"
+    material="color:#8bbf6a; shader:flat"></a-cone>
+
+  <a-cone position="0 2.5 32" rotation="0 0 -18" scale="0.8 0.9 0.8"
+    radius-bottom="1.2" radius-top="0.2" height="5"
+    material="color:#7fb85f; shader:flat"></a-cone>
+
+  <a-cone position="0 4 45" rotation="0 0 8" scale="1.1 1 1"
+    radius-bottom="1.6" radius-top="0.2" height="6.5"
+    material="color:#90c770; shader:flat"></a-cone>
+
+</a-entity>
 
   <!-- ═══ HAUPTFLÄCHE ═══ -->
   <a-plane
-    position="-86 0.005 0"
+    position="-86 0.6 0"
     rotation="-90 0 0"
     width="106"
     height="132"
