@@ -34,6 +34,13 @@ AFRAME.registerComponent('daynight', {
         `color:${mode==='night'?'#ffcc44':'#886633'};emissive:${mode==='night'?'#ffaa22':'#000'};emissiveIntensity:1`)
     );
 
+    // Fenster: bernsteinfarben, Abend/Nacht leuchten von innen
+    const winEmi = mode === 'night' ? 1.0 : mode === 'evening' ? 0.55 : 0.0;
+    document.querySelectorAll('.window-pane').forEach(w =>
+      w.setAttribute('material',
+        `color:#f5c842;emissive:#f5a020;emissiveIntensity:${winEmi};opacity:0.82;transparent:true`)
+    );
+
     if (window._KS) window._KS.setMode(mode);
   }
 });

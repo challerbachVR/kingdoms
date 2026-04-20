@@ -75,20 +75,28 @@ const KESSELSTADT_HTML = /* html */`
       tex="id:tex-stone; repx:2.7; repy:0.6"
       shadow="cast:true">
     </a-box>
-    <a-cone position="0 6 0" radius-bottom="3.2" radius-top="0" height="2.5"
-      material="color:#d0a090;roughness:1"
-      tex="id:tex-tiles; repx:3.5; repy:2"
-      shadow="cast:true">
-    </a-cone>
+    <!-- Satteldach Schmied: ridge entlang X, Neigung über Z -->
+    <a-box position="0 6.3 1.35" rotation="39.2 0 0" width="5.6" height="0.22" depth="3.48"
+      material="color:#c89070;roughness:1" tex="id:tex-tiles; repx:3; repy:1.5" shadow="cast:true"></a-box>
+    <a-box position="0 6.3 -1.35" rotation="-39.2 0 0" width="5.6" height="0.22" depth="3.48"
+      material="color:#c89070;roughness:1" tex="id:tex-tiles; repx:3; repy:1.5" shadow="cast:true"></a-box>
+    <a-box position="0 7.35 0" width="5.6" height="0.2" depth="0.3"
+      material="color:#7a4a28;roughness:1"></a-box>
+    <a-triangle vertex-a="-2.7 5.2 2.7" vertex-b="2.7 5.2 2.7" vertex-c="0 7.4 2.7"
+      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
+    <a-triangle vertex-a="2.7 5.2 -2.7" vertex-b="-2.7 5.2 -2.7" vertex-c="0 7.4 -2.7"
+      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
     <a-cylinder position="1 7.5 -1" radius="0.25" height="2"
       material="color:#2a2020;roughness:1" shadow="cast:true">
     </a-cylinder>
     <a-entity position="1 8.6 -1" steam></a-entity>
     <a-plane position="1.5 2.5 2.51" width="0.8" height="1"
-      material="color:#cc9944;emissive:#cc9944;emissiveIntensity:0.3;opacity:0.85;transparent:true">
+      material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
+      class="window-pane">
     </a-plane>
     <a-plane position="-1.2 2.5 2.51" width="0.8" height="1"
-      material="color:#cc9944;emissive:#cc9944;emissiveIntensity:0.3;opacity:0.85;transparent:true">
+      material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
+      class="window-pane">
     </a-plane>
     <a-box position="0 1.1 2.52" width="1" height="2.2" depth="0.06"
       material="color:#c8a070;roughness:0.9"
@@ -108,20 +116,28 @@ const KESSELSTADT_HTML = /* html */`
       tex="id:tex-stone; repx:2.7; repy:0.5"
       shadow="cast:true">
     </a-box>
-    <a-cone position="0 8 0" radius-bottom="3.2" radius-top="0" height="3"
-      material="color:#c8a898;roughness:1"
-      tex="id:tex-tiles; repx:3.5; repy:2.5"
-      shadow="cast:true">
-    </a-cone>
+    <!-- Satteldach Händlerhaus: ridge entlang X, Neigung über Z -->
+    <a-box position="0 8.5 1.35" rotation="48.0 0 0" width="5.6" height="0.22" depth="4.04"
+      material="color:#c8a098;roughness:1" tex="id:tex-tiles; repx:3; repy:2" shadow="cast:true"></a-box>
+    <a-box position="0 8.5 -1.35" rotation="-48.0 0 0" width="5.6" height="0.22" depth="4.04"
+      material="color:#c8a098;roughness:1" tex="id:tex-tiles; repx:3; repy:2" shadow="cast:true"></a-box>
+    <a-box position="0 9.95 0" width="5.6" height="0.2" depth="0.3"
+      material="color:#7a4a28;roughness:1"></a-box>
+    <a-triangle vertex-a="-2.7 7.0 2.7" vertex-b="2.7 7.0 2.7" vertex-c="0 10.0 2.7"
+      material="color:#ccc0b0;roughness:0.9;side:double"></a-triangle>
+    <a-triangle vertex-a="2.7 7.0 -2.7" vertex-b="-2.7 7.0 -2.7" vertex-c="0 10.0 -2.7"
+      material="color:#ccc0b0;roughness:0.9;side:double"></a-triangle>
     <a-box position="0 3.5 2.8" width="2.5" height="2" depth="1"
       material="color:#d8c8b0;roughness:0.9"
       tex="id:tex-stone; repx:1.2; repy:1">
     </a-box>
     <a-plane position="1.5 4.5 2.51" width="0.9" height="1.2"
-      material="color:#bbddff;emissive:#aaccff;emissiveIntensity:0.2;opacity:0.8;transparent:true">
+      material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
+      class="window-pane">
     </a-plane>
     <a-plane position="-1.5 4.5 2.51" width="0.9" height="1.2"
-      material="color:#bbddff;emissive:#aaccff;emissiveIntensity:0.2;opacity:0.8;transparent:true">
+      material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
+      class="window-pane">
     </a-plane>
     <a-box position="0 1.1 2.52" width="1.1" height="2.2" depth="0.06"
       material="color:#b89060;roughness:0.9"
@@ -169,11 +185,17 @@ const KESSELSTADT_HTML = /* html */`
       </a-box>
       <a-entity class="lantern-light" light="type:point;intensity:0;color:#ffaa33;distance:6"></a-entity>
     </a-entity>
-    <a-cone position="0 7 0" radius-bottom="3.8" radius-top="0" height="2.5"
-      material="color:#c0907a;roughness:1"
-      tex="id:tex-tiles; repx:4; repy:2"
-      shadow="cast:true">
-    </a-cone>
+    <!-- Satteldach Gasthaus: ridge entlang X, Neigung über Z -->
+    <a-box position="0 6.25 1.35" rotation="42.8 0 0" width="6.4" height="0.22" depth="3.68"
+      material="color:#c09078;roughness:1" tex="id:tex-tiles; repx:3.5; repy:1.5" shadow="cast:true"></a-box>
+    <a-box position="0 6.25 -1.35" rotation="-42.8 0 0" width="6.4" height="0.22" depth="3.68"
+      material="color:#c09078;roughness:1" tex="id:tex-tiles; repx:3.5; repy:1.5" shadow="cast:true"></a-box>
+    <a-box position="0 7.45 0" width="6.4" height="0.2" depth="0.3"
+      material="color:#7a4a28;roughness:1"></a-box>
+    <a-triangle vertex-a="-3.1 5.0 2.7" vertex-b="3.1 5.0 2.7" vertex-c="0 7.5 2.7"
+      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
+    <a-triangle vertex-a="3.1 5.0 -2.7" vertex-b="-3.1 5.0 -2.7" vertex-c="0 7.5 -2.7"
+      material="color:#c8b8a8;roughness:0.9;side:double"></a-triangle>
     <a-box position="0 1.2 2.52" width="1.2" height="2.4" depth="0.06"
       material="color:#c09060;roughness:0.9"
       tex="id:tex-wood; repx:1; repy:1">
@@ -197,16 +219,24 @@ const KESSELSTADT_HTML = /* html */`
       tex="id:tex-tiles; repx:2; repy:1.5"
       shadow="cast:true">
     </a-cone>
-    <a-cone position="0 7 0" radius-bottom="2.8" radius-top="0" height="2.2"
-      material="color:#a07868;roughness:1"
-      tex="id:tex-tiles; repx:3; repy:2"
-      shadow="cast:true">
-    </a-cone>
+    <!-- Satteldach Alchemistenladen: ridge entlang X, Neigung über Z -->
+    <a-box position="0 6.0 1.225" rotation="39.2 0 0" width="4.9" height="0.22" depth="3.16"
+      material="color:#a07868;roughness:1" tex="id:tex-tiles; repx:2.5; repy:1.5" shadow="cast:true"></a-box>
+    <a-box position="0 6.0 -1.225" rotation="-39.2 0 0" width="4.9" height="0.22" depth="3.16"
+      material="color:#a07868;roughness:1" tex="id:tex-tiles; repx:2.5; repy:1.5" shadow="cast:true"></a-box>
+    <a-box position="0 6.95 0" width="4.9" height="0.2" depth="0.3"
+      material="color:#7a4a28;roughness:1"></a-box>
+    <a-triangle vertex-a="-2.25 5.0 2.45" vertex-b="2.25 5.0 2.45" vertex-c="0 7.0 2.45"
+      material="color:#b8a898;roughness:0.9;side:double"></a-triangle>
+    <a-triangle vertex-a="2.25 5.0 -2.45" vertex-b="-2.25 5.0 -2.45" vertex-c="0 7.0 -2.45"
+      material="color:#b8a898;roughness:0.9;side:double"></a-triangle>
     <a-plane position="-1 3 2.26" width="0.8" height="1"
-      material="color:#44ff88;emissive:#22cc44;emissiveIntensity:0.6;opacity:0.85;transparent:true">
+      material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
+      class="window-pane">
     </a-plane>
     <a-plane position="1 3 2.26" width="0.8" height="1"
-      material="color:#aa44ff;emissive:#8822cc;emissiveIntensity:0.6;opacity:0.85;transparent:true">
+      material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
+      class="window-pane">
     </a-plane>
     <a-box position="0 1.1 2.27" width="1" height="2.2" depth="0.06"
       material="color:#a08860;roughness:0.9"
