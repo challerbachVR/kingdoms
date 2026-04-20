@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // LICHTREICH SZENE – Kühl / kristallin / episch
-// Erreichbar durch das Westtor (Welt-X < -33).
+// Konfliktfrei mit globalem Day/Night-System der Kesselstadt
 // ═══════════════════════════════════════════════════════════════════════════
 
 function _drawLichtSky(canvas) {
@@ -8,101 +8,102 @@ function _drawLichtSky(canvas) {
   const W = canvas.width;
   const H = canvas.height;
 
-  // ═══ BASIS: tiefer kühler Verlauf ═══
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0.00, '#2f4658');
-  bg.addColorStop(0.22, '#49657a');
-  bg.addColorStop(0.48, '#6f8a99');
-  bg.addColorStop(0.78, '#9db1bb');
-  bg.addColorStop(1.00, '#c6d3da');
+  bg.addColorStop(0.00, '#183041');
+  bg.addColorStop(0.20, '#27485f');
+  bg.addColorStop(0.45, '#4c7288');
+  bg.addColorStop(0.72, '#86a7b7');
+  bg.addColorStop(1.00, '#d4e3ea');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // ═══ Horizont-Aufhellung ═══
-  const horizon = ctx.createLinearGradient(0, H * 0.58, 0, H);
-  horizon.addColorStop(0, 'rgba(255,255,255,0)');
-  horizon.addColorStop(0.45, 'rgba(205,230,240,0.10)');
-  horizon.addColorStop(1, 'rgba(220,238,245,0.22)');
+  const horizon = ctx.createLinearGradient(0, H * 0.55, 0, H);
+  horizon.addColorStop(0.0, 'rgba(255,255,255,0)');
+  horizon.addColorStop(0.45, 'rgba(185,225,240,0.10)');
+  horizon.addColorStop(1.0, 'rgba(220,245,255,0.28)');
   ctx.fillStyle = horizon;
   ctx.fillRect(0, 0, W, H);
 
-  // ═══ Großer kalter Glow in der Mitte ═══
-  const centralGlow = ctx.createRadialGradient(
-    W * 0.5, H * 0.56, 0,
-    W * 0.5, H * 0.56, W * 0.34
+  const glow = ctx.createRadialGradient(
+    W * 0.5, H * 0.58, 0,
+    W * 0.5, H * 0.58, W * 0.38
   );
-  centralGlow.addColorStop(0, 'rgba(185,240,255,0.18)');
-  centralGlow.addColorStop(0.35, 'rgba(150,220,245,0.10)');
-  centralGlow.addColorStop(0.70, 'rgba(120,180,210,0.04)');
-  centralGlow.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = centralGlow;
+  glow.addColorStop(0.00, 'rgba(180,245,255,0.24)');
+  glow.addColorStop(0.30, 'rgba(120,220,255,0.12)');
+  glow.addColorStop(0.65, 'rgba(120,180,220,0.05)');
+  glow.addColorStop(1.00, 'rgba(255,255,255,0)');
+  ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
 
-  // ═══ Seitliche Eis-/Nebelinseln ═══
-  function drawCloud(x, y, scale, alpha) {
+  const pillar = ctx.createLinearGradient(W * 0.48, H * 0.18, W * 0.52, H);
+  pillar.addColorStop(0.0, 'rgba(220,250,255,0)');
+  pillar.addColorStop(0.35, 'rgba(210,248,255,0.05)');
+  pillar.addColorStop(0.6, 'rgba(180,235,255,0.10)');
+  pillar.addColorStop(1.0, 'rgba(220,250,255,0)');
+  ctx.fillStyle = pillar;
+  ctx.fillRect(W * 0.40, 0, W * 0.20, H);
+
+  function drawCrystalCloud(x, y, scale, alpha) {
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
-    ctx.fillStyle = `rgba(210,230,240,${alpha})`;
 
+    ctx.fillStyle = `rgba(210,235,245,${alpha})`;
     ctx.beginPath();
-    ctx.moveTo(-90, 0);
-    ctx.lineTo(-30, -18);
-    ctx.lineTo(35, -10);
-    ctx.lineTo(82, 12);
-    ctx.lineTo(80, 32);
-    ctx.lineTo(45, 42);
-    ctx.lineTo(0, 36);
-    ctx.lineTo(-40, 24);
-    ctx.lineTo(-78, 18);
+    ctx.moveTo(-110, -10);
+    ctx.lineTo(-30, -26);
+    ctx.lineTo(30, -16);
+    ctx.lineTo(92, 12);
+    ctx.lineTo(96, 34);
+    ctx.lineTo(44, 52);
+    ctx.lineTo(-18, 46);
+    ctx.lineTo(-74, 26);
+    ctx.lineTo(-112, 8);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = `rgba(160,190,205,${alpha * 0.75})`;
+    ctx.fillStyle = `rgba(150,185,205,${alpha * 0.8})`;
     ctx.beginPath();
-    ctx.moveTo(-58, 24);
-    ctx.lineTo(-6, 12);
-    ctx.lineTo(26, 15);
-    ctx.lineTo(68, 34);
-    ctx.lineTo(50, 46);
-    ctx.lineTo(4, 45);
-    ctx.lineTo(-36, 36);
+    ctx.moveTo(-70, 18);
+    ctx.lineTo(-12, 6);
+    ctx.lineTo(28, 12);
+    ctx.lineTo(74, 34);
+    ctx.lineTo(40, 50);
+    ctx.lineTo(-8, 48);
+    ctx.lineTo(-52, 34);
     ctx.closePath();
     ctx.fill();
 
     ctx.restore();
   }
 
-  drawCloud(W * 0.18, H * 0.28, 0.95, 0.18);
-  drawCloud(W * 0.82, H * 0.24, 0.78, 0.12);
+  drawCrystalCloud(W * 0.18, H * 0.30, 0.95, 0.20);
+  drawCrystalCloud(W * 0.80, H * 0.24, 0.78, 0.14);
 
-  // ═══ Schräge Kristall-Lichtbahnen ═══
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 14; i++) {
     const x = Math.random() * W;
-    const y = H * (0.18 + Math.random() * 0.42);
-    const len = 40 + Math.random() * 120;
-    const tilt = 0.35 + Math.random() * 0.45;
+    const y = H * (0.16 + Math.random() * 0.38);
+    const len = 80 + Math.random() * 140;
 
-    ctx.strokeStyle = `rgba(220,245,255,${0.03 + Math.random() * 0.05})`;
-    ctx.lineWidth = 1 + Math.random() * 0.7;
+    ctx.strokeStyle = `rgba(210,245,255,${0.04 + Math.random() * 0.05})`;
+    ctx.lineWidth = 1 + Math.random() * 0.5;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + len * tilt, y - len);
+    ctx.lineTo(x + len * 0.34, y - len);
     ctx.stroke();
   }
 
-  // ═══ Weiche Haze-Felder ═══
   const hazeCols = [
-    'rgba(210,238,248,0.10)',
-    'rgba(170,220,240,0.07)',
-    'rgba(230,245,255,0.06)',
+    'rgba(210,240,250,0.09)',
+    'rgba(150,220,245,0.06)',
+    'rgba(235,250,255,0.05)',
   ];
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
     const x = Math.random() * W;
-    const y = H * (0.16 + Math.random() * 0.42);
-    const rw = 100 + Math.random() * 180;
-    const rh = rw * (0.14 + Math.random() * 0.10);
+    const y = H * (0.14 + Math.random() * 0.44);
+    const rw = 120 + Math.random() * 200;
+    const rh = rw * (0.12 + Math.random() * 0.10);
 
     const grad = ctx.createRadialGradient(x, y, 0, x, y, rw);
     grad.addColorStop(0, hazeCols[i % hazeCols.length]);
@@ -114,33 +115,30 @@ function _drawLichtSky(canvas) {
     ctx.fill();
   }
 
-  // ═══ Kleine funkelnde Partikel ═══
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 28; i++) {
     const x = Math.random() * W;
     const y = Math.random() * H * 0.62;
-    const r = 0.8 + Math.random() * 2.2;
+    const r = 0.8 + Math.random() * 2.0;
 
     const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2);
     g.addColorStop(0, 'rgba(255,255,255,0.24)');
-    g.addColorStop(0.35, 'rgba(210,245,255,0.10)');
+    g.addColorStop(0.35, 'rgba(180,235,255,0.11)');
     g.addColorStop(1, 'rgba(255,255,255,0)');
-
     ctx.fillStyle = g;
+
     ctx.beginPath();
     ctx.arc(x, y, r * 3.2, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // ═══ Sehr feine Sterne/Kreuzfunken ═══
   for (let i = 0; i < 10; i++) {
     const x = Math.random() * W;
-    const y = H * (0.08 + Math.random() * 0.42);
-    const len = 8 + Math.random() * 10;
-    const a = 0.05 + Math.random() * 0.07;
+    const y = H * (0.08 + Math.random() * 0.40);
+    const len = 7 + Math.random() * 10;
+    const a = 0.06 + Math.random() * 0.06;
 
     ctx.strokeStyle = `rgba(240,250,255,${a})`;
     ctx.lineWidth = 1;
-
     ctx.beginPath();
     ctx.moveTo(x - len, y);
     ctx.lineTo(x + len, y);
@@ -180,7 +178,6 @@ AFRAME.registerComponent('lichtreich-scene', {
 
   _swapSkyTo(canvasId) {
     if (!this._sky) return;
-
     if (!window._KC_TEX) window._KC_TEX = {};
 
     if (!window._KC_TEX[canvasId]) {
@@ -205,69 +202,72 @@ AFRAME.registerComponent('lichtreich-scene', {
   },
 
   tick() {
-    if (!this._cam) this._cam = document.getElementById('camera');
-    if (!this._sky) this._sky = document.getElementById('sky-sphere');
-    if (!this._amb) this._amb = document.getElementById('ambLight');
-    if (!this._sun) this._sun = document.getElementById('sun');
-    if (!this._cam) return;
+  if (!this._cam) this._cam = document.getElementById('camera');
+  if (!this._sky) this._sky = document.getElementById('sky-sphere');
+  if (!this._amb) this._amb = document.getElementById('ambLight');
+  if (!this._sun) this._sun = document.getElementById('sun');
+  if (!this._cam) return;
 
-    this._cam.object3D.getWorldPosition(this._camWP);
+  this._cam.object3D.getWorldPosition(this._camWP);
 
-    const licht = this._camWP.x < -33;
-    if (licht === this._inLicht) return;
-    this._inLicht = licht;
+  const start = -30;
+  const end = -60;
 
-    if (licht) {
-      this._swapSkyTo('licht-sky-canvas');
+  const t = THREE.MathUtils.clamp(
+    (this._camWP.x - start) / (end - start),
+    0,
+    1
+  );
 
-      if (this._scene) {
-        this._scene.setAttribute(
-          'fog',
-          'type: exponential; color: #98a7b1; density: 0.0045'
-        );
-      }
+  const inLicht = t > 0.01;
 
-      if (this._amb) {
-        this._amb.setAttribute(
-          'light',
-          'type: ambient; intensity: 0.12; color: #8fa0ab'
-        );
-      }
+  if (inLicht !== this._inLicht) {
+    this._inLicht = inLicht;
+    this.el.emit('zone-changed', { zone: inLicht ? 'licht' : 'city' });
+  }
 
-      if (this._sun) {
-        this._sun.setAttribute(
-          'light',
-          'type: directional; intensity: 0.92; color: #dbe8f4'
-        );
-        this._sun.setAttribute('position', '-18 16 6');
-      }
+  // In der Stadt: Stadthimmel wiederherstellen, aber keine Lichtwerte überschreiben
+  if (!inLicht) {
+    this._swapSkyTo('sky-canvas');
 
-      this.el.emit('zone-changed', { zone: 'licht' });
-    } else if (this._camWP.z <= 33) {
-      this._swapSkyTo('sky-canvas');
-
-      if (this._scene) {
-        this._scene.removeAttribute('fog');
-      }
-
-      if (this._amb) {
-        this._amb.setAttribute(
-          'light',
-          'type: ambient; intensity: 0.7; color: #fff8f0'
-        );
-      }
-
-      if (this._sun) {
-        this._sun.setAttribute(
-          'light',
-          'type: directional; intensity: 1.1; color: #fff5cc'
-        );
-        this._sun.setAttribute('position', '5 12 -8');
-      }
-
-      this.el.emit('zone-changed', { zone: 'city' });
+    if (this._scene) {
+      this._scene.removeAttribute('fog');
     }
-  },
+    return;
+  }
+
+  // Im Übergang / Lichtreich
+  if (t > 0.6) {
+    this._swapSkyTo('licht-sky-canvas');
+  } else {
+    this._swapSkyTo('sky-canvas');
+  }
+
+  if (this._scene) {
+    const density = 0.0001 + t * 0.0032;
+    this._scene.setAttribute(
+      'fog',
+      `type: exponential; color: #90a7b3; density: ${density}`
+    );
+  }
+
+  if (this._amb) {
+    const intensity = 0.7 * (1 - t) + 0.55 * t;
+    this._amb.setAttribute(
+      'light',
+      `type: ambient; intensity: ${intensity}; color: #cfefff`
+    );
+  }
+
+  if (this._sun) {
+    const intensity = 1.1 * (1 - t) + 0.6 * t;
+    this._sun.setAttribute(
+      'light',
+      `type: directional; intensity: ${intensity}; color: #d8f6ff`
+    );
+    this._sun.setAttribute('position', '-10 18 4');
+  }
+},
 });
 
 AFRAME.registerComponent('light-beam-effect', {
@@ -345,6 +345,21 @@ AFRAME.registerComponent('light-beam-effect', {
   _enterBeam() {
     this.active = true;
 
+    const cam = document.getElementById('camera');
+    if (!cam) return;
+
+    const x = cam.object3D.position.x;
+    const start = -30;
+    const end = -60;
+
+    const t = THREE.MathUtils.clamp(
+      (x - start) / (end - start),
+      0,
+      1
+    );
+
+    if (t <= 0.01) return;
+
     const sun = document.getElementById('sun');
     if (sun) {
       sun.setAttribute(
@@ -356,7 +371,7 @@ AFRAME.registerComponent('light-beam-effect', {
     if (this.scene) {
       this.scene.setAttribute(
         'fog',
-        'type: exponential; color: #b7c8d2; density: 0.0065'
+        'type: exponential; color: #a9c1cc; density: 0.0048'
       );
     }
   },
@@ -365,27 +380,40 @@ AFRAME.registerComponent('light-beam-effect', {
     this.active = false;
 
     const cam = document.getElementById('camera');
-    const inLicht = cam && cam.object3D.position.x < -33;
+    if (!cam) return;
+
+    const x = cam.object3D.position.x;
+    const start = -30;
+    const end = -60;
+
+    const t = THREE.MathUtils.clamp(
+      (x - start) / (end - start),
+      0,
+      1
+    );
+
+    // Außerhalb Lichtreich nichts global anfassen
+    if (t <= 0.01) {
+      if (this.scene) {
+        this.scene.removeAttribute('fog');
+      }
+      return;
+    }
 
     const sun = document.getElementById('sun');
     if (sun) {
-      if (inLicht) {
-        sun.setAttribute(
-          'light',
-          'type: directional; intensity: 0.92; color: #dbe8f4'
-        );
-      } else {
-        sun.setAttribute(
-          'light',
-          'type: directional; intensity: 1.1; color: #fff5cc'
-        );
-      }
+      const intensity = 1.1 * (1 - t) + 0.6 * t;
+      sun.setAttribute(
+        'light',
+        `type: directional; intensity: ${intensity}; color: #d8f6ff`
+      );
     }
 
-    if (this.scene && inLicht) {
+    if (this.scene) {
+      const density = 0.0001 + t * 0.0032;
       this.scene.setAttribute(
         'fog',
-        'type: exponential; color: #8fa6b2; density: 0.0045'
+        `type: exponential; color: #90a7b3; density: ${density}`
       );
     }
   },
@@ -398,6 +426,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="14"
     height="10"
+    tex="id: tex-licht-ground; repx: 2; repy: 2"
     material="color:#bcc6cb; shader:flat">
   </a-plane>
 
@@ -406,6 +435,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="18"
     height="14"
+    tex="id: tex-licht-ground; repx: 2; repy: 2"
     material="color:#a7b7c1; shader:flat">
   </a-plane>
 
@@ -414,6 +444,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="22"
     height="18"
+    tex="id: tex-licht-ground; repx: 2; repy: 2"
     material="color:#93a8b1; opacity:0.18; transparent:true; shader:flat">
   </a-plane>
 
@@ -423,7 +454,8 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="106"
     height="132"
-    material="color:#7f9098; shader:flat">
+    tex="id: tex-licht-ground; repx: 10; repy: 12"
+    material="color:#5d7380; shader:flat">
   </a-plane>
 
   <!-- Schimmernde Bodenfelder -->
@@ -432,6 +464,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="18"
     height="24"
+    tex="id: tex-licht-ground; repx: 2; repy: 3"
     material="color:#91a8b4; opacity:0.15; transparent:true; shader:flat">
   </a-plane>
 
@@ -440,6 +473,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="24"
     height="18"
+    tex="id: tex-licht-ground; repx: 3; repy: 2"
     material="color:#9fb1ba; opacity:0.12; transparent:true; shader:flat">
   </a-plane>
 
@@ -448,6 +482,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="16"
     height="20"
+    tex="id: tex-licht-ground; repx: 2; repy: 2"
     material="color:#879ba3; opacity:0.12; transparent:true; shader:flat">
   </a-plane>
 
@@ -456,6 +491,7 @@ const LICHTREICH_HTML = /* html */ `
     rotation="-90 0 0"
     width="20"
     height="16"
+    tex="id: tex-licht-ground; repx: 2; repy: 2"
     material="color:#7f8f99; opacity:0.14; transparent:true; shader:flat">
   </a-plane>
 
@@ -465,6 +501,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="8.4"
     height="0.28"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#62737d; opacity:0.18; transparent:true; shader:flat">
   </a-cylinder>
 
@@ -473,7 +510,8 @@ const LICHTREICH_HTML = /* html */ `
     radius="8"
     height="2.4"
     segments-radial="8"
-    material="color:#9cadb6; shader:flat">
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
+    material="color:#a8bbc4; shader:flat">
   </a-cylinder>
 
   <a-cylinder
@@ -481,6 +519,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="10.5"
     height="0.30"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#62717a; opacity:0.18; transparent:true; shader:flat">
   </a-cylinder>
 
@@ -489,7 +528,8 @@ const LICHTREICH_HTML = /* html */ `
     radius="10"
     height="3.2"
     segments-radial="8"
-    material="color:#95a4ae; shader:flat">
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
+    material="color:#a1b6c0; shader:flat">
   </a-cylinder>
 
   <a-cylinder
@@ -497,6 +537,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="7.4"
     height="0.24"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#5e6b74; opacity:0.18; transparent:true; shader:flat">
   </a-cylinder>
 
@@ -505,7 +546,8 @@ const LICHTREICH_HTML = /* html */ `
     radius="7"
     height="2.0"
     segments-radial="8"
-    material="color:#99a7af; shader:flat">
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
+    material="color:#9fb4be; shader:flat">
   </a-cylinder>
 
   <!-- Kristallformationen links -->
@@ -515,7 +557,8 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.18"
     height="12"
     segments-radial="5"
-    material="color:#b7d7ea; emissive:#9ee9ff; emissiveIntensity:0.10; shader:flat">
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
+    material="color:#b7e4f4; emissive:#9ee9ff; emissiveIntensity:0.35; shader:flat">
   </a-cone>
 
   <a-cone
@@ -524,6 +567,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.14"
     height="8"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#d8ebf5; emissive:#c4f3ff; emissiveIntensity:0.08; shader:flat">
   </a-cone>
 
@@ -533,6 +577,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.12"
     height="6.5"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#cad8f0; emissive:#bed7ff; emissiveIntensity:0.07; shader:flat">
   </a-cone>
 
@@ -542,6 +587,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.10"
     height="7.5"
     segments-radial="4"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#edf9ff; emissive:#d5faff; emissiveIntensity:0.12; shader:flat">
   </a-cone>
 
@@ -552,6 +598,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.18"
     height="13"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#cfe8f8; emissive:#b9edff; emissiveIntensity:0.10; shader:flat">
   </a-cone>
 
@@ -561,6 +608,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.14"
     height="8.5"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#b8dff2; emissive:#9deeff; emissiveIntensity:0.09; shader:flat">
   </a-cone>
 
@@ -570,6 +618,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.12"
     height="7"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#d7ddf6; emissive:#d7dfff; emissiveIntensity:0.08; shader:flat">
   </a-cone>
 
@@ -579,6 +628,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.10"
     height="8"
     segments-radial="4"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#f4fbff; emissive:#e6fdff; emissiveIntensity:0.12; shader:flat">
   </a-cone>
 
@@ -589,6 +639,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.16"
     height="11"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#bbd8e7; emissive:#9fdaff; emissiveIntensity:0.10; shader:flat">
   </a-cone>
 
@@ -598,6 +649,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.12"
     height="7"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#dce8f0; emissive:#c9eef8; emissiveIntensity:0.08; shader:flat">
   </a-cone>
 
@@ -607,6 +659,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.10"
     height="6"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#cbe3ee; emissive:#a8f2ff; emissiveIntensity:0.08; shader:flat">
   </a-cone>
 
@@ -619,7 +672,8 @@ const LICHTREICH_HTML = /* html */ `
     arc="220"
     segments-radial="6"
     segments-tubular="18"
-    material="color:#d8eef8; emissive:#c7f5ff; emissiveIntensity:0.42; shader:flat">
+    tex="id: tex-licht-portal; repx: 1; repy: 1"
+    material="color:#d8eef8; emissive:#c7f5ff; emissiveIntensity:0.8; shader:flat">
   </a-torus>
 
   <a-torus
@@ -630,12 +684,13 @@ const LICHTREICH_HTML = /* html */ `
     arc="230"
     segments-radial="6"
     segments-tubular="18"
-    material="color:#b8e6ff; emissive:#8feeff; emissiveIntensity:0.55; shader:flat">
+    tex="id: tex-licht-portal; repx: 1; repy: 1"
+    material="color:#b8e6ff; emissive:#8feeff; emissiveIntensity:1.0; shader:flat">
   </a-torus>
 
   <a-entity
     position="-84 5 0"
-    light="type:point; color:#dff6ff; intensity:0.34; distance:18">
+    light="type:point; color:#c8f3ff; intensity:0.6; distance:20">
   </a-entity>
 
   <a-entity
@@ -651,6 +706,7 @@ const LICHTREICH_HTML = /* html */ `
     height="4.5"
     depth="1.2"
     animation="property: rotation; to: 24 378 14; loop: true; dur: 32000; easing: linear"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#d0e5ee; emissive:#b7f2ff; emissiveIntensity:0.08; shader:flat">
   </a-box>
 
@@ -661,6 +717,7 @@ const LICHTREICH_HTML = /* html */ `
     height="3.8"
     depth="1.0"
     animation="property: rotation; to: -14 392 -10; loop: true; dur: 36000; easing: linear"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#d8eaf1; emissive:#d0f8ff; emissiveIntensity:0.08; shader:flat">
   </a-box>
 
@@ -671,6 +728,7 @@ const LICHTREICH_HTML = /* html */ `
     height="3.2"
     depth="0.9"
     animation="property: rotation; to: 18 336 22; loop: true; dur: 34000; easing: linear"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#cdd9ee; emissive:#cad7ff; emissiveIntensity:0.07; shader:flat">
   </a-box>
 
@@ -681,6 +739,7 @@ const LICHTREICH_HTML = /* html */ `
     height="4.0"
     depth="1.1"
     animation="property: rotation; to: 12 380 -18; loop: true; dur: 38000; easing: linear"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#c7e4ea; emissive:#9aefff; emissiveIntensity:0.08; shader:flat">
   </a-box>
 
@@ -690,6 +749,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="4.5"
     height="0.18"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#5f6f79; opacity:0.22; transparent:true; shader:flat">
   </a-cylinder>
 
@@ -698,6 +758,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="4.2"
     height="1.0"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#9fb3bc; shader:flat">
   </a-cylinder>
 
@@ -707,6 +768,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.4"
     height="1.8"
     segments-radial="6"
+    tex="id: tex-licht-terrace; repx: 1; repy: 1"
     material="color:#7f949f; shader:flat">
   </a-cone>
 
@@ -716,6 +778,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.08"
     height="4.8"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#e9f8ff; emissive:#d9fbff; emissiveIntensity:0.10; shader:flat">
   </a-cone>
 
@@ -724,6 +787,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="3.8"
     height="0.18"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#596871; opacity:0.20; transparent:true; shader:flat">
   </a-cylinder>
 
@@ -732,6 +796,7 @@ const LICHTREICH_HTML = /* html */ `
     radius="3.5"
     height="0.9"
     segments-radial="8"
+    tex="id: tex-licht-terrace; repx: 2; repy: 1"
     material="color:#95a6af; shader:flat">
   </a-cylinder>
 
@@ -741,6 +806,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.3"
     height="1.6"
     segments-radial="6"
+    tex="id: tex-licht-terrace; repx: 1; repy: 1"
     material="color:#7b909b; shader:flat">
   </a-cone>
 
@@ -750,6 +816,7 @@ const LICHTREICH_HTML = /* html */ `
     radius-top="0.08"
     height="4.2"
     segments-radial="5"
+    tex="id: tex-licht-crystal; repx: 1; repy: 2"
     material="color:#e8f6fd; emissive:#d5f8ff; emissiveIntensity:0.10; shader:flat">
   </a-cone>
 
@@ -757,24 +824,28 @@ const LICHTREICH_HTML = /* html */ `
   <a-sphere
     position="-48 0.6 2"
     radius="0.38"
+    tex="id: tex-licht-crystal; repx: 1; repy: 1"
     material="color:#d7e9ef; emissive:#a6ecff; emissiveIntensity:0.26; shader:flat">
   </a-sphere>
 
   <a-sphere
     position="-58 0.7 -1"
     radius="0.44"
+    tex="id: tex-licht-crystal; repx: 1; repy: 1"
     material="color:#cfe4eb; emissive:#98ebff; emissiveIntensity:0.24; shader:flat">
   </a-sphere>
 
   <a-sphere
     position="-68 0.7 3"
     radius="0.40"
+    tex="id: tex-licht-crystal; repx: 1; repy: 1"
     material="color:#d9edf5; emissive:#afecff; emissiveIntensity:0.26; shader:flat">
   </a-sphere>
 
   <a-sphere
     position="-79 0.8 0"
     radius="0.46"
+    tex="id: tex-licht-crystal; repx: 1; repy: 1"
     material="color:#e5f5ff; emissive:#c1f5ff; emissiveIntensity:0.28; shader:flat">
   </a-sphere>
 
@@ -812,14 +883,16 @@ const LICHTREICH_HTML = /* html */ `
       position="-84 6 0"
       radius="1.4"
       height="12"
-      material="color:#f3fcff; opacity:0.12; transparent:true; shader:flat">
+      tex="id: tex-licht-portal; repx: 1; repy: 2"
+      material="color:#f3fcff; opacity:0.22; transparent:true; shader:flat">
     </a-cylinder>
 
     <a-cylinder
       position="-84 6 0"
       radius="0.4"
       height="12"
-      material="color:#d6f6ff; emissive:#b6f2ff; emissiveIntensity:0.34; shader:flat">
+      tex="id: tex-licht-portal; repx: 1; repy: 2"
+      material="color:#d6f6ff; emissive:#b6f2ff; emissiveIntensity:0.7; shader:flat">
     </a-cylinder>
 
     <a-entity id="beam-particles" position="-84 0 0"></a-entity>

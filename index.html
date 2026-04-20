@@ -1,74 +1,114 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kingdoms – Kesselstadt</title>
+
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
   <style>
-    body { margin: 0; overflow: hidden; }
-    .a-canvas { cursor: default; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .a-canvas {
+      cursor: default;
+    }
   </style>
 
+  <!-- Basis -->
   <script src="js/textures.js"></script>
   <script src="js/sounds.js"></script>
   <script src="js/daynight.js"></script>
   <script src="js/navigation.js"></script>
   <script src="js/npcs.js"></script>
+
+  <!-- Szenen -->
   <script src="scenes/kesselstadt.js"></script>
   <script src="scenes/feenreich.js"></script>
   <script src="scenes/lichtreich.js"></script>
+
+  <!-- Zusätzliche Systeme -->
   <script src="js/feenreich-creatures.js"></script>
   <script src="js/touch-controls.js"></script>
   <script src="js/ui-panel.js"></script>
 </head>
 <body>
-<script>initTextures();</script>
+  <script>
+    initTextures();
+  </script>
 
-<a-scene
-  webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking"
-  renderer="antialias:true;colorManagement:true;physicallyCorrectLights:true"
-  shadow="type:pcfsoft;autoUpdate:true"
-  daynight="mode:day"
-  kesselstadt-scene
-  feenreich-scene
-  lichtreich-scene
-  player-collision
-  ui-panel-manager
-  id="scene">
+  <a-scene
+    id="scene"
+    webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking"
+    renderer="antialias:true; colorManagement:true; physicallyCorrectLights:true"
+    shadow="type:pcfsoft; autoUpdate:true"
+    daynight="mode:day"
+    kesselstadt-scene
+    feenreich-scene
+    lichtreich-scene
+    player-collision
+    ui-panel-manager
+  >
+    <!-- Globaler Himmel -->
+   <a-sky id="sky-sphere" material="shader:flat; color:#fff"></a-sky>
 
-  <a-entity id="sun" position="5 12 -8"
-    light="type:directional;intensity:1.1;color:#fff5cc;castShadow:true;
-           shadowCameraLeft:-40;shadowCameraRight:40;shadowCameraTop:40;shadowCameraBottom:-40;
-           shadowMapWidth:2048;shadowMapHeight:2048">
-  </a-entity>
-
-  <a-entity id="ambLight"
-    light="type:ambient;intensity:0.7;color:#fff8f0">
-  </a-entity>
-
-  <a-entity light-beam-effect></a-entity>
-
-  <a-entity id="rig" position="0 0 10" vr-movement vr-teleport>
-    <a-camera id="camera" wasd-controls="acceleration:20" look-controls>
-      <a-cursor
-        cursor="rayOrigin: mouse"
-        raycaster="objects: .ui-btn; far: 20"
-        fuse="false"
-        material="shader:flat;opacity:0;transparent:true"
-        geometry="primitive:ring;radiusInner:0.01;radiusOuter:0.015"
-        position="0 0 -1">
-      </a-cursor>
-    </a-camera>
-
-    <a-entity id="leftHand" oculus-touch-controls="hand:left"></a-entity>
-
-    <a-entity id="rightHand"
-      oculus-touch-controls="hand:right"
-      laser-controls="hand:right"
-      raycaster="objects:.ui-btn;far:10">
+    <!-- Globales Licht -->
+    <a-entity
+      id="sun"
+      position="5 12 -8"
+      light="type:directional; intensity:1.1; color:#fff5cc; castShadow:true;
+             shadowCameraLeft:-40; shadowCameraRight:40; shadowCameraTop:40; shadowCameraBottom:-40;
+             shadowMapWidth:2048; shadowMapHeight:2048">
     </a-entity>
-  </a-entity>
 
-</a-scene>
+    <a-entity
+      id="ambLight"
+      light="type:ambient; intensity:0.7; color:#fff8f0">
+    </a-entity>
+
+    <!-- Beam-Logik separat -->
+    <a-entity light-beam-effect></a-entity>
+
+    <!-- Spieler-Rig -->
+    <a-entity
+      id="rig"
+      position="0 0 10"
+      vr-movement
+      vr-teleport
+    >
+      <a-camera
+        id="camera"
+        wasd-controls="acceleration:20"
+        look-controls
+      >
+        <a-cursor
+          cursor="rayOrigin: mouse"
+          raycaster="objects: .ui-btn; far: 20"
+          fuse="false"
+          material="shader:flat; opacity:0; transparent:true"
+          geometry="primitive:ring; radiusInner:0.01; radiusOuter:0.015"
+          position="0 0 -1">
+        </a-cursor>
+      </a-camera>
+
+      <a-entity
+        id="leftHand"
+        oculus-touch-controls="hand:left">
+      </a-entity>
+
+      <a-entity
+        id="rightHand"
+        oculus-touch-controls="hand:right"
+        laser-controls="hand:right"
+        raycaster="objects: .ui-btn; far: 10">
+      </a-entity>
+    </a-entity>
+  </a-scene>
 </body>
 </html>
