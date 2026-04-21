@@ -385,6 +385,12 @@ AFRAME.registerComponent('fairy-mode', {
     this._rig = document.getElementById('rig');
     if (!this._rig) return;
 
+    // Kamera-Lokalposition merken damit Rig-XZ während der Skalierung
+    // nachgeführt wird → Kamera-Weltposition bleibt konstant, kein Zone-Revert
+    const cam = document.getElementById('camera');
+    this._rigPosStart     = this._rig.object3D.position.clone();
+    this._camLocalAtStart = cam ? cam.object3D.position.clone() : new THREE.Vector3();
+
     // Verwandlungsanimation starten (Position bleibt, nur Scale ändert sich)
     this._transforming = true;
     this._transformT   = 0;
@@ -480,7 +486,14 @@ AFRAME.registerComponent('fairy-mode', {
       const ease = progress < 0.5
         ? 2 * progress * progress
         : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-      this._rig.object3D.scale.setScalar(1.0 - (1.0 - this.FAIRY_SCALE) * ease);
+      const currentScale = 1.0 - (1.0 - this.FAIRY_SCALE) * ease;
+      this._rig.object3D.scale.setScalar(currentScale);
+
+      // Rig verschieben damit die Kamera-Weltposition konstant bleibt:
+      // rigWorld + camLocal * scale = rigStart + camLocal * 1  =>  rigWorld = rigStart + camLocal * (1 - scale)
+      const drift = 1.0 - currentScale;
+      this._rig.object3D.position.x = this._rigPosStart.x + this._camLocalAtStart.x * drift;
+      this._rig.object3D.position.z = this._rigPosStart.z + this._camLocalAtStart.z * drift;
 
       if (progress >= 1) {
         this._transforming = false;

@@ -434,8 +434,12 @@ AFRAME.registerComponent('player-collision', {
     }
 
     // Rig-Höhe an das Terrain anpassen, damit Feenreich-Hügel begehbar sind.
+    // Im Feenmodus übernimmt fairy-mode die Y-Kontrolle (Fliegen).
     const nextX = px + this._push.x;
     const nextZ = pz + this._push.z;
-    this._rig.object3D.position.y = this._getTerrainHeight(nextX, nextZ);
+    const fairyMode = this.el.components['fairy-mode'];
+    if (!fairyMode || !fairyMode.data.active) {
+      this._rig.object3D.position.y = this._getTerrainHeight(nextX, nextZ);
+    }
   },
 });
