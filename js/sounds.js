@@ -410,6 +410,7 @@
       return;
     }
     _live = true;
+    
     _c = new (window.AudioContext || window.webkitAudioContext)();
     _m = _c.createGain(); _m.gain.value = 0.75; _m.connect(_c.destination);
 
@@ -425,7 +426,8 @@
     _feen = _c.createGain(); _feen.gain.value = 0; _feen.connect(_m);
 
     // Kesselstadt (kontinuierlich)
-    _buildCrowd(); _buildFire(); _buildWind();
+    //_buildCrowd(); _buildFire(); _buildWind();
+    _buildWind();
     // Kesselstadt (periodisch)
     _steamWhistle(); _gearClank(); _smithyHammer(); _owlCall();
 

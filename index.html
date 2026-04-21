@@ -37,6 +37,7 @@
   <script src="js/feenreich-creatures.js"></script>
   <script src="js/touch-controls.js"></script>
   <script src="js/ui-panel.js"></script>
+  <script src="js/fairy-transform.js"></script>
 </head>
 <body>
   <script>
@@ -54,9 +55,18 @@
     lichtreich-scene
     player-collision
     ui-panel-manager
+    gate-trigger
+    wise-fairy
+    fairy-mode
   >
     <!-- Globaler Himmel -->
    <a-sky id="sky-sphere" material="shader:flat; color:#fff"></a-sky>
+
+    <!-- Himmel-Overlay: zweite Sphäre (r=4800) für sanftes Cross-Fade beim Zonenübergang -->
+    <a-entity id="sky-overlay"
+      geometry="primitive:sphere; radius:4800; segmentsWidth:36; segmentsHeight:18"
+      material="shader:flat; color:#ffffff; side:back; transparent:true; opacity:0">
+    </a-entity>
 
     <!-- Globales Licht -->
     <a-entity

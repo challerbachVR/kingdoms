@@ -3,6 +3,39 @@
 // Baut den gesamten Stadtinhalt dynamisch auf.
 // ═══════════════════════════════════════════════════════════════════════════
 
+AFRAME.registerComponent('gate-trigger', {
+  init() {
+    this._cam = null;
+    this._camWP = new THREE.Vector3();
+    this._southOpen = false;
+    this._westOpen  = false;
+  },
+  tick() {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam) return;
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const { x, z } = this._camWP;
+
+    const dSouth = Math.sqrt(x * x + (z - 28) * (z - 28));
+    const nearSouth = dSouth < 5.5;
+    if (nearSouth !== this._southOpen) {
+      this._southOpen = nearSouth;
+      const evt = nearSouth ? 'gate-open' : 'gate-close';
+      document.getElementById('gate-south-left')?.emit(evt);
+      document.getElementById('gate-south-right')?.emit(evt);
+    }
+
+    const dWest = Math.sqrt((x + 28) * (x + 28) + z * z);
+    const nearWest = dWest < 5.5;
+    if (nearWest !== this._westOpen) {
+      this._westOpen = nearWest;
+      const evt = nearWest ? 'gate-open' : 'gate-close';
+      document.getElementById('gate-west-left')?.emit(evt);
+      document.getElementById('gate-west-right')?.emit(evt);
+    }
+  },
+});
+
 AFRAME.registerComponent('kesselstadt-scene', {
   init() {
     // Szene-HTML einmalig einfügen, sobald A-Frame bereit ist
@@ -376,11 +409,11 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true"></a-cylinder>
     <a-cylinder position="4 4 0" radius="2" height="8"
       material="color:#c8c0b8;roughness:0.9" tex="id:tex-stone; repx:2.5; repy:4" shadow="cast:true"></a-cylinder>
-    <a-cone position="-4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
+    <a-cone position="-4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"w
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
     <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
-    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.5"
       theta-length="180" theta-start="0"
       material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true"></a-torus>
     <a-box position="0 3 0" width="6" height="6" depth="1.6"
@@ -416,13 +449,17 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
     <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
-    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.5"
       theta-length="180" theta-start="0"
       material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true"></a-torus>
-    <a-box position="0 3 0" width="6" height="6" depth="1.6"
-      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:3; repy:3" shadow="cast:true"></a-box>
-    <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
-    <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
+    <!-- Torrahmen Süd: linke + rechte Seite + Sturz (Öffnung x=-2..2, y=0..5 bleibt frei) -->
+    <a-box position="-2.5 3 0" width="1" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:3" shadow="cast:true"></a-box>
+    <a-box position=" 2.5 3 0" width="1" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:3" shadow="cast:true"></a-box>
+    <a-box position="0 5.5 0" width="4" height="1" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:0.5" shadow="cast:true"></a-box>
+    <a-box position="0 6.2 0" width="1.2" height="0.8" depth="1.8"
       material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.6; repy:0.4"></a-box>
     <!-- Schild Südseite (sichtbar aus dem Feenreich) -->
     <a-box position="0 7.5 0.85" width="3" height="0.8" depth="0.2"
@@ -444,6 +481,28 @@ const KESSELSTADT_HTML = /* html */`
     <a-box position="11 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
     <a-box position="13 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
     <a-box position="15 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <!-- Torflügel SÜD – linker Flügel (Scharnier an linkem Pfosten, x=-2) -->
+    <a-entity id="gate-south-left" position="-2 0 0"
+      animation__open="property:rotation; to:0 90 0; dur:1600; easing:easeInOutSine; startEvents:gate-open; autoplay:false"
+      animation__close="property:rotation; to:0 0 0; dur:1400; easing:easeInOutSine; startEvents:gate-close; autoplay:false">
+      <a-box position="0.95 2.5 0" width="1.9" height="5" depth="0.14"
+        tex="id:tex-wood; repx:1; repy:2.5"
+        material="color:#7a5430; shader:flat">
+      </a-box>
+      <a-box position="0.95 4.2 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+      <a-box position="0.95 0.8 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+    </a-entity>
+    <!-- Torflügel SÜD – rechter Flügel (Scharnier an rechtem Pfosten, x=+2) -->
+    <a-entity id="gate-south-right" position="2 0 0"
+      animation__open="property:rotation; to:0 -90 0; dur:1600; easing:easeInOutSine; startEvents:gate-open; autoplay:false"
+      animation__close="property:rotation; to:0 0 0; dur:1400; easing:easeInOutSine; startEvents:gate-close; autoplay:false">
+      <a-box position="-0.95 2.5 0" width="1.9" height="5" depth="0.14"
+        tex="id:tex-wood; repx:1; repy:2.5"
+        material="color:#7a5430; shader:flat">
+      </a-box>
+      <a-box position="-0.95 4.2 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+      <a-box position="-0.95 0.8 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+    </a-entity>
   </a-entity>
 
   <!-- ═══ TOR OST → Schattenreich ═══ -->
@@ -456,7 +515,7 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
     <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
-    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.5"
       theta-length="180" theta-start="0"
       material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true"></a-torus>
     <a-box position="0 3 0" width="6" height="6" depth="1.6"
@@ -492,13 +551,17 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
     <a-cone position="4 8.8 0" radius-bottom="2.5" radius-top="0" height="2.5"
       material="color:#b09080;roughness:1" tex="id:tex-tiles; repx:2.5; repy:2"></a-cone>
-    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.8"
+    <a-torus position="0 5.5 0" rotation="90 0 0" radius="3" radius-tubular="0.5"
       theta-length="180" theta-start="0"
       material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:1" shadow="cast:true"></a-torus>
-    <a-box position="0 3 0" width="6" height="6" depth="1.6"
-      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:3; repy:3" shadow="cast:true"></a-box>
-    <a-box position="0 2.5 0" width="4" height="5" depth="1.8" material="color:#111;roughness:1"></a-box>
-    <a-box position="0 5.5 0" width="1.2" height="0.8" depth="1.8"
+    <!-- Torrahmen West: linke + rechte Seite + Sturz (Öffnung x=-2..2, y=0..5 bleibt frei) -->
+    <a-box position="-2.5 3 0" width="1" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:3" shadow="cast:true"></a-box>
+    <a-box position=" 2.5 3 0" width="1" height="6" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:0.5; repy:3" shadow="cast:true"></a-box>
+    <a-box position="0 5.5 0" width="4" height="1" depth="1.6"
+      material="color:#c0b8b0;roughness:0.9" tex="id:tex-stone; repx:2; repy:0.5" shadow="cast:true"></a-box>
+    <a-box position="0 6.2 0" width="1.2" height="0.8" depth="1.8"
       material="color:#b8b0a8;roughness:0.9" tex="id:tex-stone; repx:0.6; repy:0.4"></a-box>
     <a-box position="0 7.5 0.85" width="3" height="0.8" depth="0.2"
       material="color:#c8a060;roughness:0.9" tex="id:tex-wood; repx:2; repy:0.6"></a-box>
@@ -516,6 +579,28 @@ const KESSELSTADT_HTML = /* html */`
     <a-box position="11 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
     <a-box position="13 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
     <a-box position="15 6.5 0"  width="1" height="1" depth="1.8" material="color:#b8b0a8" tex="id:tex-stone; repx:0.5; repy:0.5"></a-box>
+    <!-- Torflügel WEST – linker Flügel (Scharnier an linkem Pfosten, x=-2) -->
+    <a-entity id="gate-west-left" position="-2 0 0"
+      animation__open="property:rotation; to:0 90 0; dur:1600; easing:easeInOutSine; startEvents:gate-open; autoplay:false"
+      animation__close="property:rotation; to:0 0 0; dur:1400; easing:easeInOutSine; startEvents:gate-close; autoplay:false">
+      <a-box position="0.95 2.5 0" width="1.9" height="5" depth="0.14"
+        tex="id:tex-wood; repx:1; repy:2.5"
+        material="color:#7a5430; shader:flat">
+      </a-box>
+      <a-box position="0.95 4.2 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+      <a-box position="0.95 0.8 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+    </a-entity>
+    <!-- Torflügel WEST – rechter Flügel (Scharnier an rechtem Pfosten, x=+2) -->
+    <a-entity id="gate-west-right" position="2 0 0"
+      animation__open="property:rotation; to:0 -90 0; dur:1600; easing:easeInOutSine; startEvents:gate-open; autoplay:false"
+      animation__close="property:rotation; to:0 0 0; dur:1400; easing:easeInOutSine; startEvents:gate-close; autoplay:false">
+      <a-box position="-0.95 2.5 0" width="1.9" height="5" depth="0.14"
+        tex="id:tex-wood; repx:1; repy:2.5"
+        material="color:#7a5430; shader:flat">
+      </a-box>
+      <a-box position="-0.95 4.2 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+      <a-box position="-0.95 0.8 0" width="1.9" height="0.2" depth="0.2" material="color:#42280a; shader:flat"></a-box>
+    </a-entity>
   </a-entity>
 
   <!-- ═══ LUFTSCHIFFE ═══ -->

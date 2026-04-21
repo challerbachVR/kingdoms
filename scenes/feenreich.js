@@ -402,6 +402,25 @@ function _drawFeenWater(canvas) {
   }
 }
 
+// ─── Polygon-Bodenfläche (wiederverwendbar für alle Zonen) ──────────────────
+// verts: kommagetrennte "x z"-Paare definieren das Polygon in der XZ-Ebene.
+// Beispiel: verts: -28 28, 28 28, 120 120, -120 120
+AFRAME.registerGeometry('zone-ground', {
+  schema: {
+    verts: { type: 'string', default: '0 0, 1 0, 1 1' }
+  },
+  init(data) {
+    const pairs = data.verts.split(',').map(p => p.trim().split(/\s+/).map(Number));
+    const shape = new THREE.Shape();
+    shape.moveTo(pairs[0][0], pairs[0][1]);
+    for (let i = 1; i < pairs.length; i++) shape.lineTo(pairs[i][0], pairs[i][1]);
+    shape.closePath();
+    this.geometry = new THREE.ShapeGeometry(shape);
+    // ShapeGeometry liegt standardmäßig in der XY-Ebene → in XZ drehen
+    this.geometry.rotateX(-Math.PI / 2);
+  }
+});
+
 /* ── Bach: prozedurale Three.js-Geometrie + animierte Wassertextur ──────── */
 AFRAME.registerComponent('fairy-stream', {
   init() {
@@ -572,7 +591,6 @@ AFRAME.registerComponent('fairy-dust', {
 /* ── Feenreich-Szene: Zone-Erkennung + Himmelswechsel ──────────────────── */
 AFRAME.registerComponent('feenreich-scene', {
   init() {
-    // Alle Feenreich-Canvas-Texturen erstellen (document.body existiert jetzt sicher)
     const CANVASES = [
       { id: 'fee-sky-canvas', w: 1024, h: 512, fn: _drawFeenSky    },
       { id: 'fee-grass',      w: 512,  h: 512, fn: _drawFeenGrass  },
@@ -592,14 +610,15 @@ AFRAME.registerComponent('feenreich-scene', {
     });
 
     this.el.insertAdjacentHTML('beforeend', FEENREICH_HTML);
-    this._inFeen = false;
+    this._inFeen         = false;
+    this._feenSkyActive  = false;
     this._cam    = null;
     this._sky    = null;
+    this._overlay = null;
     this._amb    = null;
     this._sun    = null;
     this._camWP  = new THREE.Vector3();
 
-    // Standardhimmel einmalig beim Start anwenden (tick läuft nur bei Zonenänderung)
     this.el.addEventListener('loaded', () => {
       this._sky = document.getElementById('sky-sphere');
       this._swapSkyTo('sky-canvas');
@@ -611,7 +630,7 @@ AFRAME.registerComponent('feenreich-scene', {
     if (!window._KC_TEX) window._KC_TEX = {};
     if (!window._KC_TEX[canvasId]) {
       const canvas = document.getElementById(canvasId);
-      if (!canvas) { console.warn('feenreich: canvas nicht gefunden:', canvasId); return; }
+      if (!canvas) return;
       const t = new THREE.CanvasTexture(canvas);
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.needsUpdate = true;
@@ -619,11 +638,32 @@ AFRAME.registerComponent('feenreich-scene', {
     }
     const tex = window._KC_TEX[canvasId];
     this._sky.object3D.traverse(n => {
-      if (n.isMesh && n.material) {
-        n.material.map = tex;
-        n.material.needsUpdate = true;
-      }
+      if (n.isMesh && n.material) { n.material.map = tex; n.material.needsUpdate = true; }
     });
+  },
+
+  _setOverlay(canvasId, opacity) {
+    if (!this._overlay) this._overlay = document.getElementById('sky-overlay');
+    if (!this._overlay) return;
+    const mesh = this._overlay.getObject3D('mesh');
+    if (!mesh) return;
+    if (opacity <= 0.001) {
+      mesh.material.opacity = 0;
+      mesh.material.needsUpdate = true;
+      return;
+    }
+    if (!window._KC_TEX) window._KC_TEX = {};
+    if (!window._KC_TEX[canvasId]) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const t = new THREE.CanvasTexture(canvas);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.needsUpdate = true;
+      window._KC_TEX[canvasId] = t;
+    }
+    mesh.material.map = window._KC_TEX[canvasId];
+    mesh.material.opacity = opacity;
+    mesh.material.needsUpdate = true;
   },
 
   tick() {
@@ -634,26 +674,56 @@ AFRAME.registerComponent('feenreich-scene', {
     if (!this._cam) return;
 
     this._cam.object3D.getWorldPosition(this._camWP);
-    const feen = this._camWP.z > 33;
-    if (feen === this._inFeen) return;
-    this._inFeen = feen;
-    if (window._KS) window._KS.setZone(feen ? 'feen' : 'city');
-    this.el.emit('zone-changed', { zone: feen ? 'feen' : 'city' });
+    const z  = this._camWP.z;
+    const ax = Math.abs(this._camWP.x);
 
-    if (feen) {
-      this._swapSkyTo('fee-sky-canvas');
-      if (this._amb) this._amb.setAttribute('light', 'type:ambient;intensity:0.55;color:#cc88ff');
-      if (this._sun) {
-        this._sun.setAttribute('light', 'type:directional;intensity:0.6;color:#ff88cc');
-        this._sun.setAttribute('position', '-6 10 20');
+    // t: 0 = Stadt, 1 = tief im Feenreich (Übergang über 22 Einheiten ab z=28)
+    const inFeenZone = z > 28 && z > ax;
+    const t = inFeenZone ? THREE.MathUtils.clamp((z - 28) / 22, 0, 1) : 0;
+
+    // Zone-Event + Sound-Crossfade bei Hälfte des Übergangs
+    const feen = t > 0.5;
+    if (feen !== this._inFeen) {
+      this._inFeen = feen;
+      if (window._KS) window._KS.setZone(feen ? 'feen' : 'city');
+      this.el.emit('zone-changed', { zone: feen ? 'feen' : 'city' });
+      if (feen) {
+        if (this._amb) this._amb.setAttribute('light', 'type:ambient;intensity:0.55;color:#cc88ff');
+        if (this._sun) {
+          this._sun.setAttribute('light', 'type:directional;intensity:0.6;color:#ff88cc');
+          this._sun.setAttribute('position', '-6 10 20');
+        }
+      } else {
+        if (this._amb) this._amb.setAttribute('light', 'type:ambient;intensity:0.7;color:#fff8f0');
+        if (this._sun) {
+          this._sun.setAttribute('light', 'type:directional;intensity:1.1;color:#fff5cc');
+          this._sun.setAttribute('position', '5 12 -8');
+        }
       }
+    }
+
+    // Sky-Crossfade via Overlay-Sphäre
+    if (t >= 0.99) {
+      // Vollständig im Feenreich – Sky-Sphäre direkt setzen, Overlay leeren
+      if (!this._feenSkyActive) {
+        this._swapSkyTo('fee-sky-canvas');
+        this._setOverlay('fee-sky-canvas', 0);
+        this._feenSkyActive = true;
+      }
+    } else if (t <= 0.001) {
+      // Vollständig in der Stadt – Overlay leeren
+      if (this._feenSkyActive) {
+        this._swapSkyTo('sky-canvas');
+        this._feenSkyActive = false;
+      }
+      this._setOverlay('fee-sky-canvas', 0);
     } else {
-      this._swapSkyTo('sky-canvas');
-      if (this._amb) this._amb.setAttribute('light', 'type:ambient;intensity:0.7;color:#fff8f0');
-      if (this._sun) {
-        this._sun.setAttribute('light', 'type:directional;intensity:1.1;color:#fff5cc');
-        this._sun.setAttribute('position', '5 12 -8');
+      // Übergangszone: Stadt-Sky bleibt, Feenreich-Sky blendet über Overlay ein
+      if (this._feenSkyActive) {
+        this._swapSkyTo('sky-canvas');
+        this._feenSkyActive = false;
       }
+      this._setOverlay('fee-sky-canvas', t);
     }
   },
 });
@@ -678,6 +748,14 @@ const FEENREICH_HTML = /* html */`
   <!-- ═══ HAUPTWIESE ═══ -->
   <a-plane position="0 0.005 83" rotation="-90 0 0" width="130" height="108"
     tex="id:fee-grass;repx:18;repy:15"
+    material="color:#ffffff;shader:flat">
+  </a-plane>
+
+  <!-- SW-Erweiterung: deckt den Feenreich-Bereich hinter der Diagonalmauer ab. -->
+  <!-- y=0.006 → liegt über Lichtreich-Hauptfläche (y=0.003), sodass Feenreich-Gras -->
+  <!-- im Bereich nahe der Mauer auf der Feenseite korrekt sichtbar ist. -->
+  <a-plane position="-65 0.006 80" rotation="-90 0 0" width="70" height="60"
+    tex="id:fee-grass;repx:10;repy:8"
     material="color:#ffffff;shader:flat">
   </a-plane>
 
