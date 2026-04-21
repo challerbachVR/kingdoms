@@ -29,9 +29,16 @@ const _plane = (w, h, col, op, px, py, pz, rx, ry, rz) =>
     material: `color:${col};shader:flat;transparent:true;opacity:${op};side:double` });
 
 /* ════════════════════════════════════════════════════════════════════════════
-   WISE-FAIRY  –  NPC-Mesh + Proximity-Dialog
+   WISE-FAIRY  –  NPC-Mesh, freies Laufen + Proximity-Dialog
    ════════════════════════════════════════════════════════════════════════════ */
 AFRAME.registerComponent('wise-fairy', {
+
+  // Wegpunkte im Feenreich (erste Siedlung)
+  _wps: [
+    [-5, 52], [-10, 58], [-3, 64], [6, 60],
+    [ 8, 52], [ 4, 47],  [-8, 50], [-12, 56],
+    [ 2, 68], [-6, 44],
+  ],
 
   init() {
     this._cam       = null;
@@ -45,6 +52,10 @@ AFRAME.registerComponent('wise-fairy', {
     this._wR        = [];
     this._orbs      = [];
     this._wPhase    = Math.random() * Math.PI * 2;
+    this._wpIdx     = 0;
+    this._wait      = Math.random() * 2;
+    this._speed     = 0.55;
+    this._angle     = 0;
 
     const sc = this.el.sceneEl;
     if (sc.hasLoaded) this._build();
@@ -56,7 +67,7 @@ AFRAME.registerComponent('wise-fairy', {
     this._buildDialog();
   },
 
-  // ── Mesh der weisen Fee ────────────────────────────────────────────────────
+  // ── Mesh der weisen Fee ───────────────────────────────────────────────────
   _buildFairy() {
     const root = document.createElement('a-entity');
     root.setAttribute('position', '-5 0.62 52');
@@ -81,8 +92,6 @@ AFRAME.registerComponent('wise-fairy', {
     // Hals + Kopf
     root.appendChild(_cyl(0.024, 0.055, skin, 0, 0.133, 0));
     root.appendChild(_sph(0.064, skin, null, 0, 1, 0, 0.190, 0));
-
-    // Wangen
     root.appendChild(_sph(0.030, skin, null, 0, 1, -0.054, 0.185, 0.018));
     root.appendChild(_sph(0.030, skin, null, 0, 1,  0.054, 0.185, 0.018));
 
@@ -91,7 +100,6 @@ AFRAME.registerComponent('wise-fairy', {
     root.appendChild(_sph(0.015, '#336699', null, 0, 1,  0.030, 0.196, 0.055));
     root.appendChild(_sph(0.009, '#060408', null, 0, 1, -0.030, 0.196, 0.062));
     root.appendChild(_sph(0.009, '#060408', null, 0, 1,  0.030, 0.196, 0.062));
-    // Glanzpunkte
     root.appendChild(_sph(0.004, '#ffffff', null, 0, 1, -0.024, 0.200, 0.065));
     root.appendChild(_sph(0.004, '#ffffff', null, 0, 1,  0.024, 0.200, 0.065));
 
@@ -108,7 +116,7 @@ AFRAME.registerComponent('wise-fairy', {
     }));
     root.appendChild(_sph(0.014, '#ff88cc', '#ff44aa', 3.0, 1, 0, 0.244, 0.055));
 
-    // Arme (ausgebreitet)
+    // Arme
     const mkArm = (side) => {
       const piv = document.createElement('a-entity');
       piv.setAttribute('position', `${side * 0.060} 0.058 0`);
@@ -120,7 +128,7 @@ AFRAME.registerComponent('wise-fairy', {
     root.appendChild(mkArm(-1));
     root.appendChild(mkArm( 1));
 
-    // Zauberstab (rechts)
+    // Zauberstab
     const staffPiv = document.createElement('a-entity');
     staffPiv.setAttribute('position', '0.060 0.058 0');
     staffPiv.setAttribute('rotation', '0 0 38');
@@ -128,12 +136,12 @@ AFRAME.registerComponent('wise-fairy', {
     staffPiv.appendChild(_sph(0.022, gold, gold, 3.5, 1, 0, -0.24, 0));
     root.appendChild(staffPiv);
 
-    // Leuchtaura
+    // Aura
     const aura = _sph(0.22, '#cc88ff', '#aa44ff', 0.4, 0.12, 0, 0.055, 0);
     root.appendChild(aura);
     this._aura = aura;
 
-    // Große Schmetterlingsflügel (4 Panels)
+    // Flügel
     const wL1 = _plane(0.26, 0.20, wCol, 0.62, -0.13,  0.040, 0, -10,  28, 0);
     const wL2 = _plane(0.20, 0.16, wCol, 0.46, -0.12, -0.065, 0,  -5,  22, 0);
     const wR1 = _plane(0.26, 0.20, wCol, 0.62,  0.13,  0.040, 0, -10, -28, 0);
@@ -143,7 +151,7 @@ AFRAME.registerComponent('wise-fairy', {
     this._wL = [wL1, wL2];
     this._wR = [wR1, wR2];
 
-    // Schwebende Feenstaub-Orbs
+    // Feenstaub-Orbs
     for (let i = 0; i < 5; i++) {
       const orb = _sph(0.011, '#ffdd88', '#ffaa00', 2.5, 0.72, 0, -200, 0);
       root.appendChild(orb);
@@ -155,55 +163,58 @@ AFRAME.registerComponent('wise-fairy', {
     this._root = root;
   },
 
-  // ── Dialog-Panel ──────────────────────────────────────────────────────────
+  // ── Dialog-Panel ─────────────────────────────────────────────────────────
   _buildDialog() {
     const dlg = document.createElement('a-entity');
     dlg.setAttribute('visible', false);
 
     // Rahmen
     dlg.appendChild(_el('a-plane', {
-      width: 0.72, height: 0.34,
+      width: 0.72, height: 0.38,
       material: 'color:#cc88ff;shader:flat;transparent:true;opacity:0.38',
       position: '0 0 -0.003',
     }));
     // Hintergrund
     dlg.appendChild(_el('a-plane', {
-      width: 0.66, height: 0.28,
+      width: 0.66, height: 0.32,
       material: 'color:#180030;shader:flat;transparent:true;opacity:0.92',
     }));
 
-    // Dialogtext
+    // Frage-Text
     dlg.appendChild(_el('a-text', {
       value: 'Möchtest du mit Feenstaub\nbestäubt werden?',
       align: 'center', color: '#ffddff',
-      width: 0.58, 'wrap-count': 30,
-      position: '0 0.060 0.006',
+      width: 0.58, 'wrap-count': 28,
+      position: '0 0.075 0.006',
     }));
 
-    // Ja-Button
+    // ── Ja-Button ──
     const jaBtn = _el('a-plane', {
       class: 'ui-btn',
-      width: 0.22, height: 0.075,
+      width: 0.24, height: 0.090,
       material: 'color:#5522aa;shader:flat;transparent:true;opacity:0.95',
-      position: '-0.158 -0.075 0.006',
+      position: '-0.165 -0.088 0.006',
     });
+    // Größerer Text: hohe width, niedrige wrap-count → große Zeichen
     jaBtn.appendChild(_el('a-text', {
       value: 'Ja', align: 'center', color: '#ffccff',
-      width: 0.18, position: '0 0 0.004',
+      width: 0.55, 'wrap-count': 4,
+      position: '0 0 0.004',
     }));
     jaBtn.addEventListener('click', () => this._onAnswer(true));
     dlg.appendChild(jaBtn);
 
-    // Nein-Button
+    // ── Nein-Button ──
     const neinBtn = _el('a-plane', {
       class: 'ui-btn',
-      width: 0.22, height: 0.075,
+      width: 0.24, height: 0.090,
       material: 'color:#220044;shader:flat;transparent:true;opacity:0.95',
-      position: '0.158 -0.075 0.006',
+      position: '0.165 -0.088 0.006',
     });
     neinBtn.appendChild(_el('a-text', {
       value: 'Nein', align: 'center', color: '#ccaaee',
-      width: 0.18, position: '0 0 0.004',
+      width: 0.55, 'wrap-count': 6,
+      position: '0 0 0.004',
     }));
     neinBtn.addEventListener('click', () => this._onAnswer(false));
     dlg.appendChild(neinBtn);
@@ -234,27 +245,20 @@ AFRAME.registerComponent('wise-fairy', {
   tick(t, dt) {
     if (!this._root) return;
     const ts = t * 0.001;
+    const s  = Math.min(dt, 50) * 0.001;
 
-    // Hover + sanfte Rotation
-    this._root.object3D.position.y = 0.62 + Math.sin(ts * 0.85) * 0.09;
-    this._root.object3D.rotation.y = ts * 0.25;
-
-    // Flügelschlag
+    // ── Visuelle Animationen ──
     const flapAng = Math.sin(ts * 9.0 + this._wPhase) * 0.60;
     this._wL.forEach((w, i) => {
       if (w.object3D)
-        w.object3D.rotation.z = (i === 0 ? 0.48 : 0.75) + flapAng * (i === 0 ? 1.0 : 0.65);
+        w.object3D.rotation.z =  (i === 0 ? 0.48 : 0.75) + flapAng * (i === 0 ? 1.0 : 0.65);
     });
     this._wR.forEach((w, i) => {
       if (w.object3D)
         w.object3D.rotation.z = -((i === 0 ? 0.48 : 0.75) + flapAng * (i === 0 ? 1.0 : 0.65));
     });
-
-    // Aura-Puls
     if (this._aura && this._aura.object3D)
       this._aura.object3D.scale.setScalar(0.85 + Math.abs(Math.sin(ts * 2.0 + this._wPhase)) * 0.30);
-
-    // Orbs kreisen
     this._orbs.forEach(o => {
       if (o.el.object3D) o.el.object3D.position.set(
         Math.cos(ts * 1.4 + o.phase) * o.r,
@@ -263,23 +267,22 @@ AFRAME.registerComponent('wise-fairy', {
       );
     });
 
-    // Kamera-Nähe – nur im Feenreich prüfen
-    if (this._answered) return;
+    // ── Kamera holen ──
     if (!this._cam) this._cam = document.getElementById('camera');
     if (!this._cam) return;
     this._cam.object3D.getWorldPosition(this._camWP);
-    if (this._camWP.z < 33) return;
+    if (this._camWP.z < 33) return;  // Spieler noch in Kesselstadt
 
-    const fp  = this._root.object3D.position;
-    const dx  = fp.x - this._camWP.x;
-    const dz  = fp.z - this._camWP.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
+    const fp   = this._root.object3D.position;
+    const dxC  = fp.x - this._camWP.x;
+    const dzC  = fp.z - this._camWP.z;
+    const dist = Math.sqrt(dxC * dxC + dzC * dzC);
 
-    // Dialog zum Spieler hin ausrichten
+    // Dialog vor der Fee zum Spieler hin ausrichten
     if (this._dialogVis && this._dialog.object3D) {
       const len = Math.max(0.1, dist);
-      const nx  = -dx / len;
-      const nz  = -dz / len;
+      const nx  = -dxC / len;
+      const nz  = -dzC / len;
       this._dialog.object3D.position.set(
         fp.x + nx * 0.55,
         fp.y + 0.72,
@@ -288,8 +291,53 @@ AFRAME.registerComponent('wise-fairy', {
       this._dialog.object3D.rotation.y = Math.atan2(nx, nz);
     }
 
-    if (dist < 3.0) this._showDialog();
-    else if (dist > 4.5) this._hideDialog();
+    // Dialog ein-/ausblenden
+    if (!this._answered) {
+      if (dist < 3.0) this._showDialog();
+      else if (dist > 4.5) this._hideDialog();
+    }
+
+    // ── Hover-Animation (Y) ──
+    fp.y = 0.62 + Math.sin(ts * 0.85) * 0.09;
+
+    // ── Zum Spieler wenden wenn nah, sonst Wegpunkt-Navigation ──
+    if (dist < 3.5) {
+      // Zur Spielerrichtung drehen, anhalten
+      const ta = Math.atan2(-dxC, -dzC);
+      let da   = ta - this._angle;
+      if (da >  Math.PI) da -= Math.PI * 2;
+      if (da < -Math.PI) da += Math.PI * 2;
+      this._angle += da * Math.min(1, s * 5);
+      this._root.object3D.rotation.y = this._angle;
+      this._wait = 0.5;
+      return;
+    }
+
+    if (this._wait > 0) {
+      this._wait -= s;
+      return;
+    }
+
+    const wp  = this._wps[this._wpIdx];
+    const dxW = wp[0] - fp.x;
+    const dzW = wp[1] - fp.z;
+    const dW  = Math.sqrt(dxW * dxW + dzW * dzW);
+
+    if (dW < 0.5) {
+      this._wpIdx = (this._wpIdx + 1) % this._wps.length;
+      this._wait  = 2 + Math.random() * 4;
+      return;
+    }
+
+    fp.x += dxW / dW * this._speed * s;
+    fp.z += dzW / dW * this._speed * s;
+
+    const ta = Math.atan2(dxW, dzW);
+    let da   = ta - this._angle;
+    if (da >  Math.PI) da -= Math.PI * 2;
+    if (da < -Math.PI) da += Math.PI * 2;
+    this._angle += da * Math.min(1, s * 4);
+    this._root.object3D.rotation.y = this._angle;
   },
 
   remove() {
@@ -301,24 +349,28 @@ AFRAME.registerComponent('wise-fairy', {
 
 
 /* ════════════════════════════════════════════════════════════════════════════
-   FAIRY-MODE  –  Schrumpfen, Fliegen, Flügel, Schweif
-   Auf <a-scene> platzieren; wird durch das 'fairy-transform' Szenen-Event
-   aktiviert.
+   FAIRY-MODE  –  Verwandlungsanimation, Fliegen, Flügel, Schweif
    ════════════════════════════════════════════════════════════════════════════ */
 AFRAME.registerComponent('fairy-mode', {
   schema: { active: { type: 'boolean', default: false } },
 
+  // Verwandlungsdauer in Sekunden
+  TRANSFORM_DUR: 2.8,
+  FAIRY_SCALE:   0.22,
+
   init() {
-    this._rig      = null;
-    this._wL       = null;
-    this._wR       = null;
-    this._trail    = [];
-    this._trailTick = 0;
-    this._vY       = 0;
-    this._rise     = false;
-    this._sink     = false;
-    this._wPhase   = Math.random() * Math.PI * 2;
-    this._tmpWP    = new THREE.Vector3();
+    this._rig          = null;
+    this._wL           = null;
+    this._wR           = null;
+    this._trail        = [];
+    this._trailTick    = 0;
+    this._vY           = 0;
+    this._rise         = false;
+    this._sink         = false;
+    this._wPhase       = Math.random() * Math.PI * 2;
+    this._tmpWP        = new THREE.Vector3();
+    this._transforming = false;
+    this._transformT   = 0;
 
     this.el.sceneEl.addEventListener('fairy-transform', () => {
       this.el.setAttribute('fairy-mode', 'active', true);
@@ -333,25 +385,25 @@ AFRAME.registerComponent('fairy-mode', {
     this._rig = document.getElementById('rig');
     if (!this._rig) return;
 
-    // Auf Feengröße schrumpfen + etwas anheben
-    this._rig.object3D.scale.setScalar(0.22);
-    this._rig.object3D.position.y = 0.5;
+    // Verwandlungsanimation starten (Position bleibt, nur Scale ändert sich)
+    this._transforming = true;
+    this._transformT   = 0;
 
+    // Flügel und Schweif aufbauen – Flügel zunächst unsichtbar
     this._buildWings();
     this._buildTrail();
     this._bindControls();
   },
 
-  // ── Flügel am Rig (Schulterposition in Rig-Lokalraum) ─────────────────────
+  // ── Flügel am Rig (in Rig-Lokalraum, sichtbar in Peripherie) ─────────────
   _buildWings() {
     const rig = this._rig;
 
     const mkWingSet = (side) => {
       const piv = document.createElement('a-entity');
-      // In Rig-Lokalkoordinaten: Schulter links/rechts auf Schulterhöhe
       piv.setAttribute('position', `${side * 0.68} 1.44 -0.22`);
+      piv.setAttribute('visible', false);  // erscheinen erst nach Verwandlung
 
-      // Oberer Flügel
       const wu = _el('a-plane', {
         width: 2.8, height: 2.2,
         rotation: `-10 ${side > 0 ? -30 : 30} 0`,
@@ -359,7 +411,6 @@ AFRAME.registerComponent('fairy-mode', {
         material: 'color:#dd88ff;shader:flat;transparent:true;opacity:0.70;side:double' +
                   ';emissive:#aa44ff;emissiveIntensity:0.35',
       });
-      // Inneres Muster (leicht leuchtend)
       const wui = _el('a-plane', {
         width: 2.0, height: 1.55,
         rotation: `-10 ${side > 0 ? -30 : 30} 0`,
@@ -367,7 +418,6 @@ AFRAME.registerComponent('fairy-mode', {
         material: 'color:#ffffff;shader:flat;transparent:true;opacity:0.18;side:double' +
                   ';emissive:#ffccff;emissiveIntensity:0.5',
       });
-      // Unterer Flügel
       const wl = _el('a-plane', {
         width: 2.0, height: 1.55,
         rotation: `-6 ${side > 0 ? -24 : 24} 0`,
@@ -385,7 +435,7 @@ AFRAME.registerComponent('fairy-mode', {
     this._wR = mkWingSet( 1);
   },
 
-  // ── Magischer Schweif (Weltkoordinaten) ────────────────────────────────────
+  // ── Magischer Schweif (Weltkoordinaten, Ring-Puffer) ──────────────────────
   _buildTrail() {
     const scene = this.el.sceneEl;
     for (let i = 0; i < 12; i++) {
@@ -397,7 +447,7 @@ AFRAME.registerComponent('fairy-mode', {
     }
   },
 
-  // ── Controller-Bindings ────────────────────────────────────────────────────
+  // ── Controller + Keyboard ─────────────────────────────────────────────────
   _bindControls() {
     const rh = document.getElementById('rightHand');
     if (rh) {
@@ -406,7 +456,6 @@ AFRAME.registerComponent('fairy-mode', {
       rh.addEventListener('abuttondown', () => { this._sink = true;  });
       rh.addEventListener('abuttonup',   () => { this._sink = false; });
     }
-    // Desktop-Fallback: Space steigen, C sinken
     document.addEventListener('keydown', e => {
       if (!this.data.active) return;
       if (e.code === 'Space') { e.preventDefault(); this._rise = true;  }
@@ -423,13 +472,32 @@ AFRAME.registerComponent('fairy-mode', {
     const s  = Math.min(dt, 50) * 0.001;
     const ts = t * 0.001;
 
+    // ── Verwandlungsanimation ──
+    if (this._transforming) {
+      this._transformT += s;
+      const progress = Math.min(1, this._transformT / this.TRANSFORM_DUR);
+      // easeInOut: erst langsam, dann schneller, am Ende wieder langsam
+      const ease = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      this._rig.object3D.scale.setScalar(1.0 - (1.0 - this.FAIRY_SCALE) * ease);
+
+      if (progress >= 1) {
+        this._transforming = false;
+        this._rig.object3D.scale.setScalar(this.FAIRY_SCALE);
+        // Flügel einblenden
+        if (this._wL) this._wL.piv.setAttribute('visible', true);
+        if (this._wR) this._wR.piv.setAttribute('visible', true);
+      }
+      return;  // Während Verwandlung kein Fliegen
+    }
+
     // ── Vertikales Fliegen ──
     if (this._rise) {
       this._vY = Math.min( 5.0, this._vY + 4.5 * s);
     } else if (this._sink) {
       this._vY = Math.max(-4.0, this._vY - 4.5 * s);
     } else {
-      // Sanfte Schwerkraft wenn weder steigen noch sinken gedrückt
       this._vY = Math.max(-3.0, this._vY - 2.2 * s);
     }
 
@@ -447,7 +515,7 @@ AFRAME.registerComponent('fairy-mode', {
       this._wR.piv.object3D.rotation.x = tilt * 0.4;
     }
 
-    // ── Magischer Schweif (Ring-Puffer) ──
+    // ── Magischer Schweif ──
     this._trailTick -= s;
     if (this._trailTick <= 0 && this._trail.length > 0) {
       this._trailTick = 0.05;
