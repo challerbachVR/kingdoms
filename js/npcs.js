@@ -35,6 +35,14 @@ const CITY_COLLISION_BOXES = [
   { x0: -29.5, x1:-26.5, z0:  3.0,  z1:  45   },
 ];
 
+// Ablagen, auf die Katzen springen können (world space)
+// x/z = Mittelpunkt der Fläche, y = Höhe, hw/hd = halbe Breite/Tiefe
+const CAT_LEDGES = [
+  { x: -3.5, z: -4.5, y: 0.975, hw: 0.90, hd: 0.55 }, // Marktstand 1 Tisch
+  { x:  3.5, z: -4.5, y: 0.975, hw: 0.90, hd: 0.55 }, // Marktstand 2 Tisch
+  { x:  0,   z:  0,   y: 0.820, hw: 1.40, hd: 1.40 }, // Brunnenkante
+];
+
 AFRAME.registerComponent('city-life', {
 
   init() {
@@ -555,7 +563,8 @@ AFRAME.registerComponent('city-life', {
         speed: 1.4 + Math.random() * 0.8,
         angle: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
-        wait:  Math.random() * 1.5 });
+        wait:  Math.random() * 1.5,
+        radius: 0.22, stuck: 0 });
     });
 
     // ── Katzen ────────────────────────────────────────────────────────────
@@ -629,8 +638,17 @@ AFRAME.registerComponent('city-life', {
         speed: 0.40 + Math.random() * 0.25,
         angle: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
-        wait:  2 + Math.random() * 4 });
+        wait:  2 + Math.random() * 4,
+        radius: 0.18, stuck: 0,
+        catState: 'ground', catLedge: null,
+        jumpTimer: 0, jumpDur: 0.55,
+        jumpFromX: 0, jumpFromZ: 0, jumpFromY: 0,
+        jumpToX: 0, jumpToZ: 0, jumpToY: 0,
+        ledgeTimer: 0, ledgeTargetX: 0, ledgeTargetZ: 0 });
     });
+
+    // ── Detaillierter Hund (golden) ────────────────────────────────────────
+    this._mkDetailedDog();
 
     // ── Hühner ────────────────────────────────────────────────────────────
     for (let i = 0; i < 6; i++) {
@@ -699,25 +717,109 @@ AFRAME.registerComponent('city-life', {
         speed: 0.50 + Math.random() * 0.30,
         tx: sx + (Math.random() - 0.5) * 5,
         tz: sz + (Math.random() - 0.5) * 5,
-        wait:  Math.random() * 2 });
+        wait:  Math.random() * 2,
+        radius: 0.15, stuck: 0 });
     }
   },
 
   _tickAnim(t, dt) {
     this._anim.forEach(a => {
       if (a.type === 'chicken') { this._tickChicken(a, t, dt); return; }
+      if (a.type === 'dog')     { this._tickDog(a, t, dt);     return; }
+      if (a.type === 'cat')     { this._tickCat(a, t, dt);     return; }
+    });
+  },
 
-      const p = a.root.object3D.position;
+  _tickDog(a, t, dt) {
+    const p = a.root.object3D.position;
+
+    if (a.wait > 0) {
+      a.wait -= dt;
+      if (a.legFL && a.legFL.object3D) {
+        a.legFL.object3D.rotation.x *= 0.88; a.legFR.object3D.rotation.x *= 0.88;
+        a.legRL.object3D.rotation.x *= 0.88; a.legRR.object3D.rotation.x *= 0.88;
+      }
+      if (a.headPiv && a.headPiv.object3D)
+        a.headPiv.object3D.rotation.z = Math.sin(t * 0.003 + a.phase) * 0.18;
+      if (a.tailPiv && a.tailPiv.object3D)
+        a.tailPiv.object3D.rotation.z = Math.sin(t * 0.010 + a.phase) * 0.50;
+      return;
+    }
+
+    const [tx, tz] = a.wps[a.wpIdx];
+    const dx = tx - p.x, dz = tz - p.z;
+    const d  = Math.sqrt(dx * dx + dz * dz);
+
+    if (d < 0.30) {
+      a.wpIdx = (a.wpIdx + 1) % a.wps.length;
+      a.wait  = 0.3 + Math.random() * 1.0;
+      a.stuck = 0;
+      return;
+    }
+
+    const spd  = a.speed * dt;
+    const move = this._tryStep(a, tx, tz, spd);
+    p.y = Math.sin(t * 0.010 + a.phase) * 0.03;
+
+    if (!move.moved) { a.stuck += dt; } else { a.stuck = 0; }
+    if (a.stuck > 0.6) {
+      a.wpIdx = (a.wpIdx + 1) % a.wps.length;
+      a.stuck = 0;
+      a.wait  = 0.1 + Math.random() * 0.3;
+      return;
+    }
+
+    if (a.legFL && a.legFL.object3D) {
+      const sw = Math.sin(t * 0.015 * a.speed + a.phase) * 0.55;
+      a.legFL.object3D.rotation.x =  sw; a.legFR.object3D.rotation.x = -sw;
+      a.legRL.object3D.rotation.x = -sw; a.legRR.object3D.rotation.x =  sw;
+    }
+    if (a.headPiv && a.headPiv.object3D) {
+      a.headPiv.object3D.rotation.x = Math.sin(t * 0.015 * a.speed + a.phase) * 0.08;
+      a.headPiv.object3D.rotation.z *= 0.90;
+    }
+    if (a.tailPiv && a.tailPiv.object3D)
+      a.tailPiv.object3D.rotation.z = Math.sin(t * 0.018 * a.speed + a.phase) * 0.55;
+    if (a.tonguePiv && a.tonguePiv.object3D)
+      a.tonguePiv.object3D.rotation.x = 0.18 + Math.abs(Math.sin(t * 0.015 * a.speed + a.phase)) * 0.20;
+
+    const ta = move.moved ? move.heading : Math.atan2(dx, dz);
+    let da   = ta - a.angle;
+    if (da >  Math.PI) da -= Math.PI * 2;
+    if (da < -Math.PI) da += Math.PI * 2;
+    a.angle += da * Math.min(1, dt * 6);
+    a.root.object3D.rotation.y = a.angle;
+  },
+
+  _tickCat(a, t, dt) {
+    const p = a.root.object3D.position;
+    if (a.tail && a.tail.object3D)
+      a.tail.object3D.rotation.z = Math.sin(t * 0.006 + a.phase) * 0.30;
+
+    const state = a.catState;
+
+    if (state === 'ground') {
       if (a.wait > 0) {
         a.wait -= dt;
-        // Beine in Ruhe dämpfen
         if (a.legFL && a.legFL.object3D) {
           a.legFL.object3D.rotation.x *= 0.88; a.legFR.object3D.rotation.x *= 0.88;
           a.legRL.object3D.rotation.x *= 0.88; a.legRR.object3D.rotation.x *= 0.88;
         }
-        // Katzenschwanz wippen
-        if (a.tail && a.tail.object3D) {
-          a.tail.object3D.rotation.z = Math.sin(t * 0.006 + a.phase) * 0.28;
+        if (a.wait <= 0 && Math.random() < 0.25) {
+          const ledge = CAT_LEDGES[Math.floor(Math.random() * CAT_LEDGES.length)];
+          if ((p.x - ledge.x) ** 2 + (p.z - ledge.z) ** 2 < 144) {
+            a.catLedge = ledge;
+            a.catState = 'approach';
+            const axis = Math.random() < 0.5 ? 'x' : 'z';
+            const side = Math.random() < 0.5 ? -1 : 1;
+            if (axis === 'x') {
+              a.approachX = ledge.x + side * (ledge.hw + 0.15);
+              a.approachZ = ledge.z + (Math.random() - 0.5) * ledge.hd * 1.2;
+            } else {
+              a.approachX = ledge.x + (Math.random() - 0.5) * ledge.hw * 1.2;
+              a.approachZ = ledge.z + side * (ledge.hd + 0.15);
+            }
+          }
         }
         return;
       }
@@ -728,38 +830,138 @@ AFRAME.registerComponent('city-life', {
 
       if (d < 0.25) {
         a.wpIdx = (a.wpIdx + 1) % a.wps.length;
-        a.wait  = a.type === 'cat'
-          ? (Math.random() < 0.4 ? 4 + Math.random() * 5 : 0.8 + Math.random() * 2)
-          : 0.2 + Math.random() * 0.6;
+        a.wait  = Math.random() < 0.4 ? 4 + Math.random() * 5 : 0.8 + Math.random() * 2;
+        a.stuck = 0;
         return;
       }
 
-      const spd = a.speed * dt;
-      p.x += dx / d * spd;
-      p.z += dz / d * spd;
-      p.y  = Math.sin(t * 0.014 + a.phase) * 0.018;
+      const spd  = a.speed * dt;
+      const move = this._tryStep(a, tx, tz, spd);
+      p.y = Math.sin(t * 0.014 + a.phase) * 0.018;
 
-      // Bein-Animation (Trab-Gang: FL+RR vs FR+RL)
+      if (!move.moved) { a.stuck += dt; } else { a.stuck = 0; }
+      if (a.stuck > 0.8) {
+        a.wpIdx = (a.wpIdx + 1) % a.wps.length;
+        a.stuck = 0;
+        a.wait  = 0.2 + Math.random() * 0.5;
+        return;
+      }
+
       if (a.legFL && a.legFL.object3D) {
-        const swing = Math.sin(t * 0.015 * a.speed + a.phase) * (a.type === 'dog' ? 0.55 : 0.40);
-        a.legFL.object3D.rotation.x =  swing;
-        a.legFR.object3D.rotation.x = -swing;
-        a.legRL.object3D.rotation.x = -swing;
-        a.legRR.object3D.rotation.x =  swing;
+        const sw = Math.sin(t * 0.015 * a.speed + a.phase) * 0.40;
+        a.legFL.object3D.rotation.x =  sw; a.legFR.object3D.rotation.x = -sw;
+        a.legRL.object3D.rotation.x = -sw; a.legRR.object3D.rotation.x =  sw;
       }
+      const ta = move.moved ? move.heading : Math.atan2(dx, dz);
+      let da   = ta - a.angle;
+      if (da >  Math.PI) da -= Math.PI * 2;
+      if (da < -Math.PI) da += Math.PI * 2;
+      a.angle += da * Math.min(1, dt * 7);
+      a.root.object3D.rotation.y = a.angle;
 
-      // Katzenschwanz: rhythmisches Seitenwedeln
-      if (a.tail && a.tail.object3D) {
-        a.tail.object3D.rotation.z = Math.sin(t * 0.008 + a.phase) * 0.32;
+    } else if (state === 'approach') {
+      const dx = a.approachX - p.x, dz = a.approachZ - p.z;
+      const d  = Math.sqrt(dx * dx + dz * dz);
+      if (d < 0.28) {
+        a.catState  = 'jump_up';
+        a.jumpTimer = 0;
+        a.jumpDur   = 0.55;
+        a.jumpFromX = p.x; a.jumpFromZ = p.z; a.jumpFromY = p.y;
+        const l = a.catLedge;
+        a.jumpToX = l.x + (Math.random() - 0.5) * l.hw * 1.2;
+        a.jumpToZ = l.z + (Math.random() - 0.5) * l.hd * 1.2;
+        a.jumpToY = l.y;
+        return;
       }
-
+      const spd = a.speed * 1.3 * dt;
+      p.x += dx / d * spd; p.z += dz / d * spd; p.y = 0;
+      if (a.legFL && a.legFL.object3D) {
+        const sw = Math.sin(t * 0.015 * a.speed + a.phase) * 0.40;
+        a.legFL.object3D.rotation.x =  sw; a.legFR.object3D.rotation.x = -sw;
+        a.legRL.object3D.rotation.x = -sw; a.legRR.object3D.rotation.x =  sw;
+      }
       const ta = Math.atan2(dx, dz);
       let da   = ta - a.angle;
       if (da >  Math.PI) da -= Math.PI * 2;
       if (da < -Math.PI) da += Math.PI * 2;
       a.angle += da * Math.min(1, dt * 7);
       a.root.object3D.rotation.y = a.angle;
-    });
+
+    } else if (state === 'jump_up') {
+      a.jumpTimer += dt / a.jumpDur;
+      if (a.jumpTimer >= 1) {
+        p.x = a.jumpToX; p.z = a.jumpToZ; p.y = a.jumpToY;
+        a.catState   = 'on_ledge';
+        a.ledgeTimer = 4 + Math.random() * 8;
+        this._pickLedgeTarget(a, a.catLedge);
+        return;
+      }
+      const tt   = a.jumpTimer;
+      const ease = tt < 0.5 ? 2 * tt * tt : 1 - Math.pow(-2 * tt + 2, 2) / 2;
+      p.x = a.jumpFromX + (a.jumpToX - a.jumpFromX) * ease;
+      p.z = a.jumpFromZ + (a.jumpToZ - a.jumpFromZ) * ease;
+      p.y = a.jumpFromY + (a.jumpToY - a.jumpFromY) * ease + Math.sin(tt * Math.PI) * 0.40;
+
+    } else if (state === 'on_ledge') {
+      a.ledgeTimer -= dt;
+      if (a.ledgeTimer <= 0) {
+        a.catState  = 'jump_down';
+        a.jumpTimer = 0;
+        a.jumpDur   = 0.45;
+        a.jumpFromX = p.x; a.jumpFromZ = p.z; a.jumpFromY = p.y;
+        const l = a.catLedge;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        if (Math.random() < 0.5) {
+          a.jumpToX = l.x + side * (l.hw + 0.3 + Math.random() * 0.3);
+          a.jumpToZ = l.z + (Math.random() - 0.5) * l.hd;
+        } else {
+          a.jumpToX = l.x + (Math.random() - 0.5) * l.hw;
+          a.jumpToZ = l.z + side * (l.hd + 0.3 + Math.random() * 0.3);
+        }
+        a.jumpToY = 0;
+        return;
+      }
+      const dx = a.ledgeTargetX - p.x, dz = a.ledgeTargetZ - p.z;
+      const d  = Math.sqrt(dx * dx + dz * dz);
+      if (d < 0.12) { this._pickLedgeTarget(a, a.catLedge); return; }
+      const spd = a.speed * 0.5 * dt;
+      p.x += dx / d * spd; p.z += dz / d * spd;
+      const l = a.catLedge;
+      p.x = Math.max(l.x - l.hw + 0.06, Math.min(l.x + l.hw - 0.06, p.x));
+      p.z = Math.max(l.z - l.hd + 0.06, Math.min(l.z + l.hd - 0.06, p.z));
+      p.y = l.y;
+      if (a.legFL && a.legFL.object3D) {
+        const sw = Math.sin(t * 0.015 * a.speed + a.phase) * 0.30;
+        a.legFL.object3D.rotation.x =  sw; a.legFR.object3D.rotation.x = -sw;
+        a.legRL.object3D.rotation.x = -sw; a.legRR.object3D.rotation.x =  sw;
+      }
+      const ta = Math.atan2(dx, dz);
+      let da   = ta - a.angle;
+      if (da >  Math.PI) da -= Math.PI * 2;
+      if (da < -Math.PI) da += Math.PI * 2;
+      a.angle += da * Math.min(1, dt * 7);
+      a.root.object3D.rotation.y = a.angle;
+
+    } else if (state === 'jump_down') {
+      a.jumpTimer += dt / a.jumpDur;
+      if (a.jumpTimer >= 1) {
+        p.x = a.jumpToX; p.z = a.jumpToZ; p.y = 0;
+        a.catState = 'ground';
+        a.catLedge = null;
+        a.wait = 0.5 + Math.random() * 1.5;
+        return;
+      }
+      const tt   = a.jumpTimer;
+      const ease = tt < 0.5 ? 2 * tt * tt : 1 - Math.pow(-2 * tt + 2, 2) / 2;
+      p.x = a.jumpFromX + (a.jumpToX - a.jumpFromX) * ease;
+      p.z = a.jumpFromZ + (a.jumpToZ - a.jumpFromZ) * ease;
+      p.y = a.jumpFromY + (a.jumpToY - a.jumpFromY) * ease + Math.sin(tt * Math.PI) * 0.25;
+    }
+  },
+
+  _pickLedgeTarget(a, ledge) {
+    a.ledgeTargetX = ledge.x + (Math.random() - 0.5) * (ledge.hw * 2 - 0.15);
+    a.ledgeTargetZ = ledge.z + (Math.random() - 0.5) * (ledge.hd * 2 - 0.15);
   },
 
   _tickChicken(a, t, dt) {
@@ -775,19 +977,127 @@ AFRAME.registerComponent('city-life', {
       a.tx   = (Math.random() - 0.5) * 9;
       a.tz   = (Math.random() - 0.5) * 9;
       a.wait = 0.9 + Math.random() * 1.8;
+      a.stuck = 0;
       return;
     }
 
-    const spd = a.speed * dt * 0.55;
-    p.x += dx / d * spd;
-    p.z += dz / d * spd;
+    const spd  = a.speed * dt * 0.55;
+    const move = this._tryStep(a, a.tx, a.tz, spd);
 
-    const ta = Math.atan2(dx, dz);
+    if (!move.moved) { a.stuck += dt; } else { a.stuck = 0; }
+    if (a.stuck > 0.5) {
+      a.tx    = (Math.random() - 0.5) * 9;
+      a.tz    = (Math.random() - 0.5) * 9;
+      a.stuck = 0;
+      a.wait  = 0.2 + Math.random() * 0.5;
+      return;
+    }
+
+    const ta = move.moved ? move.heading : Math.atan2(dx, dz);
     let da   = ta - a.angle;
     if (da >  Math.PI) da -= Math.PI * 2;
     if (da < -Math.PI) da += Math.PI * 2;
     a.angle += da * Math.min(1, dt * 5);
     a.root.object3D.rotation.y = a.angle;
+  },
+
+  /* ── Goldener Retriever (detaillierter Hund) ──────────────────────────── */
+  _mkDetailedDog() {
+    const c    = '#c8a030';
+    const dark = '#1a0800';
+    const root = document.createElement('a-entity');
+
+    // Körper
+    root.appendChild(this._box(0.36, 0.22, 0.50, c, 0, 0.27, 0));
+    root.appendChild(this._box(0.30, 0.19, 0.17, c, 0, 0.27, 0.26));
+
+    // 4 Bein-Pivots mit Oberschenkel + Unterschenkel
+    const makeLeg = (lx, lz) => {
+      const piv  = document.createElement('a-entity');
+      piv.setAttribute('position', `${lx} 0.22 ${lz}`);
+      piv.appendChild(this._cyl(0.040, 0.24, c, 0, -0.12, 0));
+      const lower = document.createElement('a-entity');
+      lower.setAttribute('position', '0 -0.24 0');
+      lower.appendChild(this._cyl(0.033, 0.20, c, 0, -0.10, 0));
+      piv.appendChild(lower);
+      piv.appendChild(this._box(0.082, 0.038, 0.100, c, 0, -0.255, 0.024));
+      return piv;
+    };
+    const legFL = makeLeg(-0.14,  0.18);
+    const legFR = makeLeg( 0.14,  0.18);
+    const legRL = makeLeg(-0.14, -0.18);
+    const legRR = makeLeg( 0.14, -0.18);
+    root.appendChild(legFL); root.appendChild(legFR);
+    root.appendChild(legRL); root.appendChild(legRR);
+
+    // Halsband
+    root.appendChild(this._cyl(0.098, 0.044, '#881100', 0, 0.375, 0.175));
+
+    // Hals-Pivot
+    const neckPiv = document.createElement('a-entity');
+    neckPiv.setAttribute('position', '0 0.345 0.215');
+    neckPiv.setAttribute('rotation', '-28 0 0');
+    neckPiv.appendChild(this._box(0.148, 0.185, 0.148, c, 0, 0.093, 0));
+
+    // Kopf-Pivot (für Neigen im Leerlauf)
+    const headPiv = document.createElement('a-entity');
+    headPiv.setAttribute('position', '0 0.190 0.020');
+
+    // Kopf
+    headPiv.appendChild(this._sph(0.127, c, 0, 0.062, 0));
+    // Schnauze
+    headPiv.appendChild(this._box(0.086, 0.074, 0.118, c, 0, 0.025, 0.122));
+    // Nase
+    headPiv.appendChild(this._sph(0.023, dark, 0, 0.031, 0.180));
+    // Augen
+    headPiv.appendChild(this._sph(0.019, dark, -0.059, 0.087, 0.100));
+    headPiv.appendChild(this._sph(0.019, dark,  0.059, 0.087, 0.100));
+    headPiv.appendChild(this._sph(0.008, '#fff', -0.053, 0.093, 0.109));
+    headPiv.appendChild(this._sph(0.008, '#fff',  0.053, 0.093, 0.109));
+
+    // Hängende Ohren
+    const makeEar = (side) => {
+      const ep = document.createElement('a-entity');
+      ep.setAttribute('position', `${side * 0.120} 0.055 0.010`);
+      ep.setAttribute('rotation', '15 0 0');
+      ep.appendChild(this._box(0.064, 0.125, 0.050, c, 0, -0.062, 0));
+      return ep;
+    };
+    headPiv.appendChild(makeEar(-1));
+    headPiv.appendChild(makeEar( 1));
+
+    // Zunge (Pivot für Wippen)
+    const tonguePiv = document.createElement('a-entity');
+    tonguePiv.setAttribute('position', '0 0.010 0.140');
+    tonguePiv.setAttribute('rotation', '10 0 0');
+    tonguePiv.appendChild(this._box(0.046, 0.009, 0.062, '#e84060', 0, -0.031, 0));
+    headPiv.appendChild(tonguePiv);
+
+    neckPiv.appendChild(headPiv);
+    root.appendChild(neckPiv);
+
+    // Schwanz-Pivot
+    const tailPiv = document.createElement('a-entity');
+    tailPiv.setAttribute('position', '0 0.330 -0.258');
+    tailPiv.setAttribute('rotation', '-50 0 0');
+    tailPiv.appendChild(this._box(0.049, 0.043, 0.225, c, 0, 0, 0.113));
+    tailPiv.appendChild(this._box(0.038, 0.034, 0.145, c, 0, 0.010, 0.248));
+    root.appendChild(tailPiv);
+
+    this.el.appendChild(root);
+    const wps = this._pickWPs(6);
+    root.object3D.position.set(wps[0][0] + 1.5, 0, wps[0][1] + 1.5);
+
+    this._anim.push({
+      root, wps, wpIdx: 0, type: 'dog',
+      legFL, legFR, legRL, legRR,
+      headPiv, tailPiv, tonguePiv,
+      speed: 1.5 + Math.random() * 0.6,
+      angle: Math.random() * Math.PI * 2,
+      phase: Math.random() * Math.PI * 2,
+      wait:  Math.random() * 2,
+      radius: 0.22, stuck: 0,
+    });
   },
 
   /* ════════════════════════════════════════════════════════════════════

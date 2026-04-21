@@ -153,118 +153,131 @@ AFRAME.registerComponent('lichtreich-scene', {
     const canvases = [
       { id: 'licht-sky-canvas', w: 1024, h: 512, fn: _drawLichtSky },
     ];
-
     canvases.forEach(({ id, w, h, fn }) => {
       if (document.getElementById(id)) return;
       const c = document.createElement('canvas');
-      c.id = id;
-      c.width = w;
-      c.height = h;
-      c.style.display = 'none';
+      c.id = id; c.width = w; c.height = h; c.style.display = 'none';
       document.body.appendChild(c);
       fn(c);
     });
 
     this.el.insertAdjacentHTML('beforeend', LICHTREICH_HTML);
 
-    this._inLicht = false;
-    this._cam = null;
-    this._sky = null;
-    this._amb = null;
-    this._sun = null;
-    this._scene = this.el.sceneEl;
-    this._camWP = new THREE.Vector3();
+    this._inLicht        = false;
+    this._lichtSkyActive = false;
+    this._cam     = null;
+    this._sky     = null;
+    this._overlay = null;
+    this._amb     = null;
+    this._sun     = null;
+    this._scene   = this.el.sceneEl;
+    this._camWP   = new THREE.Vector3();
   },
 
   _swapSkyTo(canvasId) {
     if (!this._sky) return;
     if (!window._KC_TEX) window._KC_TEX = {};
-
     if (!window._KC_TEX[canvasId]) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
-
       const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.needsUpdate = true;
       window._KC_TEX[canvasId] = tex;
     }
-
     const tex = window._KC_TEX[canvasId];
-
-    this._sky.object3D.traverse((node) => {
-      if (node.isMesh && node.material) {
-        node.material.map = tex;
-        node.material.needsUpdate = true;
-      }
+    this._sky.object3D.traverse(n => {
+      if (n.isMesh && n.material) { n.material.map = tex; n.material.needsUpdate = true; }
     });
   },
 
-  tick() {
-  if (!this._cam) this._cam = document.getElementById('camera');
-  if (!this._sky) this._sky = document.getElementById('sky-sphere');
-  if (!this._amb) this._amb = document.getElementById('ambLight');
-  if (!this._sun) this._sun = document.getElementById('sun');
-  if (!this._cam) return;
-
-  this._cam.object3D.getWorldPosition(this._camWP);
-
-  const start = -30;
-  const end = -60;
-
-  const t = THREE.MathUtils.clamp(
-    (this._camWP.x - start) / (end - start),
-    0,
-    1
-  );
-
-  const inLicht = t > 0.01;
-
-  if (inLicht !== this._inLicht) {
-    this._inLicht = inLicht;
-    this.el.emit('zone-changed', { zone: inLicht ? 'licht' : 'city' });
-    if (!inLicht) {
-      // Lichtreich verlassen: Sky nur zurücksetzen wenn nicht im Feenreich
-      if (this._camWP.z <= 33) this._swapSkyTo('sky-canvas');
-      if (this._scene) this._scene.removeAttribute('fog');
+  _setOverlay(canvasId, opacity) {
+    if (!this._overlay) this._overlay = document.getElementById('sky-overlay');
+    if (!this._overlay) return;
+    const mesh = this._overlay.getObject3D('mesh');
+    if (!mesh) return;
+    if (opacity <= 0.001) {
+      mesh.material.opacity = 0;
+      mesh.material.needsUpdate = true;
+      return;
     }
-  }
+    if (!window._KC_TEX) window._KC_TEX = {};
+    if (!window._KC_TEX[canvasId]) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const t = new THREE.CanvasTexture(canvas);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.needsUpdate = true;
+      window._KC_TEX[canvasId] = t;
+    }
+    mesh.material.map = window._KC_TEX[canvasId];
+    mesh.material.opacity = opacity;
+    mesh.material.needsUpdate = true;
+  },
 
-  if (!inLicht) return;
+  tick() {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._sky) this._sky = document.getElementById('sky-sphere');
+    if (!this._amb) this._amb = document.getElementById('ambLight');
+    if (!this._sun) this._sun = document.getElementById('sun');
+    if (!this._cam) return;
 
-  // Im Übergang / Lichtreich
-  if (t > 0.6) {
-    this._swapSkyTo('licht-sky-canvas');
-  } else {
-    this._swapSkyTo('sky-canvas');
-  }
+    this._cam.object3D.getWorldPosition(this._camWP);
 
-  if (this._scene) {
-    const density = 0.0001 + t * 0.0032;
-    this._scene.setAttribute(
-      'fog',
-      `type: exponential; color: #90a7b3; density: ${density}`
-    );
-  }
+    // t: 0 = Stadt, 1 = tief im Lichtreich (Übergang über 30 Einheiten ab Grenze)
+    const az = Math.abs(this._camWP.z);
+    const xBorder = -Math.max(28, az);
+    const t = THREE.MathUtils.clamp((xBorder - this._camWP.x) / 30, 0, 1);
 
-  if (this._amb) {
-    const intensity = 0.7 * (1 - t) + 0.55 * t;
-    this._amb.setAttribute(
-      'light',
-      `type: ambient; intensity: ${intensity}; color: #cfefff`
-    );
-  }
+    const inLicht = t > 0.01;
 
-  if (this._sun) {
-    const intensity = 1.1 * (1 - t) + 0.6 * t;
-    this._sun.setAttribute(
-      'light',
-      `type: directional; intensity: ${intensity}; color: #d8f6ff`
-    );
-    this._sun.setAttribute('position', '-10 18 4');
-  }
-},
+    if (inLicht !== this._inLicht) {
+      this._inLicht = inLicht;
+      this.el.emit('zone-changed', { zone: inLicht ? 'licht' : 'city' });
+      if (!inLicht) {
+        const inFeen = this._camWP.z > 28 && this._camWP.z > az;
+        if (!inFeen) {
+          this._swapSkyTo('sky-canvas');
+          this._setOverlay('licht-sky-canvas', 0);
+        }
+        this._lichtSkyActive = false;
+        if (this._scene) this._scene.removeAttribute('fog');
+      }
+    }
+
+    if (!inLicht) return;
+
+    // Sky-Crossfade via Overlay-Sphäre
+    if (t >= 0.99) {
+      if (!this._lichtSkyActive) {
+        this._swapSkyTo('licht-sky-canvas');
+        this._setOverlay('licht-sky-canvas', 0);
+        this._lichtSkyActive = true;
+      }
+    } else {
+      if (this._lichtSkyActive) {
+        this._swapSkyTo('sky-canvas');
+        this._lichtSkyActive = false;
+      }
+      this._setOverlay('licht-sky-canvas', t);
+    }
+
+    if (this._scene) {
+      const density = 0.0001 + t * 0.0032;
+      this._scene.setAttribute('fog', `type: exponential; color: #90a7b3; density: ${density}`);
+    }
+
+    if (this._amb) {
+      const intensity = 0.7 * (1 - t) + 0.55 * t;
+      this._amb.setAttribute('light', `type: ambient; intensity: ${intensity}; color: #cfefff`);
+    }
+
+    if (this._sun) {
+      const intensity = 1.1 * (1 - t) + 0.6 * t;
+      this._sun.setAttribute('light', `type: directional; intensity: ${intensity}; color: #d8f6ff`);
+      this._sun.setAttribute('position', '-10 18 4');
+    }
+  },
 });
 
 AFRAME.registerComponent('light-beam-effect', {
@@ -445,23 +458,24 @@ const LICHTREICH_HTML = /* html */ `
     material="color:#93a8b1; opacity:0.18; transparent:true; shader:flat">
   </a-plane>
   
-<!-- ═══ SCHMALE GRENZMAUER ZUM FEENREICH ═══ -->
+<!-- ═══ DIAGONALE GRENZMAUER ZUM FEENREICH (SW-Diagonale) ═══ -->
+<!-- Verläuft von SW-Ecke der Kesselstadt (-28, 0, 28) nach SW-Kartenrand (-84, 0, 84). -->
+<!-- Mauer-Achse: SW-Richtung (-0.707, 0, 0.707). Kartenregel: Zonen = Dreiecke, Grenzen = Diagonalen. -->
 
-<!-- Grenzmauer: zwei Planes mit ausreichend Abstand, kein gemeinsamer Strukturblock -->
-<!-- Lichtreich-Seite (Normale zeigt in -X, sichtbar von Westen) -->
-<a-plane position="-36.5 7 40" rotation="0 -90 0" width="70" height="14"
+<!-- Lichtreich-Seite: Normale zeigt NW, sichtbar aus dem Lichtreich -->
+<a-plane position="-56.4 7 55.6" rotation="0 -135 0" width="80" height="14"
   tex="id: tex-stone; repx: 5; repy: 3"
   material="color:#5b6670; shader:flat">
 </a-plane>
-<!-- Feenreich-Seite (Normale zeigt in +X, sichtbar von Osten) -->
-<a-plane position="-35.5 7 40" rotation="0 90 0" width="70" height="14"
+<!-- Feenreich-Seite: Normale zeigt SE, sichtbar aus dem Feenreich -->
+<a-plane position="-55.6 7 56.4" rotation="0 45 0" width="80" height="14"
   tex="id: tex-feen; repx: 5; repy: 3"
   material="color:#ffffff; shader:flat">
 </a-plane>
 
-<!-- Rundbastion vorne -->
+<!-- Bastion am SW-Eck der Kesselstadt -->
 <a-cylinder
-  position="-36 8 10"
+  position="-28 8 28"
   radius="5"
   height="16"
   segments-radial="12"
@@ -469,9 +483,9 @@ const LICHTREICH_HTML = /* html */ `
   material="color:#66737d; shader:flat">
 </a-cylinder>
 
-<!-- Rundbastion hinten -->
+<!-- Bastion am SW-Kartenrand -->
 <a-cylinder
-  position="-36 8 70"
+  position="-84 8 84"
   radius="5"
   height="16"
   segments-radial="12"
@@ -479,9 +493,9 @@ const LICHTREICH_HTML = /* html */ `
   material="color:#66737d; shader:flat">
 </a-cylinder>
 
-<!-- mittlere Bastion -->
+<!-- Mittlere Bastion -->
 <a-cylinder
-  position="-40 9 40"
+  position="-56 9 56"
   radius="4"
   height="18"
   segments-radial="12"
@@ -489,19 +503,20 @@ const LICHTREICH_HTML = /* html */ `
   material="color:#5c6871; shader:flat">
 </a-cylinder>
 
-<!-- oberer Steg -->
+<!-- Oberer Steg (diagonal entlang der Mauer, rotation -45° → depth läuft SW) -->
 <a-box
-  position="-38 15 40"
+  position="-56 15 56"
+  rotation="0 -45 0"
   width="4"
   height="2"
-  depth="60"
+  depth="80"
   tex="id: tex-stone; repx: 1; repy: 1"
   material="color:#73808a; shader:flat">
 </a-box>
 
-<!-- dezente Kristalle -->
+<!-- Dezente Kristalle an Viertel- und Dreiviertel-Punkt der Mauer -->
 <a-cone
-  position="-36 18 20"
+  position="-42 18 42"
   radius-bottom="0.9"
   radius-top="0.08"
   height="4"
@@ -510,7 +525,7 @@ const LICHTREICH_HTML = /* html */ `
 </a-cone>
 
 <a-cone
-  position="-36 18 55"
+  position="-70 18 70"
   radius-bottom="0.9"
   radius-top="0.08"
   height="4"
@@ -518,27 +533,24 @@ const LICHTREICH_HTML = /* html */ `
   material="color:#cfeeff; emissive:#aee9ff; emissiveIntensity:0.12; shader:flat">
 </a-cone>
 
-  <!-- FEEN-WURZELN – wachsen von der Mauerseite in das Feenreich (+X-Richtung) -->
+  <!-- FEEN-WURZELN – wachsen von der Mauer in das Feenreich (SE-Richtung).
+       rotation="0 -45 0" dreht lokale +X auf Welt-SE (+0.707, 0, +0.707). -->
 
-  <!-- Wurzelgruppe bei z≈38 (Feenreich-Eingang) -->
-  <a-entity position="-35.6 0 38">
-    <!-- Hauptwurzel: horizontal in +X -->
+  <!-- Wurzelgruppe bei (-42, 0, 42) -->
+  <a-entity position="-42 0 42" rotation="0 -45 0">
     <a-cylinder radius="0.50" height="5.5" position="1.8 0.9 0"
       rotation="0 0 -72" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
-    <!-- Seitenwurzel links-tief -->
     <a-cylinder radius="0.38" height="4.0" position="0.8 0.5 1.4"
       rotation="0 -22 -66" segments-radial="6" material="color:#42280e; shader:flat"></a-cylinder>
-    <!-- Seitenwurzel rechts -->
     <a-cylinder radius="0.32" height="3.5" position="2.2 0.4 -1.2"
       rotation="0 18 -62" segments-radial="6" material="color:#3c240c; shader:flat"></a-cylinder>
-    <!-- Moos-Boden -->
     <a-plane position="1.5 0.02 0" rotation="-90 0 0" width="5" height="4"
       tex="id:fee-moss;repx:2;repy:1.5"
       material="color:#ffffff;shader:flat;opacity:0.80;transparent:true"></a-plane>
   </a-entity>
 
-  <!-- Wurzelgruppe bei z≈52 (Mitte der Mauer) -->
-  <a-entity position="-35.6 0 52">
+  <!-- Wurzelgruppe bei (-56, 0, 56) – Mitte der Mauer -->
+  <a-entity position="-56 0 56" rotation="0 -45 0">
     <a-cylinder radius="0.55" height="6.0" position="2.0 1.0 0"
       rotation="0 0 -70" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
     <a-cylinder radius="0.40" height="4.5" position="1.0 0.6 1.8"
@@ -552,8 +564,8 @@ const LICHTREICH_HTML = /* html */ `
       material="color:#ffffff;shader:flat;opacity:0.82;transparent:true"></a-plane>
   </a-entity>
 
-  <!-- Wurzelgruppe bei z≈67 (hinten, in Richtung tiefer Feenreich) -->
-  <a-entity position="-35.6 0 67">
+  <!-- Wurzelgruppe bei (-70, 0, 70) – tief im Übergangsbereich -->
+  <a-entity position="-70 0 70" rotation="0 -45 0">
     <a-cylinder radius="0.60" height="7.0" position="2.2 1.2 0"
       rotation="0 0 -74" segments-radial="6" material="color:#3a2010; shader:flat"></a-cylinder>
     <a-cylinder radius="0.45" height="5.0" position="1.2 0.7 2.0"
@@ -565,9 +577,83 @@ const LICHTREICH_HTML = /* html */ `
       material="color:#ffffff;shader:flat;opacity:0.78;transparent:true"></a-plane>
   </a-entity>
 
-  <!-- ═══ HAUPTFLÄCHE ═══ -->
+  <!-- ═══ DIE WURZELGRENZE ═══ -->
+  <!-- Lore: Das Feenreich kann seine Naturmagie nicht vollständig eindämmen.  -->
+  <!-- Moos, Gras und Feenpflanzen wachsen auf der Lichtreich-Seite der Mauer – -->
+  <!-- dicht an der Mauer, mit zunehmender Distanz immer schwächer werdend.    -->
+
+  <!-- Nahe Mauer (0–3 Einheiten NW) – dichtes Moos, hohe Deckkraft -->
+  <a-plane position="-35 0.02 33" rotation="-90 15 0" width="5" height="4"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#4a7a3a; opacity:0.82; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-43 0.02 41" rotation="-90 -10 0" width="6" height="4"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#3d6b2e; opacity:0.78; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-57 0.02 55" rotation="-90 5 0" width="5.5" height="4.5"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#4a7040; opacity:0.80; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-68 0.02 65" rotation="-90 -8 0" width="6" height="4"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#3e6a30; opacity:0.75; transparent:true; shader:flat">
+  </a-plane>
+
+  <!-- Mittlere Distanz (4–8 Einheiten NW) – lichteres Moos und Gras -->
+  <a-plane position="-46 0.018 38" rotation="-90 20 0" width="4" height="3.5"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#55884a; opacity:0.55; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-60 0.018 52" rotation="-90 8 0" width="4.5" height="3.5"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#4d7a40; opacity:0.52; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-71 0.018 63" rotation="-90 -5 0" width="4" height="3"
+    tex="id:fee-moss; repx:2; repy:1.5"
+    material="color:#507840; opacity:0.50; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-49 0.018 35" rotation="-90 -15 0" width="3.5" height="3"
+    tex="id:fee-grass; repx:2; repy:2"
+    material="color:#6aaa50; opacity:0.45; transparent:true; shader:flat">
+  </a-plane>
+
+  <!-- Große Distanz (9–15 Einheiten NW) – blasse Feenspuren -->
+  <a-plane position="-65 0.015 48" rotation="-90 12 0" width="3.5" height="2.5"
+    tex="id:fee-grass; repx:2; repy:2"
+    material="color:#6ab852; opacity:0.25; transparent:true; shader:flat">
+  </a-plane>
+  <a-plane position="-76 0.015 57" rotation="-90 -10 0" width="3" height="2.5"
+    tex="id:fee-grass; repx:2; repy:2"
+    material="color:#72c060; opacity:0.22; transparent:true; shader:flat">
+  </a-plane>
+
+  <!-- Feenpflanzen – zarte leuchtende Triebe nahe der Mauer -->
+  <a-cylinder position="-44 0.3 40" radius="0.08" height="0.6"
+    material="color:#3a7030; shader:flat"></a-cylinder>
+  <a-sphere position="-44 0.65 40" radius="0.22"
+    material="color:#7dd656; emissive:#3a8020; emissiveIntensity:0.15; shader:flat"></a-sphere>
+
+  <a-cylinder position="-58 0.3 54" radius="0.08" height="0.7"
+    material="color:#3a7030; shader:flat"></a-cylinder>
+  <a-sphere position="-58 0.72 54" radius="0.25"
+    material="color:#8be04a; emissive:#3a8020; emissiveIntensity:0.14; shader:flat"></a-sphere>
+
+  <a-cylinder position="-62 0.3 49" radius="0.07" height="0.5"
+    material="color:#48304a; shader:flat"></a-cylinder>
+  <a-sphere position="-62 0.58 49" radius="0.18"
+    material="color:#c44eff; emissive:#8000cc; emissiveIntensity:0.22; shader:flat"></a-sphere>
+
+  <a-cylinder position="-69 0.3 65" radius="0.09" height="0.65"
+    material="color:#3a7030; shader:flat"></a-cylinder>
+  <a-sphere position="-69 0.68 65" radius="0.22"
+    material="color:#7dd656; emissive:#3a8020; emissiveIntensity:0.12; shader:flat"></a-sphere>
+
+  <!-- ═══ HAUPTFLÄCHE Lichtreich ═══ -->
+  <!-- y=0.003 → liegt unter Feenreich-Wiese (y=0.005), sodass Feenreich-Gras -->
+  <!-- im Überlappungsbereich nahe der Diagonalmauer automatisch oben erscheint. -->
   <a-plane
-    position="-86 0.01 0"
+    position="-86 0.003 0"
     rotation="-90 0 0"
     width="106"
     height="132"

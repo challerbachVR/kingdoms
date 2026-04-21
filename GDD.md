@@ -7,7 +7,7 @@
 **Perspektive:** First Person VR  
 **Repository:** https://github.com/challerbachvr/kingdoms  
 **Live URL:** https://challerbachvr.github.io/kingdoms  
-**Status:** In Entwicklung – Kesselstadt ✅ / Feenreich ✅ (Terrain + Leben + Sounds)
+**Status:** In Entwicklung – Kesselstadt ✅ / Feenreich ✅ / Lichtreich 🔲 (Kulisse) / Mauer ✅
 
 ---
 
@@ -28,15 +28,33 @@ Jedes Reich hat eine eigene Atmosphäre, Farbpalette, Kreaturenwelt und Soundlan
 
 ## 2. Weltstruktur
 
-Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort führen vier Wege in die vier Reiche.
+Die Welt ist als **Kreuz-Dreieck-Karte** aufgebaut. Im Zentrum liegt die Kesselstadt als Quadrat (|x| ≤ 28, |z| ≤ 28). Die vier Reiche erstrecken sich als Dreiecke diagonal nach außen bis zum Kartenrand (≈ 120 Einheiten).
 
 ```
-        [ Sturmreich 🐉 ]
-               ↑
-[ Lichtreich 🌟 ] ← KESSELSTADT → [ Schattenreich 🌑 ]
-               ↓
-        [ Feenreich 🍄 ] ← AKTIV
+              [ Sturmreich 🐉 ]
+             /                 \
+            /   -z > |x|        \
+           /                     \
+[ Lichtreich ] ──[ KESSELSTADT ]──[ Schattenreich ]
+  -x > |z|  \                   /   x > |z|
+              \   z > |x|      /
+               \               /
+              [ Feenreich 🍄 ]
 ```
+
+Die **Grenzen** verlaufen diagonal (45°) von den Ecken der Kesselstadt (±28, 0, ±28) bis zum Kartenrand. Jede Grenze wird durch ein Landschaftselement markiert (z. B. Mauer zwischen Feenreich und Lichtreich).
+
+### Zonenerkennung (Kameraposition)
+
+| Zone | Bedingung |
+|------|-----------|
+| Kesselstadt | \|x\| ≤ 28 **und** \|z\| ≤ 28 |
+| Feenreich (Süd) | z > \|x\| |
+| Sturmreich (Nord) | −z > \|x\| |
+| Lichtreich (West) | −x > \|z\| |
+| Schattenreich (Ost) | x > \|z\| |
+
+Koordinatensystem: +X = Ost, −X = West, +Z = Süd, −Z = Nord.
 
 ### Übersicht der Zonen
 
@@ -44,14 +62,16 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 |------|------|------------|--------|
 | 🏙️ Kesselstadt | Steampunk-Mittelalter | Belebt, laut, geschäftig | ✅ Fertig |
 | 🍄 Feenreich | Magisch, bunt | Märchenhaft & lebendig | ✅ Terrain + Leben + Sounds |
-| 🌟 Lichtreich | Hell & kristallin | Magisch, schwebend | 🔲 Kulisse geplant |
-| 🌑 Schattenreich | Dunkel & mystisch | Nebel, Mondlicht | 🔲 Kulisse geplant |
-| 🐉 Sturmreich | Episch & dramatisch | Gewitter, Burgen | 🔲 Kulisse geplant |
+| 🌟 Lichtreich | Hell & kristallin | Magisch, schwebend | 🔲 Kulisse in Arbeit |
+| 🌑 Schattenreich | Dunkel & mystisch | Nebel, Mondlicht | 🔲 Geplant |
+| 🐉 Sturmreich | Episch & dramatisch | Gewitter, Burgen | 🔲 Geplant |
 
-### Zonenwechsel
-- Übergang Kesselstadt → Feenreich bei z > 33
-- Automatischer Himmel-, Licht- und Sound-Wechsel beim Betreten
+### Zonenwechsel & Übergänge
+- **Feenreich:** Himmels-Crossfade über 22 Einheiten ab z=28 (Kesselstadt-Tor bis tief im Feenreich). Sound/Licht-Wechsel bei 50 % des Übergangs.
+- **Lichtreich:** Himmels-Crossfade über 30 Einheiten ab der Diagonalgrenze. Licht und Nebel werden kontinuierlich interpoliert.
+- Beide Zonen nutzen eine zweite, transparente Sphäre (`#sky-overlay`, r=4800) als Overlay. Die Sphäre blendet schrittweise von Opacity 0 → 1 ein; bei voller Immersion wechselt die Hauptsphäre (`#sky-sphere`) und das Overlay verschwindet.
 - 4-Sekunden Audio-Crossfade zwischen den Zonen
+- Grenzen für Sturmreich und Schattenreich folgen demselben Diagonalprinzip
 
 ---
 
@@ -99,6 +119,12 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 - Nachts: Feuerknistern, Wind, Eulenrufe
 - Sanfter 4-Sekunden Crossfade zwischen Tag und Nacht
 
+### Tore mit Öffnungsanimation
+- **Südtor** (→ Feenreich) und **Westtor** (→ Lichtreich) besitzen je zwei Holzflügel mit Querriegel.
+- `gate-trigger`-Komponente auf der `<a-scene>` prüft jeden Frame den Abstand zur Tormitte (Radius 5.5 Einheiten).
+- Bei Annäherung öffnen beide Flügel in 1,6 s (easeInOutSine), bei Entfernung schließen sie in 1,4 s.
+- Scharniere an den Torpfosten (x ±2) — Flügel schwingen auswärts in Richtung des Zielreichs.
+
 ### Kollisionserkennung
 - AABB-Boxen für Gebäude und Mauern
 - Kreise für Türme und Brunnen
@@ -142,7 +168,37 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 ---
 
-## 5. Navigation & Steuerung
+## 5. Die Grenzmauer: Feenreich ↔ Lichtreich ✅
+
+### Lage & Aufbau
+Die Mauer verläuft **diagonal (SW-Richtung)** von der SW-Ecke der Kesselstadt (−28, 0, 28) bis zum SW-Kartenrand (−84, 0, 84). Sie folgt exakt der Zonengrenze `z = −x`.
+
+- Zwei Mauerebenen (Lichtreich-Seite: grau/Stein, Feenreich-Seite: weiß/organisch)
+- Drei Rundbastone: am Kesselstadt-Eck, in der Mitte und am Kartenrand
+- Oberer Steg (begehbar, diagonal)
+- Kristall-Ornamente auf Lichtreich-Seite
+- Feenwurzeln, die von der Feenreich-Seite in/durch die Mauer wachsen
+
+### Die Wurzelgrenze *(Narrative)*
+Das Feenreich kann seine Naturmagie nicht vollständig eindämmen. Moos, Gras und leuchtende Feenpflanzen wachsen auf der **Lichtreich-Seite** der Mauer — dicht und üppig unmittelbar an der Mauer, mit zunehmender Distanz immer blasser werdend.
+
+**Bedeutung:** Vor dem Bau der Mauer war dieser Bereich gemeinschaftliches Territorium. Die Natur "erinnert sich" und wächst trotz Mauer durch die Fugen. Das Lichtreich toleriert es — ein stiller Hinweis auf die alte Verbindung der beiden Reiche. NPCs und Questgegenstände können diese Spannung künftig aufgreifen.
+
+**Visuell:**
+- 0–3 Einheiten NW der Mauer: dichtes grünes Moos (Opacity 0.75–0.82)
+- 4–8 Einheiten NW: lichteres Moos und Grastupfen (Opacity 0.45–0.55)
+- 9–15 Einheiten NW: blasse Feenspuren (Opacity 0.22–0.28)
+- Vereinzelte leuchtende Feenpflanzen (grün + violett, mit Emissive-Glow)
+
+### Künftige Grenzmauern
+Gleiche Diagonallogik für:
+- Lichtreich ↔ Sturmreich (NW-Diagonale, von (−28,−28) nach (−84,−84))
+- Sturmreich ↔ Schattenreich (NO-Diagonale, von (28,−28) nach (84,−84))
+- Schattenreich ↔ Feenreich (SO-Diagonale, von (28,28) nach (84,84))
+
+---
+
+## 7. Navigation & Steuerung
 
 | Plattform | Bewegung | Kamera |
 |-----------|----------|--------|
@@ -152,7 +208,7 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 ---
 
-## 6. UI & Panel
+## 8. UI & Panel
 
 ### Öffnen/Schließen
 - **Quest 3:** X-Button am linken Controller
@@ -167,7 +223,7 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 ---
 
-## 7. Mixed Reality Modus (Geplant)
+## 9. Mixed Reality Modus (Geplant)
 
 > 📌 Wird nach Fertigstellung der VR-Welt eingebaut.
 
@@ -179,7 +235,7 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 ---
 
-## 8. Geschichte & Narrative (Geplant)
+## 10. Geschichte & Narrative (Geplant)
 
 > 📌 Wird nach Fertigstellung der visuellen Welt ausgearbeitet.
 
@@ -190,7 +246,7 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 ---
 
-## 9. Bekannte TODOs
+## 11. Bekannte TODOs
 
 | Priorität | Was |
 |-----------|-----|
@@ -198,7 +254,7 @@ Die Welt ist kreisförmig aufgebaut. Im Zentrum liegt die Kesselstadt. Von dort 
 
 ---
 
-## 10. Dateistruktur
+## 12. Dateistruktur
 
 ```
 kingdoms/
@@ -217,7 +273,7 @@ kingdoms/
 
 ---
 
-## 11. Entwicklungs-Roadmap
+## 13. Entwicklungs-Roadmap
 
 | Phase | Was | Status |
 |-------|-----|--------|
@@ -228,14 +284,17 @@ kingdoms/
 | 5 | Feenreich Kreaturen + Sounds | ✅ |
 | 6 | UI Panel | ✅ |
 | 7 | Kollision Feenreich | ✅ |
-| 8 | Drei Kulissen-Reiche | 🔲 |
+| 7b | Diagonale Kartenaufteilung + Grenzmauer Feenreich/Lichtreich | ✅ |
+| 7c | Wurzelgrenze Narrative (Moos/Pflanzen auf Lichtreich-Seite) | ✅ |
+| 7d | Sky-Crossfade (Overlay-Sphäre) + Torflügel mit Öffnungsanimation | ✅ |
+| 8 | Drei Kulissen-Reiche (Sturmreich, Schattenreich, Lichtreich vollständig) | 🔲 |
 | 9 | Mixed Reality Modus | 🔲 |
 | 10 | Geschichte & Narrative | 🔲 |
 | 11 | Polish & Optimierung | 🔲 |
 
 ---
 
-## 12. Technische Hinweise & Erkenntnisse
+## 14. Technische Hinweise & Erkenntnisse
 
 ### Performance-Regeln Quest 3
 - shader:flat wo möglich
@@ -251,3 +310,6 @@ kingdoms/
 - `rayOrigin: mouse` für kamera-relative UI-Panels verwenden
 - Zonenwechsel über Kamera-Weltposition prüfen, nicht Rig-Position
 - Canvas-Texturen einmalig zeichnen, per Clone wiederverwenden
+- `AFRAME.registerGeometry` mit custom `THREE.ShapeGeometry` überträgt Texturen via `tex`-Component nicht zuverlässig → `<a-plane>` mit Y-Schichtung bevorzugen
+- Bodenflächen-Y-Reihenfolge: Lichtreich 0.003 < Feenreich 0.005/0.006 < Schimmer 0.015–0.02
+- Diagonale Zonengrenze `z = −x` (SW) / `z = x` (NW) etc. — alle künftigen Grenzelemente folgen diesem 45°-Prinzip
