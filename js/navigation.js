@@ -346,7 +346,14 @@ AFRAME.registerComponent('player-collision', {
       // Tor-W  (x ≈ -28)
       { x0: -29.5, x1: -26.5, z0: -45,  z1:  -3.0 },
       { x0: -29.5, x1: -26.5, z0:  3.0,  z1:  45  },
+      // Lichtreich-Barriere (Toröffnung x=-29..−27, z=-2.5..2.5 – entfernt nach Öffnung)
+      { x0: -29,   x1: -27,   z0: -2.5,  z1:  2.5  },
     ];
+
+    this.el.addEventListener('lichtreich-unlocked', () => {
+      const i = this._boxes.findIndex(b => b.x0 === -29 && b.z0 === -2.5);
+      if (i !== -1) this._boxes.splice(i, 1);
+    }, { once: true });
   },
 
   _getTerrainHeight(px, pz) {

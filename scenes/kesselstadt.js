@@ -8,7 +8,6 @@ AFRAME.registerComponent('gate-trigger', {
     this._cam = null;
     this._camWP = new THREE.Vector3();
     this._southOpen = false;
-    this._westOpen  = false;
   },
   tick() {
     if (!this._cam) this._cam = document.getElementById('camera');
@@ -24,15 +23,7 @@ AFRAME.registerComponent('gate-trigger', {
       document.getElementById('gate-south-left')?.emit(evt);
       document.getElementById('gate-south-right')?.emit(evt);
     }
-
-    const dWest = Math.sqrt((x + 28) * (x + 28) + z * z);
-    const nearWest = dWest < 5.5;
-    if (nearWest !== this._westOpen) {
-      this._westOpen = nearWest;
-      const evt = nearWest ? 'gate-open' : 'gate-close';
-      document.getElementById('gate-west-left')?.emit(evt);
-      document.getElementById('gate-west-right')?.emit(evt);
-    }
+    // Westtor (Lichtreich) wird durch lichtreich-gate-Komponente gesteuert
   },
 });
 

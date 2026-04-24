@@ -182,7 +182,7 @@ AFRAME.registerComponent('wise-fairy', {
 
     // Frage-Text
     dlg.appendChild(_el('a-text', {
-      value: 'Möchtest du mit Feenstaub\nbestäubt werden?',
+      value: 'Moechtest du mit Feenstaub\nbestaeubt werden?',
       align: 'center', color: '#ffddff',
       width: 0.58, 'wrap-count': 28,
       position: '0 0.075 0.006',
@@ -198,7 +198,7 @@ AFRAME.registerComponent('wise-fairy', {
     // Größerer Text: hohe width, niedrige wrap-count → große Zeichen
     jaBtn.appendChild(_el('a-text', {
       value: 'Ja', align: 'center', color: '#ffccff',
-      width: 0.55, 'wrap-count': 4,
+      width: 0.15, 'wrap-count': 4,
       position: '0 0 0.004',
     }));
     jaBtn.addEventListener('click', () => this._onAnswer(true));
@@ -213,7 +213,7 @@ AFRAME.registerComponent('wise-fairy', {
     });
     neinBtn.appendChild(_el('a-text', {
       value: 'Nein', align: 'center', color: '#ccaaee',
-      width: 0.55, 'wrap-count': 6,
+      width: 0.15, 'wrap-count': 6,
       position: '0 0 0.004',
     }));
     neinBtn.addEventListener('click', () => this._onAnswer(false));

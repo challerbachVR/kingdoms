@@ -25,6 +25,7 @@ const CITY_COLLISION_BOXES = [
   { x0: -12.3, x1:  -5.7, z0:   5.2, z1:  10.8 },
   { x0:   6.5, x1:  11.5, z0:   5.8, z1:  10.2 },
   { x0:  10.8, x1:  15.5, z0:  -3.2, z1:   1.2 },
+  { x0: -16.25, x1: -11.75, z0: -4.25, z1:  0.25 }, // Uhrturm-Sockel
   { x0: -45,  x1:  -3.0, z0: -29.5, z1: -26.5 },
   { x0:  3.0, x1:  45,   z0: -29.5, z1: -26.5 },
   { x0: -45,  x1:  -3.0, z0:  26.5, z1:  29.5 },
@@ -233,9 +234,11 @@ AFRAME.registerComponent('city-life', {
     [-14, 2],[-14,-2],[-20, 0],
   ],
 
-  _pickWPs(n) {
-    const pool = [...this._WP], res = [];
+  _pickWPs(n, radius = 0.26) {
+    const pool = this._WP.filter(([x, z]) => !this._isBlocked(x, z, radius));
+    const res = [];
     for (let i = 0; i < n; i++) {
+      if (!pool.length) { res.push(res[0] || [0, 10]); continue; }
       const j = Math.floor(Math.random() * pool.length);
       res.push(pool.splice(j, 1)[0]);
     }
@@ -708,8 +711,12 @@ AFRAME.registerComponent('city-life', {
       root.appendChild(this._sph(0.009, '#080808',  0.050, 0.467, 0.158));
 
       this.el.appendChild(root);
-      const sx = (Math.random() - 0.5) * 10;
-      const sz = (Math.random() - 0.5) * 10;
+      let sx = 0, sz = 0;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        sx = (Math.random() - 0.5) * 10;
+        sz = (Math.random() - 0.5) * 10;
+        if (!this._isBlocked(sx, sz, 0.15)) break;
+      }
       root.object3D.position.set(sx, 0, sz);
       this._anim.push({ root, type: 'chicken',
         angle: Math.random() * Math.PI * 2,
@@ -1085,8 +1092,8 @@ AFRAME.registerComponent('city-life', {
     root.appendChild(tailPiv);
 
     this.el.appendChild(root);
-    const wps = this._pickWPs(6);
-    root.object3D.position.set(wps[0][0] + 1.5, 0, wps[0][1] + 1.5);
+    const wps = this._pickWPs(6, 0.22);
+    root.object3D.position.set(wps[0][0], 0, wps[0][1]);
 
     this._anim.push({
       root, wps, wpIdx: 0, type: 'dog',
