@@ -514,9 +514,11 @@ AFRAME.registerComponent('fairy-mode', {
       this._vY = Math.max(-3.0, this._vY - 2.2 * s);
     }
 
-    const pos = this._rig.object3D.position;
-    pos.y = Math.max(0.0, Math.min(30.0, pos.y + this._vY * s));
-    if (pos.y <= 0.0) this._vY = Math.max(0, this._vY);
+    const pos    = this._rig.object3D.position;
+    const pc     = this.el.components['player-collision'];
+    const floorY = pc ? pc._getTerrainHeight(pos.x, pos.z) : 0;
+    pos.y = Math.max(floorY, Math.min(30.0, pos.y + this._vY * s));
+    if (pos.y <= floorY) this._vY = Math.max(0, this._vY);
 
     // ── Flügelschlag ──
     if (this._wL && this._wL.piv.object3D) {
