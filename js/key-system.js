@@ -315,6 +315,7 @@ if (window.LICHTREICH_GATE_UNLOCKED === undefined) window.LICHTREICH_GATE_UNLOCK
 
 const GATE_POS = { x: -28, y: 0, z: 0 };
 const GATE_R   = 5.5;
+const LOCK_X   = -26.5;  // vor der Innenfläche der Stadtmauer (Wandmitte −28, Innenseite −27.2)
 
 AFRAME.registerComponent('lichtreich-gate', {
 
@@ -353,11 +354,11 @@ AFRAME.registerComponent('lichtreich-gate', {
   // ── 3D-Schloss (goldenes Glühen) ─────────────────────────────────────────
   _buildLock() {
     const root = document.createElement('a-entity');
-    root.setAttribute('position', `${GATE_POS.x} 3.2 ${GATE_POS.z}`);
+    root.setAttribute('position', `${LOCK_X} 3.2 ${GATE_POS.z}`);
     root.setAttribute('animation__rot',
       'property:rotation; to:0 360 0; dur:8000; loop:true; easing:linear');
     root.setAttribute('animation__float',
-      `property:position; to:${GATE_POS.x} 3.42 ${GATE_POS.z}; dur:1800; dir:alternate; loop:true; easing:easeInOutSine`);
+      `property:position; to:${LOCK_X} 3.42 ${GATE_POS.z}; dur:1800; dir:alternate; loop:true; easing:easeInOutSine`);
 
     const M = 'color:#ffd740;emissive:#ffaa00;emissiveIntensity:0.9;shader:flat';
 
@@ -582,7 +583,7 @@ AFRAME.registerComponent('lichtreich-gate', {
 
     // Hinweis-Panel über dem Tor, zur Kamera ausgerichtet
     if (this._near && this._hint && this._hint.object3D) {
-      this._hint.object3D.position.set(GATE_POS.x, 5.0, GATE_POS.z);
+      this._hint.object3D.position.set(LOCK_X, 5.0, GATE_POS.z);
       this._hint.object3D.rotation.y = Math.atan2(
         this._camWP.x - GATE_POS.x,
         this._camWP.z - GATE_POS.z,
