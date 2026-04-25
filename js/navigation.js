@@ -318,6 +318,14 @@ AFRAME.registerComponent('player-collision', {
       { cx: -14, cy: -6, cz:  88, r:  8 },
     ];
 
+    // ── Riesenpilz-Kappen (oblate Ellipsoid-Heightmap) ────────────────────
+    // Formel für obere Fläche: cy + b * sqrt(1 - d²/a²)
+    // Pilz 1: entity(-13,0,51), Kappe sphere(0,9,0) r=5.5 scale-y=0.44
+    //         → Ellipsoid: Zentrum world(-13,9,51), a=5.5, b=5.5×0.44=2.42
+    this._feenMushroomCaps = [
+      { cx: -13, cy: 9, cz: 51, a: 5.5, b: 2.42 },
+    ];
+
     // ── Rechteckige Hindernisse AABB { x0, x1, z0, z1 } ────────────────────
     // Koordinaten sind Weltkoordinaten der Gebäude-Außenkanten
     this._boxes = [
@@ -371,6 +379,17 @@ AFRAME.registerComponent('player-collision', {
 
       const topY = h.cy + Math.sqrt(r2 - d2);
       if (topY > y) y = topY;
+    }
+
+    // Pilzkappe: oblates Ellipsoid (obere Fläche = Standfläche für Spieler)
+    for (const m of this._feenMushroomCaps) {
+      const dx = px - m.cx;
+      const dz = pz - m.cz;
+      const d2 = dx * dx + dz * dz;
+      const a2 = m.a * m.a;
+      if (d2 >= a2) continue;
+      const capY = m.cy + m.b * Math.sqrt(1 - d2 / a2);
+      if (capY > y) y = capY;
     }
 
     return y;

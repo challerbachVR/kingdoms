@@ -11,7 +11,7 @@ if (!window.INVENTORY) window.INVENTORY = { magicKey: false };
 // Pilz 1: entity(-13,0,51), Kappe sphere(0,9,0) r=5.5 scale-y=0.44
 // Kappen-Top: 9 + 5.5×0.44 ≈ 11.42 → Schlüssel etwas darüber
 const KEY_POS = { x: -13, y: 12.0, z: 51 };
-const KEY_R   = 1.5;   // Interaktionsradius (m)
+const KEY_R   = 2.5;   // Interaktionsradius (m) – erweitert für Pickup von der Pilzkappe
 
 AFRAME.registerComponent('magic-key', {
 
