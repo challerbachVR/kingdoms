@@ -4,27 +4,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 AFRAME.registerComponent('gate-trigger', {
-  init() {
-    this._cam = null;
-    this._camWP = new THREE.Vector3();
-    this._southOpen = false;
-  },
-  tick() {
-    if (!this._cam) this._cam = document.getElementById('camera');
-    if (!this._cam) return;
-    this._cam.object3D.getWorldPosition(this._camWP);
-    const { x, z } = this._camWP;
-
-    const dSouth = Math.sqrt(x * x + (z - 28) * (z - 28));
-    const nearSouth = dSouth < 5.5;
-    if (nearSouth !== this._southOpen) {
-      this._southOpen = nearSouth;
-      const evt = nearSouth ? 'gate-open' : 'gate-close';
-      document.getElementById('gate-south-left')?.emit(evt);
-      document.getElementById('gate-south-right')?.emit(evt);
-    }
-    // Westtor (Lichtreich) wird durch lichtreich-gate-Komponente gesteuert
-  },
+  // Westtor wird durch lichtreich-gate gesteuert.
+  // Südtor wird durch quest1-gate gesteuert.
+  init() {},
+  tick() {},
 });
 
 // ─── Hundefutter-Item am Marktstand 2 (Quest 1) ──────────────────────────────
@@ -497,6 +480,191 @@ AFRAME.registerComponent('magic-signs', {
       if (s.root && s.root.parentNode) s.root.parentNode.removeChild(s.root);
       if (s.hint && s.hint.parentNode) s.hint.parentNode.removeChild(s.hint);
     });
+  },
+});
+
+// ─── Quest 1: Südtor-Mechanik ─────────────────────────────────────────────────
+// Südtor bleibt zu bis alle 3 Zeichen untersucht wurden.
+// Bei Abschluss: Zeichen aufleuchten → Feen-Partikel → Tor öffnet.
+AFRAME.registerComponent('quest1-gate', {
+
+  init() {
+    if (!window.QUEST1) window.QUEST1 = { signs: 0, dogFed: false, completed: false };
+
+    this._cam       = null;
+    this._camWP     = new THREE.Vector3();
+    this._hint      = null;
+    this._hintVis   = false;
+    this._triggered = false;
+    this._particles = [];
+    this._partLight = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+  },
+
+  _build() {
+    this._buildHint();
+    this._buildParticles();
+  },
+
+  _buildHint() {
+    const h = document.createElement('a-entity');
+    h.setAttribute('id', 'quest1-gate-hint');
+    h.setAttribute('position', '0 -200 28');
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.52');
+    frame.setAttribute('height', '0.26');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#cc8800;shader:flat;transparent:true;opacity:0.52;' +
+      'emissive:#cc8800;emissiveIntensity:0.30');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.46');
+    bg.setAttribute('height', '0.20');
+    bg.setAttribute('material',
+      'color:#0d0800;shader:flat;transparent:true;opacity:0.92');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'Finde die drei Zeichen');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ffdd88');
+    txt.setAttribute('width', '1.26');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    this._hint = h;
+  },
+
+  _buildParticles() {
+    // 8 kleine Feen-Orbs am Südtor (z≈27.5) – initial unsichtbar
+    const COLS = ['#88ffcc', '#aaffee', '#66ffbb', '#ccffee',
+                  '#88eeff', '#aaffdd', '#77ffcc', '#bbffee'];
+    const root = document.createElement('a-entity');
+    root.setAttribute('id', 'quest1-particles');
+    root.setAttribute('visible', 'false');
+
+    COLS.forEach((col, i) => {
+      const orb = document.createElement('a-sphere');
+      orb.setAttribute('radius', '0.06');
+      orb.setAttribute('segments-width', '6');
+      orb.setAttribute('segments-height', '4');
+      orb.setAttribute('material',
+        `color:${col};emissive:${col};emissiveIntensity:2.0;shader:flat;transparent:true;opacity:0.85`);
+      root.appendChild(orb);
+      this._particles.push({ el: orb, idx: i });
+    });
+
+    const pl = document.createElement('a-entity');
+    pl.setAttribute('light', 'type:point;color:#88ffcc;intensity:1.4;distance:8');
+    pl.setAttribute('position', '0 2 27.5');
+    root.appendChild(pl);
+    this._partLight = pl;
+
+    this.el.sceneEl.appendChild(root);
+    this._partRoot = root;
+  },
+
+  _openSouthGate() {
+    document.getElementById('gate-south-left')?.emit('gate-open');
+    document.getElementById('gate-south-right')?.emit('gate-open');
+  },
+
+  _triggerComplete() {
+    this._triggered = true;
+    window.QUEST1.completed = true;
+
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+
+    // 1. Alle Zeichen kurz weiß aufleuchten
+    const WHITE = 'color:#ffffff;emissive:#ffffff;emissiveIntensity:4.0;' +
+                  'shader:flat;transparent:true;opacity:1.0';
+    const PURPLE = 'color:#ccaaff;emissive:#9955ff;emissiveIntensity:3.0;' +
+                   'shader:flat;transparent:true;opacity:0.95';
+    const signIds = ['sign-brunnen', 'sign-gasthaus', 'sign-dampf'];
+    signIds.forEach(id => {
+      const sign = document.getElementById(id);
+      if (!sign) return;
+      sign.querySelectorAll('a-torus, a-box, a-sphere')
+        .forEach(el => el.setAttribute('material', WHITE));
+    });
+
+    setTimeout(() => {
+      signIds.forEach(id => {
+        const sign = document.getElementById(id);
+        if (!sign) return;
+        sign.querySelectorAll('a-torus, a-box, a-sphere')
+          .forEach(el => el.setAttribute('material', PURPLE));
+      });
+    }, 1000);
+
+    // 2. Feen-Partikel einblenden
+    if (this._partRoot) this._partRoot.setAttribute('visible', 'true');
+
+    // 3. Südtor nach kurzem Delay öffnen
+    setTimeout(() => this._openSouthGate(), 800);
+  },
+
+  tick(t) {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam) return;
+
+    const ts = t * 0.001;
+
+    // Partikel animieren (Kreis um Toreingang)
+    if (this._triggered && this._partRoot && this._partRoot.object3D.visible) {
+      this._particles.forEach(p => {
+        const angle = ts * 1.2 + (p.idx / this._particles.length) * Math.PI * 2;
+        p.el.object3D.position.set(
+          Math.cos(angle) * 1.8,
+          1.4 + Math.sin(ts * 1.8 + p.idx) * 0.6,
+          27.4 + Math.sin(angle) * 0.3,
+        );
+      });
+    }
+
+    if (this._triggered) return;
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const dx = this._camWP.x;
+    const dz = this._camWP.z - 28;
+    const d2 = dx * dx + dz * dz;
+
+    const q1done = window.QUEST1 && window.QUEST1.signs >= 3;
+
+    if (q1done) {
+      this._triggerComplete();
+      return;
+    }
+
+    // Hinweis bei < 3m, Quest nicht abgeschlossen
+    const nearGate = d2 < 9;   // 3m²
+    if (nearGate !== this._hintVis) {
+      this._hintVis = nearGate;
+      if (this._hint) this._hint.setAttribute('visible', nearGate ? 'true' : 'false');
+    }
+
+    if (this._hintVis && this._hint && this._hint.object3D) {
+      this._hint.object3D.position.set(0, 2.0, 28);
+      this._hint.object3D.rotation.y = Math.atan2(
+        this._camWP.x,
+        this._camWP.z - 28,
+      );
+    }
+  },
+
+  remove() {
+    if (this._hint && this._hint.parentNode)
+      this._hint.parentNode.removeChild(this._hint);
+    if (this._partRoot && this._partRoot.parentNode)
+      this._partRoot.parentNode.removeChild(this._partRoot);
   },
 });
 
