@@ -112,23 +112,25 @@ Koordinatensystem: +X = Ost, −X = West, +Z = Süd, −Z = Nord.
 ### Stadtleben
 - 9 NPCs mit stilisierten Figuren, 9 verschiedene Kleidungsfarben
 - Patrol-System mit 28 Wegpunkten über Marktplatz und Gassen
-- 3 Hunde, 2 Katzen, 6 Hühner, 13 Vögel in 2 Schwärmen
+- NPCs und Tiere spawnen nie in Gebäuden oder Hindernissen (gefilterter Spawn)
+- 3 Hunde (Golden Retriever), 2 Katzen, 6 Hühner, 13 Vögel in 2 Schwärmen
 
 ### Prozedurale Sounds (Web Audio API)
 - Tagsüber: Stimmengewirr, Dampfpfeifen, Zahnrad-Klingen, Schmiedehammer
 - Nachts: Feuerknistern, Wind, Eulenrufe
 - Sanfter 4-Sekunden Crossfade zwischen Tag und Nacht
 
-### Tore mit Öffnungsanimation
-- **Südtor** (→ Feenreich) und **Westtor** (→ Lichtreich) besitzen je zwei Holzflügel mit Querriegel.
-- `gate-trigger`-Komponente auf der `<a-scene>` prüft jeden Frame den Abstand zur Tormitte (Radius 5.5 Einheiten).
-- Bei Annäherung öffnen beide Flügel in 1,6 s (easeInOutSine), bei Entfernung schließen sie in 1,4 s.
-- Scharniere an den Torpfosten (x ±2) — Flügel schwingen auswärts in Richtung des Zielreichs.
+### Tore & Öffnungslogik
+- **Südtor** (→ Feenreich): öffnet sich automatisch bei Annäherung (Radius 5.5 m), schließt bei Entfernung. Zwei Holzflügel, 1.6 s öffnen / 1.4 s schließen.
+- **Westtor** (→ Lichtreich): gesperrt durch magisches Schloss + Barriere (siehe Abschnitt 6). Öffnet sich dauerhaft nach Benutzung des magischen Schlüssels.
+- **Nordtor** (→ Sturmreich) und **Osttor** (→ Schattenreich): offen, keine Mechanik bisher.
 
 ### Kollisionserkennung
-- AABB-Boxen für Gebäude und Mauern
-- Kreise für Türme und Brunnen
-- Torlücken korrekt freigelassen
+- AABB-Boxen für Gebäude, Mauern und Sonderobjekte
+- Kreise für Türme, Brunnen und runde Strukturen
+- Uhrturm-Fußabdruck als separater AABB-Eintrag (4.5 × 4.5 m, z. B. `x0:−16.25, x1:−11.75`)
+- Torlücken (Radius ≤ 3 m um Tormitte) korrekt freigelassen
+- Dynamische Kollisionsbox: Lichtreich-Barriere (x=−29..−27, z=−2.5..2.5) wird bei Tor-Öffnung entfernt
 
 ---
 
@@ -142,10 +144,19 @@ Koordinatensystem: +X = Ost, −X = West, +Z = Süd, −Z = Nord.
 
 ### Landschaft
 - Sanft hügelige Wiese mit Pastellfarben
-- 5 Hügel, 5 Riesenpilze, 10 kleine Pilze
+- 5 Hügel (kugelförmige Heightmap, teilweise versenkt)
+- 5 Riesenpilze, 10 kleine Pilze
 - 3 Riesenbäume mit Feendörfern in den Wurzeln
 - Kristallklarer Bach mit animiertem Wasser
 - 11 leuchtende Blumen
+
+### Riesenpilz 1 – Schlüsselpilz (Türkis) ✅
+- Position: (−13, 0, 51) — erster Pilz nach dem Südtor
+- Stamm: Zylinder r=0.9, Höhe 8 m
+- Kappe: oblates Ellipsoid (r=5.5, scale-y=0.44) — Spitze bei y≈11.42
+- **Begehbarkeit:** Ellipsoid-Heightmap in `_getTerrainHeight` — Spieler (als Fee) kann auf der Kappe landen und stehen
+- **Schlüssel:** schwebt bei (−13, 12, 51), goldenes Glühen, rotierend, mit 7 Glitzer-Orbs
+- **Interaktion:** Spieler muss als Fee auf der Kappe landen und E/Trigger/Touch drücken
 
 ### Prozedurale Texturen
 - `fee-grass`: Pastellgrün mit 500 Grashalmen
@@ -160,6 +171,15 @@ Koordinatensystem: +X = Ost, −X = West, +Z = Süd, −Z = Nord.
 - 3 weiße Hasen, 2 Füchse, 5 Schmetterlinge (Lissajous-Bahnen)
 - 3 halbtransparente Geistwesen mit pulsierender Opacity
 - Alle Tiere flüchten wenn Spieler zu nah kommt
+
+### Die Weise Fee (NPC) ✅
+- Erscheint im Feenreich nahe dem Eingang (~5–10 m vom Südtor)
+- Weißes Haar, lila Robe, goldene Krone, Zauberstab
+- Läuft frei zwischen 10 Wegpunkten (Schwarm-ähnliche Patrol-KI)
+- Dreht sich dem Spieler zu wenn dieser näherkommt (< 3.5 m)
+- **Dialog-Panel** erscheint bei Nähe (< 3 m): „Möchtest du mit Feenstaub bestäubt werden?"
+  - **Ja** → Feenstaub-Verwandlung
+  - **Nein** → Dialog schließt sich, Fee läuft weiter
 
 ### Prozedurale Sounds
 - Magisches Grundrauschen, Feen-Zwitschern, Bach-Plätschern
@@ -182,7 +202,7 @@ Die Mauer verläuft **diagonal (SW-Richtung)** von der SW-Ecke der Kesselstadt (
 ### Die Wurzelgrenze *(Narrative)*
 Das Feenreich kann seine Naturmagie nicht vollständig eindämmen. Moos, Gras und leuchtende Feenpflanzen wachsen auf der **Lichtreich-Seite** der Mauer — dicht und üppig unmittelbar an der Mauer, mit zunehmender Distanz immer blasser werdend.
 
-**Bedeutung:** Vor dem Bau der Mauer war dieser Bereich gemeinschaftliches Territorium. Die Natur "erinnert sich" und wächst trotz Mauer durch die Fugen. Das Lichtreich toleriert es — ein stiller Hinweis auf die alte Verbindung der beiden Reiche. NPCs und Questgegenstände können diese Spannung künftig aufgreifen.
+**Bedeutung:** Vor dem Bau der Mauer war dieser Bereich gemeinschaftliches Territorium. Die Natur "erinnert sich" und wächst trotz Mauer durch die Fugen. Das Lichtreich toleriert es — ein stiller Hinweis auf die alte Verbindung der beiden Reiche.
 
 **Visuell:**
 - 0–3 Einheiten NW der Mauer: dichtes grünes Moos (Opacity 0.75–0.82)
@@ -198,13 +218,84 @@ Gleiche Diagonallogik für:
 
 ---
 
+## 6. Story-Mechanik: Feenstaub & Lichtreich-Tor ✅
+
+### Überblick
+Eine lineare Story-Sequenz verbindet Feenreich und Lichtreich. Der Spieler muss fünf Schritte abschließen:
+
+```
+Kesselstadt → Feenreich → Weise Fee → Verwandlung → Pilz → Schlüssel → Westtor → Lichtreich
+```
+
+### Schritt 1 – Feenstaub-Verwandlung ✅
+- Spieler spricht mit der **Weisen Fee** im Feenreich (Dialog-Panel)
+- Bei Zustimmung: **Verwandlungsanimation** (2.8 s, easeInOut Scale 1.0 → 0.22)
+- Spieler wird zur Fee: Rig-Scale 0.22, **große Flügel** erscheinen (lila, transparent)
+- **Magischer Schweif** (12 Orbs im Ringpuffer) folgt der Bewegung
+- Feenmodus bleibt dauerhaft aktiv (kein Zurücksetzen)
+- Spieler bleibt nach Verwandlung im Feenreich (kein Zone-Revert trotz Skalierung)
+
+### Schritt 2 – Fliegen ✅
+Als Fee kann der Spieler vertikal fliegen:
+
+| Plattform | Steigen | Sinken |
+|-----------|---------|--------|
+| Quest 3 | B-Button (rechts) | A-Button (rechts) |
+| Desktop | Space | C |
+| Mobile | Touch-Button ↑ (rechts unten) | Touch-Button ↓ (rechts unten) |
+
+- Horizontale Bewegung: weiterhin über Thumbstick/WASD/Joystick
+- Gravitation: Fee sinkt langsam wenn kein Input, landet auf Terrain/Pilzkappe
+- Höhenbegrenzung: 0 m (Boden) bis 30 m (max. Flughöhe)
+- Terrain-Kollision gilt auch im Flugmodus: Fee landet auf Pilzkappen und Feenhügeln
+
+### Schritt 3 – Magischer Schlüssel ✅
+- **Fundort:** auf Pilz 1 (Türkis, −13, 12, 51), schwebend über der Kappenspitze
+- **Erreichbar:** als Fee auf die Kappe fliegen und landen (Ellipsoid-Heightmap trägt den Spieler)
+- **Flugsteuerung im Feenreich:** Stamm-Kollision deaktiviert wenn Fee > 1 m über Boden
+- **Hinweis-Panel** erscheint bei Nähe (< 2.5 m): „E / Trigger: Aufheben"
+- **Interaktion:** E-Taste / Trigger / Touch-Button → Schlüssel verschwindet
+
+### Schritt 4 – Inventory ✅
+- **HTML-HUD** rechts unten: `#inventory-hud` mit Slot-Icon 🗝️
+- Leerer Slot: gedimmt (opacity 0.40, matter Rahmen)
+- Schlüssel vorhanden: leuchtet auf (opacity 1.0, goldener Glow)
+- Persistent über alle Zonenwechsel der Session (`window.INVENTORY.magicKey`)
+- In VR: HUD blendet sich bei `enter-vr` aus, bei `exit-vr` wieder ein
+
+### Schritt 5 – Lichtreich-Tor öffnen ✅
+- Das **Westtor** der Kesselstadt ist dauerhaft gesperrt solange der Spieler keinen Schlüssel hat:
+  - **Sichtbares 3D-Schloss** (goldenes Glühen, schwebend + rotierend) vor der Stadtmauer-Innenseite
+  - **Magische Barriere** (blaue pulsierende Ebene) blockiert den Torweg physisch
+- Bei Annäherung **mit Schlüssel** (< 5.5 m): Hinweis-Panel „E / Trigger: Tor öffnen"
+- **Öffnungssequenz:**
+  1. Schloss und Barriere leuchten weiß auf (400 ms)
+  2. Beide verschwinden aus der Szene
+  3. Kollisionsbox der Barriere wird entfernt
+  4. Beide Torflügel öffnen sich (gate-open Animation)
+  5. Tor bleibt **dauerhaft offen** für den Rest der Session
+- `window.LICHTREICH_GATE_UNLOCKED = true` verhindert erneutes Schließen
+
+### Multi-Plattform-Interaktionen ✅
+Alle Story-Interaktionen (Schlüssel aufheben, Tor öffnen) funktionieren auf:
+- **Quest 3:** rechter Trigger (`triggerdown`)
+- **Desktop:** E-Taste (`keydown KeyE`)
+- **Mobile:** Touch-Button erscheint bei Nähe, verschwindet nach Interaktion
+
+---
+
 ## 7. Navigation & Steuerung
 
-| Plattform | Bewegung | Kamera |
-|-----------|----------|--------|
-| Quest 3 | Linker Thumbstick (Smooth) | Rechter Thumbstick (Snap 45°) |
-| Desktop | WASD | Maus |
-| Mobile | Linker Touch-Joystick | Rechter Touch-Joystick |
+| Plattform | Bewegung | Kamera | Fee steigen | Fee sinken |
+|-----------|----------|--------|-------------|------------|
+| Quest 3 | Linker Thumbstick | Rechter Thumbstick (Snap 45°) | B-Button | A-Button |
+| Desktop | WASD | Maus | Space | C |
+| Mobile | Linker Touch-Joystick | Rechter Touch-Joystick | ↑ Button | ↓ Button |
+
+### VR-Teleport
+- Linker Trigger gedrückt halten: parabolischer Zielbogen
+- Linken Trigger loslassen: teleportiert zum Zielpunkt
+- Zielt nur auf Y=0 (Bodenebene) — Spieler wird danach von Terrain-Höhe (Hügel, Pilzkappe) angehoben
 
 ---
 
@@ -220,6 +311,11 @@ Gleiche Diagonallogik für:
 - Tageszeit: Morgen / Tag / Abend / Nacht (nur Kesselstadt)
 - Sound Kesselstadt: An/Aus
 - Sound Feenreich: An/Aus
+
+### Inventory HUD
+- Festes HTML-Element rechts unten (`#inventory-hud`)
+- Slot `#inv-key-slot` zeigt 🗝️ — gedimmt wenn leer, leuchtend wenn Schlüssel vorhanden
+- Wird in VR ausgeblendet (kein 2D-Overlay in VR-Modus)
 
 ---
 
@@ -250,7 +346,9 @@ Gleiche Diagonallogik für:
 
 | Priorität | Was |
 |-----------|-----|
+| 🟠 Mittel | Lichtreich: Inhalte (Terrain, Kreaturen, Sounds) fehlen noch |
 | 🟡 Niedrig | aframe-watcher funktioniert nicht mit modularer Struktur |
+| 🟡 Niedrig | VR-Teleport trifft nur Y=0, nicht erhöhte Plattformen direkt |
 
 ---
 
@@ -258,17 +356,23 @@ Gleiche Diagonallogik für:
 
 ```
 kingdoms/
-├── index.html              (64 lines – schlanker Einstiegspunkt)
+├── index.html              (Schlanker Einstiegspunkt, ~65 Zeilen)
 ├── GDD.md                  (dieses Dokument)
 ├── js/
 │   ├── textures.js         (prozedurale Canvas-Texturen)
 │   ├── sounds.js           (Web Audio Sound-Engine)
 │   ├── daynight.js         (Tag/Nacht + Steampunk-Animationen)
-│   ├── navigation.js       (Bewegung + Kollision)
-│   └── npcs.js             (NPCs, Tiere, Vögel)
+│   ├── navigation.js       (Bewegung, Kollision, Terrain-Höhe)
+│   ├── npcs.js             (NPCs, Tiere, Vögel – mit Spawn-Kollisionsfilter)
+│   ├── feenreich-creatures.js  (Feenschwärme, Hasen, Füchse, Schmetterlinge)
+│   ├── touch-controls.js   (Mobile Touch-Joysticks)
+│   ├── ui-panel.js         (Info-Panel, Tageszeit, Sound-Toggles)
+│   ├── fairy-transform.js  (Weise Fee NPC + Feenverwandlung + Flugsteuerung)
+│   └── key-system.js       (Magischer Schlüssel + Inventory HUD + Lichtreich-Tor)
 └── scenes/
-    ├── kesselstadt.js      (Kesselstadt: HTML + UI)
-    └── feenreich.js        (Feenreich: Terrain + Kreaturen + Sounds)
+    ├── kesselstadt.js      (Kesselstadt HTML + gate-trigger)
+    ├── feenreich.js        (Feenreich Terrain + Kreaturen + Sounds)
+    └── lichtreich.js       (Lichtreich Kulisse)
 ```
 
 ---
@@ -286,11 +390,16 @@ kingdoms/
 | 7 | Kollision Feenreich | ✅ |
 | 7b | Diagonale Kartenaufteilung + Grenzmauer Feenreich/Lichtreich | ✅ |
 | 7c | Wurzelgrenze Narrative (Moos/Pflanzen auf Lichtreich-Seite) | ✅ |
-| 7d | Sky-Crossfade (Overlay-Sphäre) + Torflügel mit Öffnungsanimation | ✅ |
-| 8 | Drei Kulissen-Reiche (Sturmreich, Schattenreich, Lichtreich vollständig) | 🔲 |
-| 9 | Mixed Reality Modus | 🔲 |
-| 10 | Geschichte & Narrative | 🔲 |
-| 11 | Polish & Optimierung | 🔲 |
+| 7d | Sky-Crossfade + Torflügel mit Öffnungsanimation | ✅ |
+| 7e | Weise Fee NPC + Feenverwandlung + Flugsteuerung | ✅ |
+| 7f | Story-Mechanik: Schlüssel → Inventory → Lichtreich-Tor | ✅ |
+| 7g | Pilz-1-Kappe begehbar (Ellipsoid-Heightmap) + Fee-Landung | ✅ |
+| 7h | Multi-Plattform-Input (Quest/Desktop/Mobile) für alle Interaktionen | ✅ |
+| 8 | Lichtreich: Terrain, Kreaturen, Sounds | 🔲 |
+| 9 | Sturmreich, Schattenreich (Kulissen + Inhalte) | 🔲 |
+| 10 | Mixed Reality Modus | 🔲 |
+| 11 | Geschichte & Narrative (Dialoge, Quests) | 🔲 |
+| 12 | Polish & Optimierung | 🔲 |
 
 ---
 
@@ -304,6 +413,19 @@ kingdoms/
 - Kein setAttribute in Tick-Schleifen
 - dt auf 50ms begrenzen
 
+### Kollisionssystem
+- `player-collision` Komponente auf `<a-scene>`: prüft jeden Frame Kamera-Weltposition
+- **Kreise** (`_circles`, `_feenCircles`): radiale Ausstoßung für runde Objekte
+- **Boxen** (`_boxes`): AABB minimaler Ausstoß — dynamisch erweiterbar (z. B. Lichtreich-Barriere)
+- **Terrain-Höhe** (`_getTerrainHeight`): feenHills (versenkte Kugeln) + feenMushroomCaps (Ellipsoide)
+- Im Feenmodus (`fairy-mode` aktiv, rig.y > 1 m): `_feenCircles` werden übersprungen → freies Fliegen
+
+### Feenverwandlung – Technische Details
+- Rig-Scale wird über 2.8 s von 1.0 auf 0.22 interpoliert (easeInOut)
+- Während Skalierung: Kamera-Weltposition bleibt konstant (Rig-XZ wird nachgeführt)
+- `player-collision` übernimmt Y-Kontrolle im Normalmodus; `fairy-mode` übernimmt Y im Feenmodus
+- `fairy-mode` ruft `player-collision._getTerrainHeight()` auf als Bodenlimit
+
 ### Wichtige Erkenntnisse
 - Scripts im `<head>` nie direkt `document.body` ansprechen – in A-Frame `init()` initialisieren
 - aframe-watcher funktioniert nur mit einzelner index.html
@@ -313,3 +435,4 @@ kingdoms/
 - `AFRAME.registerGeometry` mit custom `THREE.ShapeGeometry` überträgt Texturen via `tex`-Component nicht zuverlässig → `<a-plane>` mit Y-Schichtung bevorzugen
 - Bodenflächen-Y-Reihenfolge: Lichtreich 0.003 < Feenreich 0.005/0.006 < Schimmer 0.015–0.02
 - Diagonale Zonengrenze `z = −x` (SW) / `z = x` (NW) etc. — alle künftigen Grenzelemente folgen diesem 45°-Prinzip
+- Oblates Ellipsoid für Pilzkappe: `capY = cy + b × √(1 − d²/a²)` — einfach in `_getTerrainHeight` integrierbar
