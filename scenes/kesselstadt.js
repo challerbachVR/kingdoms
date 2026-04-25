@@ -27,6 +27,218 @@ AFRAME.registerComponent('gate-trigger', {
   },
 });
 
+// ─── Hundefutter-Item am Marktstand 2 (Quest 1) ──────────────────────────────
+// Knochen auf Tisch von Marktstand 2: world (4.2, 1.08, -4.5)
+AFRAME.registerComponent('dog-food-item', {
+
+  init() {
+    if (!window.INVENTORY) window.INVENTORY = {};
+    if (window.INVENTORY.dogFood === undefined) window.INVENTORY.dogFood = false;
+
+    this._cam      = null;
+    this._camWP    = new THREE.Vector3();
+    this._picked   = false;
+    this._near     = false;
+    this._root     = null;
+    this._hint     = null;
+    this._touchBtn = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE') this._tryPickup();
+    });
+
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => this._tryPickup());
+    }, { once: true });
+  },
+
+  _build() {
+    this._buildBone();
+    this._buildHint();
+    this._buildTouchBtn();
+    this._addHUDSlot();
+  },
+
+  _buildBone() {
+    const M = 'color:#e8dcc8;emissive:#ffe090;emissiveIntensity:0.5;shader:flat';
+    const root = document.createElement('a-entity');
+    root.setAttribute('id', 'dog-food-bone');
+    root.setAttribute('position', '4.2 1.08 -4.5');
+    root.setAttribute('rotation', '30 0 20');
+
+    // Shaft
+    const shaft = document.createElement('a-cylinder');
+    shaft.setAttribute('radius', '0.018');
+    shaft.setAttribute('height', '0.14');
+    shaft.setAttribute('segments-radial', '6');
+    shaft.setAttribute('material', M);
+    root.appendChild(shaft);
+
+    // Top knob
+    const kTop = document.createElement('a-sphere');
+    kTop.setAttribute('radius', '0.030');
+    kTop.setAttribute('segments-width', '6');
+    kTop.setAttribute('segments-height', '4');
+    kTop.setAttribute('position', '0 0.082 0');
+    kTop.setAttribute('material', M);
+    root.appendChild(kTop);
+
+    // Bottom knob
+    const kBot = document.createElement('a-sphere');
+    kBot.setAttribute('radius', '0.030');
+    kBot.setAttribute('segments-width', '6');
+    kBot.setAttribute('segments-height', '4');
+    kBot.setAttribute('position', '0 -0.082 0');
+    kBot.setAttribute('material', M);
+    root.appendChild(kBot);
+
+    // Warm glow
+    const gl = document.createElement('a-entity');
+    gl.setAttribute('light', 'type:point;color:#ffe0a0;intensity:0.35;distance:3');
+    root.appendChild(gl);
+
+    this.el.sceneEl.appendChild(root);
+    this._root = root;
+  },
+
+  _buildHint() {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', '4.2 -200 -4.5');
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.12');
+    frame.setAttribute('height', '0.24');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#c8a060;shader:flat;transparent:true;opacity:0.48;' +
+      'emissive:#c8a060;emissiveIntensity:0.32');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.06');
+    bg.setAttribute('height', '0.18');
+    bg.setAttribute('material',
+      'color:#100800;shader:flat;transparent:true;opacity:0.92');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'E / Trigger: Aufheben');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ffe8b0');
+    txt.setAttribute('width', '0.92');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    this._hint = h;
+  },
+
+  _buildTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+    if (document.getElementById('food-touch-btn')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #food-touch-btn {
+        position: fixed; bottom: 200px; left: 50%;
+        transform: translateX(-50%);
+        background: rgba(200,160,80,0.90); color: #1a0800;
+        border: none; border-radius: 30px;
+        padding: 12px 30px; font-size: 17px;
+        font-family: sans-serif; font-weight: bold;
+        display: none; z-index: 10001; touch-action: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const btn = document.createElement('button');
+    btn.id = 'food-touch-btn';
+    btn.textContent = 'Aufheben';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      this._tryPickup();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  _addHUDSlot() {
+    if (document.getElementById('inv-food-slot')) return;
+    const hud = document.getElementById('inventory-hud');
+    if (!hud) { setTimeout(() => this._addHUDSlot(), 150); return; }
+    const slot = document.createElement('div');
+    slot.id = 'inv-food-slot';
+    slot.className = 'inv-slot';
+    slot.textContent = '🦴';
+    hud.appendChild(slot);
+  },
+
+  _tryPickup() {
+    if (this._picked || !this._near) return;
+    this._picked = true;
+
+    window.INVENTORY.dogFood = true;
+
+    if (this._root && this._root.parentNode)
+      this._root.parentNode.removeChild(this._root);
+    this._root = null;
+
+    this._near = false;
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._touchBtn) this._touchBtn.style.display = 'none';
+
+    const slot = document.getElementById('inv-food-slot');
+    if (slot) slot.classList.add('has-item');
+  },
+
+  tick(t) {
+    if (this._picked) return;
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam || !this._root) return;
+
+    const ts = t * 0.001;
+
+    if (this._root.object3D) {
+      this._root.object3D.position.y = 1.08 + Math.sin(ts * 1.6) * 0.05;
+      this._root.object3D.rotation.y = ts * 0.8;
+    }
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const dx   = this._camWP.x - 4.2;
+    const dz   = this._camWP.z + 4.5;
+    const near = (dx * dx + dz * dz) < 2.25;   // 1.5m radius
+
+    if (near !== this._near) {
+      this._near = near;
+      if (this._hint) this._hint.setAttribute('visible', near ? 'true' : 'false');
+      if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
+    }
+
+    if (this._near && this._hint && this._hint.object3D) {
+      const iy = this._root ? this._root.object3D.position.y + 0.28 : 1.36;
+      this._hint.object3D.position.set(4.2, iy, -4.5);
+      this._hint.object3D.rotation.y = Math.atan2(
+        this._camWP.x - 4.2,
+        this._camWP.z + 4.5,
+      );
+    }
+  },
+
+  remove() {
+    if (this._root && this._root.parentNode)
+      this._root.parentNode.removeChild(this._root);
+    if (this._hint && this._hint.parentNode)
+      this._hint.parentNode.removeChild(this._hint);
+  },
+});
+
 AFRAME.registerComponent('kesselstadt-scene', {
   init() {
     // Szene-HTML einmalig einfügen, sobald A-Frame bereit ist
