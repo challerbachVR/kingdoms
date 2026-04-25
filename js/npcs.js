@@ -47,10 +47,12 @@ const CAT_LEDGES = [
 AFRAME.registerComponent('city-life', {
 
   init() {
-    this._npcs  = [];
-    this._anim  = [];
-    this._birds = [];
-    this._built = false;
+    this._npcs      = [];
+    this._anim      = [];
+    this._birds     = [];
+    this._built     = false;
+    this._playerCam = null;
+    this._tmpV3     = null;
     const sc = this.el.sceneEl;
     if (sc.hasLoaded) this._build();
     else sc.addEventListener('loaded', () => this._build(), { once: true });
@@ -70,7 +72,9 @@ AFRAME.registerComponent('city-life', {
   },
 
   _build() {
-    this._built = true;
+    this._built     = true;
+    this._playerCam = document.getElementById('camera');
+    this._tmpV3     = new THREE.Vector3();
     this._initNpcTextures();
     this._mkNPCs();
     this._mkAnimals();
@@ -753,6 +757,25 @@ AFRAME.registerComponent('city-life', {
       return;
     }
 
+    if (a.special && this._playerCam && this._tmpV3) {
+      this._playerCam.object3D.getWorldPosition(this._tmpV3);
+      const rx = this._tmpV3.x - p.x, rz = this._tmpV3.z - p.z;
+      if (rx * rx + rz * rz < 16) {
+        const dist = Math.sqrt(rx * rx + rz * rz) || 1;
+        const spd  = 2.2 * dt;
+        const nx   = p.x - rx / dist * spd;
+        const nz   = p.z - rz / dist * spd;
+        if (!this._isBlocked(nx, nz, a.radius)) { p.x = nx; p.z = nz; }
+        const ra = Math.atan2(-rx, -rz);
+        let da   = ra - a.angle;
+        if (da >  Math.PI) da -= Math.PI * 2;
+        if (da < -Math.PI) da += Math.PI * 2;
+        a.angle += da * Math.min(1, dt * 5);
+        a.root.object3D.rotation.y = a.angle;
+        return;
+      }
+    }
+
     const [tx, tz] = a.wps[a.wpIdx];
     const dx = tx - p.x, dz = tz - p.z;
     const d  = Math.sqrt(dx * dx + dz * dz);
@@ -1057,8 +1080,15 @@ AFRAME.registerComponent('city-life', {
     // Nase
     headPiv.appendChild(this._sph(0.023, dark, 0, 0.031, 0.180));
     // Augen
-    headPiv.appendChild(this._sph(0.019, dark, -0.059, 0.087, 0.100));
-    headPiv.appendChild(this._sph(0.019, dark,  0.059, 0.087, 0.100));
+    const mkGoldEye = (px, py, pz) => {
+      const e = document.createElement('a-sphere');
+      e.setAttribute('radius', 0.019);
+      e.setAttribute('position', `${px} ${py} ${pz}`);
+      e.setAttribute('material', 'color:#FFD700;emissive:#FFD700;emissiveIntensity:1.5');
+      return e;
+    };
+    headPiv.appendChild(mkGoldEye(-0.059, 0.087, 0.100));
+    headPiv.appendChild(mkGoldEye( 0.059, 0.087, 0.100));
     headPiv.appendChild(this._sph(0.008, '#fff', -0.053, 0.093, 0.109));
     headPiv.appendChild(this._sph(0.008, '#fff',  0.053, 0.093, 0.109));
 
@@ -1091,6 +1121,7 @@ AFRAME.registerComponent('city-life', {
     tailPiv.appendChild(this._box(0.038, 0.034, 0.145, c, 0, 0.010, 0.248));
     root.appendChild(tailPiv);
 
+    root.setAttribute('id', 'dog-special');
     this.el.appendChild(root);
     const wps = this._pickWPs(6, 0.22);
     root.object3D.position.set(wps[0][0], 0, wps[0][1]);
@@ -1104,6 +1135,7 @@ AFRAME.registerComponent('city-life', {
       phase: Math.random() * Math.PI * 2,
       wait:  Math.random() * 2,
       radius: 0.22, stuck: 0,
+      special: true,
     });
   },
 
