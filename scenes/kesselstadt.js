@@ -239,6 +239,267 @@ AFRAME.registerComponent('dog-food-item', {
   },
 });
 
+// ─── Magische Zeichen (Quest 1) ───────────────────────────────────────────────
+// Drei Runen: Brunnen, Gasthaus-Vordach, Dampfmaschinen-Zahnrad.
+// Bleiben unsichtbar bis window.INVENTORY.dogFood = true.
+AFRAME.registerComponent('magic-signs', {
+
+  _DEFS: [
+    // x,y,z = Weltposition des Zeichens; ry = Y-Rotation; hy = Hint-Höhe
+    { id: 'sign-brunnen', x:  0.00, y: 0.62, z:  1.90, ry:   0, hy: 1.20 },
+    { id: 'sign-gasthaus',x: -9.00, y: 5.20, z: 11.58, ry:   0, hy: 3.00 },
+    { id: 'sign-dampf',   x: 14.65, y: 1.50, z: -2.00, ry:  90, hy: 2.20 },
+  ],
+
+  init() {
+    if (!window.QUEST1) window.QUEST1 = { signs: 0 };
+
+    this._cam      = null;
+    this._camWP    = new THREE.Vector3();
+    this._signs    = [];       // { root, hint, done }
+    this._revealed = false;
+    this._nearIdx  = -1;
+    this._touchBtn = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && this._nearIdx >= 0) this._tryInspect(this._nearIdx);
+    });
+
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => {
+        if (this._nearIdx >= 0) this._tryInspect(this._nearIdx);
+      });
+    }, { once: true });
+  },
+
+  _build() {
+    this._DEFS.forEach(def => {
+      this._signs.push({ root: this._mkSign(def), hint: this._mkHint(def), done: false });
+    });
+    this._mkTouchBtn();
+    this._addHUDSlot();
+  },
+
+  _mkSign(def) {
+    const M0   = 'color:#8844ff;emissive:#6622ee;emissiveIntensity:1.2;' +
+                 'shader:flat;transparent:true;opacity:0';
+    const ANIM = 'property:material.opacity; from:0; to:0.72; dur:2000; ' +
+                 'easing:easeInSine; startEvents:sign-reveal; autoplay:false';
+
+    const root = document.createElement('a-entity');
+    root.setAttribute('id', def.id);
+    root.setAttribute('position', `${def.x} ${def.y} ${def.z}`);
+    root.setAttribute('rotation', `0 ${def.ry} 0`);
+    root.setAttribute('visible', 'false');
+
+    // Äußerer Ring
+    const ring = document.createElement('a-torus');
+    ring.setAttribute('radius', '0.115');
+    ring.setAttribute('radius-tubular', '0.010');
+    ring.setAttribute('segments-tubular', '20');
+    ring.setAttribute('segments-radial', '12');
+    ring.setAttribute('material', M0);
+    ring.setAttribute('animation__reveal', ANIM);
+    root.appendChild(ring);
+
+    // Drei Rune-Striche (je 60° versetzt)
+    [0, 60, 120].forEach(angle => {
+      const stroke = document.createElement('a-box');
+      stroke.setAttribute('width',  '0.012');
+      stroke.setAttribute('height', '0.175');
+      stroke.setAttribute('depth',  '0.006');
+      stroke.setAttribute('rotation', `0 0 ${angle}`);
+      stroke.setAttribute('material', M0);
+      stroke.setAttribute('animation__reveal', ANIM);
+      root.appendChild(stroke);
+    });
+
+    // Mittelpunkt
+    const dot = document.createElement('a-sphere');
+    dot.setAttribute('radius', '0.016');
+    dot.setAttribute('segments-width',  '6');
+    dot.setAttribute('segments-height', '4');
+    dot.setAttribute('material', M0);
+    dot.setAttribute('animation__reveal', ANIM);
+    root.appendChild(dot);
+
+    this.el.sceneEl.appendChild(root);
+    return root;
+  },
+
+  _mkHint(def) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', `${def.x} -200 ${def.z}`);
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.28');
+    frame.setAttribute('height', '0.24');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#8844ff;shader:flat;transparent:true;opacity:0.48;' +
+      'emissive:#8844ff;emissiveIntensity:0.32');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.22');
+    bg.setAttribute('height', '0.18');
+    bg.setAttribute('material',
+      'color:#080010;shader:flat;transparent:true;opacity:0.92');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'E / Trigger: Untersuchen');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ddaaff');
+    txt.setAttribute('width', '1.04');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _mkTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch || document.getElementById('sign-touch-btn')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #sign-touch-btn {
+        position: fixed; bottom: 200px; left: 50%;
+        transform: translateX(-50%);
+        background: rgba(136,68,255,0.90); color: #fff;
+        border: none; border-radius: 30px;
+        padding: 12px 30px; font-size: 17px;
+        font-family: sans-serif; font-weight: bold;
+        display: none; z-index: 10001; touch-action: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const btn = document.createElement('button');
+    btn.id = 'sign-touch-btn';
+    btn.textContent = 'Untersuchen';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (this._nearIdx >= 0) this._tryInspect(this._nearIdx);
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  _addHUDSlot() {
+    if (document.getElementById('inv-signs-slot')) return;
+    const hud = document.getElementById('inventory-hud');
+    if (!hud) { setTimeout(() => this._addHUDSlot(), 150); return; }
+
+    const slot = document.createElement('div');
+    slot.id    = 'inv-signs-slot';
+    slot.className = 'inv-slot';
+    slot.textContent = '✦ 0/3';
+    slot.style.fontSize = '13px';
+    slot.style.minWidth = '56px';
+    slot.style.padding  = '0 6px';
+    hud.appendChild(slot);
+  },
+
+  _tryInspect(idx) {
+    const s = this._signs[idx];
+    if (!s || s.done) return;
+    s.done = true;
+
+    window.QUEST1.signs = Math.min(3, (window.QUEST1.signs || 0) + 1);
+
+    // Zeichen hell aufleuchten (einmalig – kein tick-setAttribute)
+    const BRIGHT = 'color:#ccaaff;emissive:#9955ff;emissiveIntensity:3.0;' +
+                   'shader:flat;transparent:true;opacity:0.95';
+    s.root.querySelectorAll('a-torus, a-box, a-sphere')
+      .forEach(el => el.setAttribute('material', BRIGHT));
+
+    if (s.hint) s.hint.setAttribute('visible', 'false');
+    if (this._nearIdx === idx) {
+      this._nearIdx = -1;
+      if (this._touchBtn) this._touchBtn.style.display = 'none';
+    }
+    this._updateHUD();
+  },
+
+  _updateHUD() {
+    const slot = document.getElementById('inv-signs-slot');
+    if (!slot) return;
+    const n = window.QUEST1 ? (window.QUEST1.signs || 0) : 0;
+    slot.textContent = `✦ ${n}/3`;
+    if (n > 0) slot.classList.add('has-item');
+  },
+
+  tick() {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam) return;
+
+    // Einmalige Enthüllung sobald Futter aufgehoben
+    if (!this._revealed && window.INVENTORY && window.INVENTORY.dogFood) {
+      this._revealed = true;
+      this._signs.forEach(s => {
+        if (s.done) return;
+        s.root.setAttribute('visible', 'true');
+        s.root.querySelectorAll('a-torus, a-box, a-sphere')
+          .forEach(el => el.emit('sign-reveal'));
+      });
+    }
+
+    if (!this._revealed) return;
+
+    // Nächstes unberührtes Zeichen innerhalb 2m XZ suchen
+    this._cam.object3D.getWorldPosition(this._camWP);
+    let newNear = -1;
+    let bestD2  = 4.0;  // 2m²
+
+    this._DEFS.forEach((def, i) => {
+      if (this._signs[i].done) return;
+      const dx = this._camWP.x - def.x;
+      const dz = this._camWP.z - def.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 < bestD2) { bestD2 = d2; newNear = i; }
+    });
+
+    if (newNear !== this._nearIdx) {
+      if (this._nearIdx >= 0 && this._signs[this._nearIdx])
+        this._signs[this._nearIdx].hint.setAttribute('visible', 'false');
+      this._nearIdx = newNear;
+      if (newNear >= 0)
+        this._signs[newNear].hint.setAttribute('visible', 'true');
+      if (this._touchBtn)
+        this._touchBtn.style.display = newNear >= 0 ? 'block' : 'none';
+    }
+
+    // Aktives Hinweis-Panel kamerazugewandt positionieren
+    if (this._nearIdx >= 0) {
+      const def = this._DEFS[this._nearIdx];
+      const h   = this._signs[this._nearIdx].hint;
+      if (h && h.object3D) {
+        h.object3D.position.set(def.x, def.hy, def.z);
+        h.object3D.rotation.y = Math.atan2(
+          this._camWP.x - def.x,
+          this._camWP.z - def.z,
+        );
+      }
+    }
+  },
+
+  remove() {
+    this._signs.forEach(s => {
+      if (s.root && s.root.parentNode) s.root.parentNode.removeChild(s.root);
+      if (s.hint && s.hint.parentNode) s.hint.parentNode.removeChild(s.hint);
+    });
+  },
+});
+
 AFRAME.registerComponent('kesselstadt-scene', {
   init() {
     // Szene-HTML einmalig einfügen, sobald A-Frame bereit ist
