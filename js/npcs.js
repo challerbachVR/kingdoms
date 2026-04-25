@@ -47,15 +47,23 @@ const CAT_LEDGES = [
 AFRAME.registerComponent('city-life', {
 
   init() {
-    this._npcs      = [];
-    this._anim      = [];
-    this._birds     = [];
-    this._built     = false;
-    this._playerCam = null;
-    this._tmpV3     = null;
+    this._npcs         = [];
+    this._anim         = [];
+    this._birds        = [];
+    this._built        = false;
+    this._playerCam    = null;
+    this._tmpV3        = null;
+    this._feedHint     = null;
+    this._feedTouchBtn = null;
+    this._feedNear     = false;
+
     const sc = this.el.sceneEl;
     if (sc.hasLoaded) this._build();
     else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && this._feedNear) this._triggerFeed();
+    });
   },
 
   remove() {
@@ -79,6 +87,12 @@ AFRAME.registerComponent('city-life', {
     this._mkNPCs();
     this._mkAnimals();
     this._mkBirds();
+    this._buildFeedInteraction();
+
+    const rh = document.getElementById('rightHand');
+    if (rh) rh.addEventListener('triggerdown', () => {
+      if (this._feedNear) this._triggerFeed();
+    });
   },
 
   /* ── NPC-Canvas-Texturen ────────────────────────────────────────────── */
@@ -225,6 +239,13 @@ AFRAME.registerComponent('city-life', {
     el.setAttribute('tex', `id:${id}; repx:${repx}; repy:${repy}`);
     return el;
   },
+
+  /* ── Zeichen-Wegpunkte für den geführten Hund (Quest 1) ────────────── */
+  _SIGN_WPS: [
+    [ 0.0,  2.7],   // Vor dem Brunnen (Zeichen 1)
+    [-9.0, 12.0],   // Vor dem Gasthaus-Vordach (Zeichen 2)
+    [13.5, -3.5],   // Vor der Dampfmaschine (Zeichen 3)
+  ],
 
   /* ── Waypoints ──────────────────────────────────────────────────────── */
   _WP: [
@@ -757,22 +778,112 @@ AFRAME.registerComponent('city-life', {
       return;
     }
 
-    if (a.special && this._playerCam && this._tmpV3) {
-      this._playerCam.object3D.getWorldPosition(this._tmpV3);
-      const rx = this._tmpV3.x - p.x, rz = this._tmpV3.z - p.z;
-      if (rx * rx + rz * rz < 16) {
-        const dist = Math.sqrt(rx * rx + rz * rz) || 1;
-        const spd  = 2.2 * dt;
-        const nx   = p.x - rx / dist * spd;
-        const nz   = p.z - rz / dist * spd;
-        if (!this._isBlocked(nx, nz, a.radius)) { p.x = nx; p.z = nz; }
-        const ra = Math.atan2(-rx, -rz);
-        let da   = ra - a.angle;
-        if (da >  Math.PI) da -= Math.PI * 2;
-        if (da < -Math.PI) da += Math.PI * 2;
-        a.angle += da * Math.min(1, dt * 5);
-        a.root.object3D.rotation.y = a.angle;
+    if (a.special) {
+      // ── Fress-Animation ────────────────────────────────────────────────
+      if (a.feeding) {
+        a.feedTimer -= dt;
+        if (a.headPiv && a.headPiv.object3D)
+          a.headPiv.object3D.rotation.x =
+            Math.sin((1 - a.feedTimer / 1.5) * Math.PI) * 0.55;
+        if (a.tailPiv && a.tailPiv.object3D)
+          a.tailPiv.object3D.rotation.z = Math.sin(t * 0.025 + a.phase) * 0.90;
+        if (a.feedTimer <= 0) {
+          a.feeding = false;
+          a.fed     = true;
+          window.INVENTORY.dogFood = false;
+          if (!window.QUEST1) window.QUEST1 = {};
+          window.QUEST1.dogFed = true;
+          const foodSlot = document.getElementById('inv-food-slot');
+          if (foodSlot) foodSlot.classList.remove('has-item');
+          if (a.headPiv && a.headPiv.object3D) a.headPiv.object3D.rotation.x = 0;
+        }
         return;
+      }
+
+      if (this._playerCam && this._tmpV3) {
+        this._playerCam.object3D.getWorldPosition(this._tmpV3);
+        const rx    = this._tmpV3.x - p.x, rz = this._tmpV3.z - p.z;
+        const dist2 = rx * rx + rz * rz;
+
+        // ── Geführte Patrol zu den Zeichen ────────────────────────────────
+        if (a.fed) {
+          const fc = window.QUEST1 ? (window.QUEST1.signs || 0) : 0;
+          while (a.signWpIdx < 3 && a.signWpIdx < fc) a.signWpIdx++;
+
+          if (a.signWpIdx < 3) {
+            if (a.ledWait > 0) {
+              a.ledWait -= dt;
+              if (a.headPiv && a.headPiv.object3D)
+                a.headPiv.object3D.rotation.z = Math.sin(t * 0.003 + a.phase) * 0.18;
+              if (a.tailPiv && a.tailPiv.object3D)
+                a.tailPiv.object3D.rotation.z = Math.sin(t * 0.012 + a.phase) * 0.60;
+              return;
+            }
+
+            const [tx, tz] = this._SIGN_WPS[a.signWpIdx];
+            const ddx = tx - p.x, ddz = tz - p.z;
+            const dd  = Math.sqrt(ddx * ddx + ddz * ddz);
+
+            if (dd < 1.5) {
+              a.signWpIdx++;
+              a.ledWait = 3.0 + Math.random() * 2.0;
+              return;
+            }
+
+            const ledSpd = a.speed * 0.75 * dt;
+            const move   = this._tryStep(a, tx, tz, ledSpd);
+            p.y = Math.sin(t * 0.010 + a.phase) * 0.03;
+
+            if (!move.moved) { a.stuck += dt; } else { a.stuck = 0; }
+            if (a.stuck > 0.8) { a.stuck = 0; a.signWpIdx++; return; }
+
+            if (a.legFL && a.legFL.object3D) {
+              const sw = Math.sin(t * 0.015 * a.speed + a.phase) * 0.55;
+              a.legFL.object3D.rotation.x =  sw; a.legFR.object3D.rotation.x = -sw;
+              a.legRL.object3D.rotation.x = -sw; a.legRR.object3D.rotation.x =  sw;
+            }
+            if (a.tailPiv && a.tailPiv.object3D)
+              a.tailPiv.object3D.rotation.z = Math.sin(t * 0.018 * a.speed + a.phase) * 0.55;
+
+            const ta = move.moved ? move.heading : Math.atan2(ddx, ddz);
+            let da   = ta - a.angle;
+            if (da >  Math.PI) da -= Math.PI * 2;
+            if (da < -Math.PI) da += Math.PI * 2;
+            a.angle += da * Math.min(1, dt * 6);
+            a.root.object3D.rotation.y = a.angle;
+            return;
+          }
+          // signWpIdx >= 3: alle Zeichen gefunden → normale Patrol
+        }
+
+        // ── Fütterungs-Hinweis ────────────────────────────────────────────
+        const hasFoodNear = !!(window.INVENTORY && window.INVENTORY.dogFood) && dist2 < 9;
+        if (hasFoodNear !== this._feedNear) {
+          this._feedNear = hasFoodNear;
+          if (this._feedHint) this._feedHint.setAttribute('visible', hasFoodNear ? 'true' : 'false');
+          if (this._feedTouchBtn) this._feedTouchBtn.style.display = hasFoodNear ? 'block' : 'none';
+        }
+        if (this._feedNear && this._feedHint && this._feedHint.object3D) {
+          this._feedHint.object3D.position.set(p.x, p.y + 1.0, p.z);
+          this._feedHint.object3D.rotation.y = Math.atan2(rx, rz);
+        }
+        if (hasFoodNear) return;  // nicht zurückweichen wenn Spieler Futter hat
+
+        // ── Rückzug ───────────────────────────────────────────────────────
+        if (dist2 < 16) {
+          const dist = Math.sqrt(dist2) || 1;
+          const spd  = 2.2 * dt;
+          const nx   = p.x - rx / dist * spd;
+          const nz   = p.z - rz / dist * spd;
+          if (!this._isBlocked(nx, nz, a.radius)) { p.x = nx; p.z = nz; }
+          const ra = Math.atan2(-rx, -rz);
+          let da   = ra - a.angle;
+          if (da >  Math.PI) da -= Math.PI * 2;
+          if (da < -Math.PI) da += Math.PI * 2;
+          a.angle += da * Math.min(1, dt * 5);
+          a.root.object3D.rotation.y = a.angle;
+          return;
+        }
       }
     }
 
@@ -819,6 +930,69 @@ AFRAME.registerComponent('city-life', {
     if (da < -Math.PI) da += Math.PI * 2;
     a.angle += da * Math.min(1, dt * 6);
     a.root.object3D.rotation.y = a.angle;
+  },
+
+  _buildFeedInteraction() {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', '0 -200 0');
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.10');
+    frame.setAttribute('height', '0.24');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#c8a060;shader:flat;transparent:true;opacity:0.48;' +
+      'emissive:#c8a060;emissiveIntensity:0.32');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.04');
+    bg.setAttribute('height', '0.18');
+    bg.setAttribute('material',
+      'color:#100800;shader:flat;transparent:true;opacity:0.92');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'E / Trigger: Füttern');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ffe8b0');
+    txt.setAttribute('width', '0.90');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    this._feedHint = h;
+
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'feed-touch-btn';
+    btn.style.cssText =
+      'position:fixed;bottom:200px;left:50%;transform:translateX(-50%);' +
+      'background:rgba(200,160,80,0.90);color:#1a0800;border:none;' +
+      'border-radius:30px;padding:12px 30px;font-size:17px;' +
+      'font-family:sans-serif;font-weight:bold;' +
+      'display:none;z-index:10001;touch-action:none;';
+    btn.textContent = 'Füttern';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      this._triggerFeed();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._feedTouchBtn = btn;
+  },
+
+  _triggerFeed() {
+    if (!this._feedNear) return;
+    const a = this._anim.find(x => x.special && !x.fed && !x.feeding);
+    if (!a) return;
+    a.feeding   = true;
+    a.feedTimer = 1.5;
+    this._feedNear = false;
+    if (this._feedHint) this._feedHint.setAttribute('visible', 'false');
+    if (this._feedTouchBtn) this._feedTouchBtn.style.display = 'none';
   },
 
   _tickCat(a, t, dt) {
@@ -1136,6 +1310,8 @@ AFRAME.registerComponent('city-life', {
       wait:  Math.random() * 2,
       radius: 0.22, stuck: 0,
       special: true,
+      fed: false, feeding: false, feedTimer: 0,
+      signWpIdx: 0, ledWait: 0,
     });
   },
 
