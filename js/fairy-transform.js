@@ -371,6 +371,8 @@ AFRAME.registerComponent('fairy-mode', {
     this._tmpWP        = new THREE.Vector3();
     this._transforming = false;
     this._transformT   = 0;
+    this._riseBtn      = null;
+    this._sinkBtn      = null;
 
     this.el.sceneEl.addEventListener('fairy-transform', () => {
       this.el.setAttribute('fairy-mode', 'active', true);
@@ -399,6 +401,7 @@ AFRAME.registerComponent('fairy-mode', {
     this._buildWings();
     this._buildTrail();
     this._bindControls();
+    this._buildMobileFlightBtns();
   },
 
   // ── Flügel am Rig (in Rig-Lokalraum, sichtbar in Peripherie) ─────────────
@@ -451,6 +454,52 @@ AFRAME.registerComponent('fairy-mode', {
       scene.appendChild(orb);
       this._trail.push({ el: orb, x: 0, y: -600, z: 0 });
     }
+  },
+
+  // ── Mobile Touch-Buttons (↑ Steigen / ↓ Sinken) ───────────────────────────
+  _buildMobileFlightBtns() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+    if (document.getElementById('fairy-rise-btn')) {
+      // Buttons bereits gebaut – nur einblenden
+      this._riseBtn = document.getElementById('fairy-rise-btn');
+      this._sinkBtn = document.getElementById('fairy-sink-btn');
+      this._riseBtn.style.display = 'flex';
+      this._sinkBtn.style.display = 'flex';
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .fairy-flight-btn {
+        position: fixed; right: 20px;
+        width: 68px; height: 68px;
+        border: none; border-radius: 50%;
+        background: rgba(170,68,255,0.88);
+        color: #fff; font-size: 30px;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10002; touch-action: none; user-select: none;
+        box-shadow: 0 0 12px rgba(170,68,255,0.60);
+      }
+      #fairy-rise-btn { bottom: 120px; }
+      #fairy-sink-btn { bottom: 36px;  }
+    `;
+    document.head.appendChild(style);
+
+    const mk = (id, label, onStart, onEnd) => {
+      const btn = document.createElement('button');
+      btn.id        = id;
+      btn.className = 'fairy-flight-btn';
+      btn.textContent = label;
+      btn.addEventListener('touchstart',  e => { e.preventDefault(); onStart(); }, { passive: false });
+      btn.addEventListener('touchend',    e => { e.preventDefault(); onEnd();   }, { passive: false });
+      btn.addEventListener('touchcancel', ()  => onEnd());
+      document.body.appendChild(btn);
+      return btn;
+    };
+
+    this._riseBtn = mk('fairy-rise-btn', '↑', () => { this._rise = true;  }, () => { this._rise = false; });
+    this._sinkBtn = mk('fairy-sink-btn', '↓', () => { this._sink = true;  }, () => { this._sink = false; });
   },
 
   // ── Controller + Keyboard ─────────────────────────────────────────────────
