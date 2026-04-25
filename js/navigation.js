@@ -421,7 +421,12 @@ AFRAME.registerComponent('player-collision', {
       }
     }
 
-    if (pz > 33) {
+    // Im Flugmodus (Fee, Rig > 1 m über Boden) keine laterale Stamm-Kollision
+    const fairyMode        = this.el.components['fairy-mode'];
+    const fairyFlying      = fairyMode && fairyMode.data.active
+                             && this._rig.object3D.position.y > 1.0;
+
+    if (pz > 33 && !fairyFlying) {
       for (const c of this._feenCircles) {
         const dx = px - c.cx;
         const dz = pz - c.cz;
@@ -463,7 +468,6 @@ AFRAME.registerComponent('player-collision', {
     // Im Feenmodus übernimmt fairy-mode die Y-Kontrolle (Fliegen).
     const nextX = px + this._push.x;
     const nextZ = pz + this._push.z;
-    const fairyMode = this.el.components['fairy-mode'];
     if (!fairyMode || !fairyMode.data.active) {
       this._rig.object3D.position.y = this._getTerrainHeight(nextX, nextZ);
     }
