@@ -82,8 +82,7 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
 
 ## 6. Quest-Struktur
 
-### Quest 1 – Erwachen in der Kesselstadt 🏙️
-> 📌 Noch nicht implementiert
+### Quest 1 – Erwachen in der Kesselstadt 🏙️ ✅
 
 **Ziel:** Das Südtor öffnen und ins Feenreich gelangen.
 
@@ -95,7 +94,7 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
 
 3. **Den Hund finden** – Ein Hund mit goldenen Augen lässt sich nicht annähern.
 
-4. **Vertrauen aufbauen** – Am Marktstand etwas Essbares holen, dem Hund geben.
+4. **Vertrauen aufbauen** – Am Marktstand einen Knochen holen, dem Hund geben.
    Er frisst, wedelt – und läuft los.
 
 5. **Den Zeichen folgen** – Der Hund führt zu drei versteckten Zeichen:
@@ -103,12 +102,12 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
    - 🔵 Dachbalken des Gasthauses
    - 🔵 Zahnrad der Dampfmaschine
 
-6. **Alle drei gefunden** – Zeichen leuchten auf, zeigen nach Süden.
+6. **Alle drei gefunden** – Zeichen leuchten auf, Schloss + Barriere am Südtor verschwinden, Tor öffnet sich.
    Der Hund bellt einmal – und verschwindet.
 
 7. **Feenlichter** – Kleine Feen erscheinen am Südtor und locken hinein.
 
-> 📌 Rätsel wird später weiter ausgebaut. Der Hund hat möglicherweise tiefere Story-Bedeutung.
+> 📌 Rätsel wird später weiter ausgebaut. Der Hund hat möglicherweise tiefere Story-Bedeutung – verzauberter Diener der Königin?
 
 ---
 
