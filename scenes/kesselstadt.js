@@ -217,6 +217,264 @@ AFRAME.registerComponent('old-woman-npc', {
   },
 });
 
+// ─── Gasthaus-Tür: Eintreten / Verlassen ─────────────────────────────────────
+// Außentür bei Weltpos (-9, ~10.5). Fade-Überblendung + Sichtbarkeitsumschaltung.
+// #ks-outdoor (gesamte Außenwelt) wird beim Eintreten ausgeblendet,
+// #gasthaus-interior (Platzhalter, später scenes/gasthaus.js) eingeblendet.
+
+const INN_OUTER = { x: -9, z: 10.52 };  // Außentür Weltpos XZ (Gasthaus-Vorderkante)
+const INN_INNER = { x: -9, z: 10.0  };  // Trigger-Pos von innen (Rückseite Tür)
+const INN_R2    = 4;                      // Interaktionsradius² = 2m
+
+AFRAME.registerComponent('gasthaus-door', {
+
+  init() {
+    this._cam           = null;
+    this._rig           = null;
+    this._camWP         = new THREE.Vector3();
+    this._inside        = false;
+    this._transitioning = false;
+    this._cooldown      = 0;
+    this._near          = false;
+    this._hint          = null;
+    this._innerHint     = null;
+    this._touchBtn      = null;
+    this._fade          = null;
+    this._interior      = null;
+    this._hiddenEls     = [];
+    this._gasthausBox   = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE') this._tryTransit();
+    });
+
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => this._tryTransit());
+    }, { once: true });
+  },
+
+  _build() {
+    this._cam = document.getElementById('camera');
+    this._rig = document.getElementById('rig');
+    this._buildFade();
+    this._buildHint();
+    this._buildInnerHint();
+    this._buildInterior();
+    this._buildTouchBtn();
+  },
+
+  // ── Schwarze Fade-Ebene (Kind der Kamera, immer vor dem Spieler) ─────────
+  _buildFade() {
+    const fade = document.createElement('a-plane');
+    fade.setAttribute('width',  '40');
+    fade.setAttribute('height', '40');
+    fade.setAttribute('position', '0 0 -0.06');
+    fade.setAttribute('material',
+      'color:#000;shader:flat;transparent:true;opacity:0;depthTest:false;side:double');
+    fade.setAttribute('animation__out',
+      'property:material.opacity;from:0;to:1;dur:300;easing:linear;autoplay:false;startEvents:fade-black');
+    fade.setAttribute('animation__in',
+      'property:material.opacity;from:1;to:0;dur:300;easing:linear;autoplay:false;startEvents:fade-clear');
+    if (this._cam) this._cam.appendChild(fade);
+    this._fade = fade;
+  },
+
+  // ── Hinweis-Panel-Helfer ──────────────────────────────────────────────────
+  _mkPanel(col, label) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', '0 -200 0');
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  '1.22');
+    frame.setAttribute('height', '0.26');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      `color:${col};shader:flat;transparent:true;opacity:0.48;emissive:${col};emissiveIntensity:0.32`);
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  '1.16');
+    bg.setAttribute('height', '0.20');
+    bg.setAttribute('material', 'color:#1a0800;shader:flat;transparent:true;opacity:0.92');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', label);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ffe8b0');
+    txt.setAttribute('width', '1.02');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _buildHint() {
+    this._hint      = this._mkPanel('#b08848', 'E / Trigger: Eintreten');
+  },
+  _buildInnerHint() {
+    this._innerHint = this._mkPanel('#907040', 'E / Trigger: Verlassen');
+  },
+
+  // ── Innenraum-Platzhalter (leer – Inhalt folgt in scenes/gasthaus.js) ────
+  _buildInterior() {
+    const el = document.createElement('a-entity');
+    el.setAttribute('id', 'gasthaus-interior');
+    el.setAttribute('position', '-9 0 8');
+    el.setAttribute('visible', 'false');
+    // Unsichtbarer Boden – ermöglicht dem Spieler zu stehen und den Exit-Trigger zu erreichen
+    const floor = document.createElement('a-plane');
+    floor.setAttribute('rotation', '-90 0 0');
+    floor.setAttribute('width',  '20');
+    floor.setAttribute('height', '20');
+    floor.setAttribute('material', 'shader:flat;transparent:true;opacity:0;side:double');
+    el.appendChild(floor);
+    this.el.sceneEl.appendChild(el);
+    this._interior = el;
+  },
+
+  // ── Mobile Touch-Button ───────────────────────────────────────────────────
+  _buildTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch || document.getElementById('inn-touch-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'inn-touch-btn';
+    btn.textContent = 'Eintreten';
+    btn.style.cssText =
+      'position:fixed;bottom:200px;left:50%;transform:translateX(-50%);' +
+      'background:rgba(192,144,80,0.90);color:#1a0800;border:none;' +
+      'border-radius:30px;padding:12px 30px;font-size:17px;' +
+      'font-family:sans-serif;font-weight:bold;' +
+      'display:none;z-index:10001;touch-action:none;';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      this._tryTransit();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  // ── Fade-Helfer ───────────────────────────────────────────────────────────
+  _fadeOut(cb) {
+    if (!this._fade) { cb(); return; }
+    this._fade.emit('fade-black');
+    setTimeout(cb, 320);
+  },
+  _fadeIn(cb) {
+    if (!this._fade) { cb(); return; }
+    this._fade.emit('fade-clear');
+    setTimeout(cb, 320);
+  },
+
+  // ── Transitions-Logik ────────────────────────────────────────────────────
+  _tryTransit() {
+    if (!this._near || this._transitioning) return;
+    this._transitioning = true;
+    const goingIn = !this._inside;
+    this._fadeOut(() => {
+      if (goingIn) this._doEnter(); else this._doExit();
+      this._fadeIn(() => {
+        this._transitioning = false;
+        this._cooldown = 1.5;
+      });
+    });
+  },
+
+  _doEnter() {
+    this._inside = true;
+
+    // Alle sichtbaren Szenen-Kinder ausblenden: ks-outdoor, Himmel, Feenreich,
+    // Lichtreich, Nacht-Wachen und alle anderen Zonen-Entities.
+    // Ausnahmen: Rig (Spieler), Interior, Sonne und Ambient-Licht.
+    const KEEP = new Set(['rig', 'gasthaus-interior', 'sun', 'ambLight']);
+    this._hiddenEls = [];
+    Array.from(this.el.sceneEl.children).forEach(el => {
+      if (!el.object3D || KEEP.has(el.id)) return;
+      if (el.object3D.visible) {
+        el.object3D.visible = false;
+        this._hiddenEls.push(el);
+      }
+    });
+
+    // Gasthaus-Kollisionsbox aus player-collision entfernen,
+    // damit der Spieler im Innenraum navigieren kann.
+    const pc = this.el.sceneEl.components['player-collision'];
+    if (pc) {
+      const idx = pc._boxes.findIndex(b => b.x0 === -12.3 && b.z0 === 5.2);
+      if (idx !== -1) this._gasthausBox = pc._boxes.splice(idx, 1)[0];
+    }
+
+    if (this._interior) this._interior.setAttribute('visible', 'true');
+    if (this._rig)      this._rig.object3D.position.set(-9, 0, 9.0);
+    this._near = false;
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._touchBtn) { this._touchBtn.textContent = 'Verlassen'; this._touchBtn.style.display = 'none'; }
+  },
+
+  _doExit() {
+    this._inside = false;
+
+    // Alle beim Eintreten ausgeblendeten Elemente wiederherstellen.
+    this._hiddenEls.forEach(el => { if (el.parentNode) el.object3D.visible = true; });
+    this._hiddenEls = [];
+
+    // Gasthaus-Kollisionsbox wiederherstellen.
+    const pc = this.el.sceneEl.components['player-collision'];
+    if (pc && this._gasthausBox) {
+      pc._boxes.push(this._gasthausBox);
+      this._gasthausBox = null;
+    }
+
+    if (this._interior) this._interior.setAttribute('visible', 'false');
+    if (this._rig)      this._rig.object3D.position.set(-9, 0, 12.5);
+    this._near = false;
+    if (this._innerHint) this._innerHint.setAttribute('visible', 'false');
+    if (this._touchBtn) { this._touchBtn.textContent = 'Eintreten'; this._touchBtn.style.display = 'none'; }
+  },
+
+  // ── Tick: Annäherungs-Prüfung + Panel-Positionierung ─────────────────────
+  tick(t, dt) {
+    if (this._transitioning || !this._cam) return;
+    if (this._cooldown > 0) { this._cooldown -= Math.min(dt, 200) * 0.001; return; }
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+
+    const trig       = this._inside ? INN_INNER : INN_OUTER;
+    const activeHint = this._inside ? this._innerHint : this._hint;
+    const dx   = this._camWP.x - trig.x;
+    const dz   = this._camWP.z - trig.z;
+    const near = (dx * dx + dz * dz) < INN_R2;
+
+    if (near !== this._near) {
+      this._near = near;
+      if (activeHint) activeHint.setAttribute('visible', near ? 'true' : 'false');
+      if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
+    }
+
+    if (this._near && activeHint && activeHint.object3D) {
+      activeHint.object3D.position.set(trig.x, 2.4, trig.z);
+      activeHint.object3D.rotation.y = Math.atan2(
+        this._camWP.x - trig.x,
+        this._camWP.z - trig.z,
+      );
+    }
+  },
+
+  remove() {
+    [this._hint, this._innerHint, this._interior].forEach(el => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+  },
+});
+
 AFRAME.registerComponent('kesselstadt-scene', {
   init() {
     // Szene-HTML einmalig einfügen, sobald A-Frame bereit ist
@@ -236,6 +494,7 @@ AFRAME.registerComponent('kesselstadt-scene', {
 // Licht und Spieler-Rig sind in index.html definiert.
 // ─────────────────────────────────────────────────────────────────────────────
 const KESSELSTADT_HTML = /* html */`
+<a-entity id="ks-outdoor">
 
   <!-- ═══ HIMMEL – prozedurale Sky-Sphere ═══ -->
   <a-entity id="sky-sphere"
@@ -918,4 +1177,6 @@ const KESSELSTADT_HTML = /* html */`
 
   <!-- ═══ STADTLEBEN ═══ -->
   <a-entity id="city-life-root" city-life></a-entity>
+
+</a-entity>
 `;
