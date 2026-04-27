@@ -23,7 +23,7 @@ AFRAME.registerComponent('old-woman-npc', {
     this._root   = null;
     this._panel  = null;
     this._shown  = false;
-    this._done   = window.QUEST1.triggered === true;
+    this._done   = true; // Quest 0 noch nicht implementiert – NPC bis dahin versteckt
     this._showAt = 0;
 
     const sc = this.el.sceneEl;
@@ -413,7 +413,12 @@ AFRAME.registerComponent('gasthaus-door', {
     }
 
     if (this._interior) this._interior.setAttribute('visible', 'true');
-    if (this._rig)      this._rig.object3D.position.set(-9, 0, 9.0);
+    if (this._rig && this._cam) {
+      // Kamera-Lokaloffset (WASD-Desktop oder HMD-VR) kompensieren,
+      // damit die Kamera sicher bei Weltpos (-9, *, 7.5) landet.
+      const cl = this._cam.object3D.position;
+      this._rig.object3D.position.set(-9 - cl.x, 0, 7.5 - cl.z);
+    }
     this._near = false;
     if (this._hint) this._hint.setAttribute('visible', 'false');
     if (this._touchBtn) { this._touchBtn.textContent = 'Verlassen'; this._touchBtn.style.display = 'none'; }
@@ -434,7 +439,10 @@ AFRAME.registerComponent('gasthaus-door', {
     }
 
     if (this._interior) this._interior.setAttribute('visible', 'false');
-    if (this._rig)      this._rig.object3D.position.set(-9, 0, 12.5);
+    if (this._rig && this._cam) {
+      const cl = this._cam.object3D.position;
+      this._rig.object3D.position.set(-9 - cl.x, 0, 12.5 - cl.z);
+    }
     this._near = false;
     if (this._innerHint) this._innerHint.setAttribute('visible', 'false');
     if (this._touchBtn) { this._touchBtn.textContent = 'Eintreten'; this._touchBtn.style.display = 'none'; }

@@ -154,6 +154,138 @@ AFRAME.registerComponent('gasthaus-scene', {
     return e;
   },
 
+  _sph(r, col, px, py, pz) {
+    const e = document.createElement('a-sphere');
+    e.setAttribute('radius', r);
+    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '5');
+    e.setAttribute('position', `${px} ${py} ${pz}`);
+    e.setAttribute('material', `color:${col};shader:flat`);
+    return e;
+  },
+
+  /* ── NPC-Figur (statisch) ────────────────────────────────────────────── */
+  // cfg: { cloth, skin, hair, legs, apron?, seated?, cloak?, hood? }
+  _figure(root, x, z, rotY, cfg) {
+    const { cloth, skin, hair, legs, apron, seated, cloak, hood } = cfg;
+    const e    = document.createElement('a-entity');
+    e.setAttribute('position', `${x} 0 ${z}`);
+    e.setAttribute('rotation', `0 ${rotY} 0`);
+    const add  = c => e.appendChild(c);
+    const BOOT = '#2c1a0a';
+    const BELT = '#5a3a10';
+    const BODY = cloak || cloth;
+
+    if (seated) {
+      // Schuhe (Füße leicht nach vorne gestreckt)
+      add(this._box(0.110, 0.055, 0.155, BOOT,  0.082, 0.028, 0.24));
+      add(this._box(0.110, 0.055, 0.155, BOOT, -0.082, 0.028, 0.24));
+      // Unterschenkel (hängend)
+      add(this._cyl(0.052, 0.40, legs,  0.082, 0.20, 0.18));
+      add(this._cyl(0.052, 0.40, legs, -0.082, 0.20, 0.18));
+      // Oberschenkel (horizontal auf Sitzbank)
+      add(this._box(0.12, 0.10, 0.36, legs,  0.082, 0.43, 0.06));
+      add(this._box(0.12, 0.10, 0.36, legs, -0.082, 0.43, 0.06));
+    } else {
+      add(this._box(0.110, 0.055, 0.155, BOOT,  0.082, 0.028, 0.016));
+      add(this._box(0.110, 0.055, 0.155, BOOT, -0.082, 0.028, 0.016));
+      add(this._cyl(0.058, 0.44, legs,  0.082, 0.22, 0));
+      add(this._cyl(0.058, 0.44, legs, -0.082, 0.22, 0));
+    }
+
+    // Hüfte + Gürtel
+    add(this._box(0.30, 0.12, 0.21, BODY, 0, 0.50, 0));
+    if (!cloak) add(this._box(0.34, 0.046, 0.23, BELT, 0, 0.565, 0));
+
+    // Torso (Umhang: breiter/tiefer)
+    const tw = cloak ? 0.38 : 0.32;
+    const td = cloak ? 0.26 : 0.22;
+    add(this._box(tw, 0.36, td, BODY, 0, 0.75, 0));
+    if (apron) add(this._box(0.24, 0.38, 0.012, apron, 0, 0.67, 0.116));
+
+    // Schultern
+    add(this._box(0.42, 0.09, 0.23, BODY, 0, 0.93, 0));
+
+    // Arme (Oberarm, Unterarm)
+    add(this._cyl(0.052, 0.38, BODY,  0.215, 0.74, 0));
+    add(this._cyl(0.052, 0.38, BODY, -0.215, 0.74, 0));
+    add(this._cyl(0.044, 0.24, skin,  0.215, 0.50, 0));
+    add(this._cyl(0.044, 0.24, skin, -0.215, 0.50, 0));
+
+    // Hals
+    add(this._cyl(0.054, 0.11, skin, 0, 1.045, 0));
+
+    if (hood) {
+      // Kapuze: kastenförmige Verkleidung über dem Kopf
+      add(this._box(0.34, 0.38, 0.32, cloak, 0, 1.22, -0.02));
+      // Gesicht (halb sichtbar unter der Kapuze)
+      add(this._sph(0.13, skin, 0, 1.19, 0.04));
+      // Augen im Schatten
+      add(this._sph(0.020, '#160800', -0.044, 1.22, 0.11));
+      add(this._sph(0.020, '#160800',  0.044, 1.22, 0.11));
+    } else {
+      // Kopf + Ohren
+      add(this._sph(0.148, skin, 0, 1.225, 0));
+      add(this._sph(0.040, skin, -0.145, 1.225, -0.015));
+      add(this._sph(0.040, skin,  0.145, 1.225, -0.015));
+      // Haare
+      add(this._box(0.30, 0.10, 0.30, hair, 0, 1.345, -0.018));
+      add(this._box(0.065, 0.13, 0.055, hair, -0.152, 1.225, -0.045));
+      add(this._box(0.065, 0.13, 0.055, hair,  0.152, 1.225, -0.045));
+      // Augenbrauen
+      add(this._box(0.062, 0.017, 0.012, hair, -0.054, 1.284, 0.124));
+      add(this._box(0.062, 0.017, 0.012, hair,  0.054, 1.284, 0.124));
+      // Augen
+      add(this._sph(0.028, '#f5f4ee', -0.055, 1.248, 0.122));
+      add(this._sph(0.028, '#f5f4ee',  0.055, 1.248, 0.122));
+      add(this._sph(0.018, '#160800', -0.055, 1.248, 0.133));
+      add(this._sph(0.018, '#160800',  0.055, 1.248, 0.133));
+      // Nase + Mund
+      add(this._sph(0.022, skin, 0, 1.200, 0.140));
+      add(this._box(0.074, 0.016, 0.012, '#aa4433', 0, 1.162, 0.132));
+    }
+
+    root.appendChild(e);
+    return e;
+  },
+
+  /* ── Statische NPC-Figuren ───────────────────────────────────────────── */
+  _buildNPCs(root) {
+    const add = e => root.appendChild(e);
+
+    // Gastwirt: stehend hinter der Theke (Westwand), schaut nach Osten
+    // rotY=90: lokales +Z → Welt +X (Ost)
+    this._figure(root, -5.80, -2.0, 90, {
+      cloth: '#2a1a0a', skin: '#c8905c', hair: '#3d2b1f',
+      legs: '#1a1a1a', apron: '#2c401c', seated: false,
+    });
+
+    // Reisender A: Tisch 3 (x=-3.2 z=-3.1), Südbank → schaut nach Norden
+    this._figure(root, -3.2, -2.37, 180, {
+      cloth: '#8b4513', skin: '#d4905c', hair: '#3a280a',
+      legs: '#4a3020', seated: true,
+    });
+
+    // Reisender B: Tisch 3, Nordbank → schaut nach Süden
+    this._figure(root, -3.2, -3.83, 0, {
+      cloth: '#2c5f7a', skin: '#e8b882', hair: '#1c1c1c',
+      legs: '#1c2840', seated: true,
+    });
+
+    // Alter Soldat: Tisch 2 (x=3.2 z=-0.4), Südbank → schaut nach Norden
+    this._figure(root, 3.2, 0.33, 180, {
+      cloth: '#4a5560', skin: '#c07848', hair: '#b0b0a8',
+      legs: '#3a4048', seated: true,
+    });
+    // Zinnbecher auf dem Tisch vor dem Soldaten (Tischplatte top y=0.80)
+    add(this._cyl(0.046, 0.13, '#787870', 3.2, 0.865, -0.15));
+
+    // Frau mit Kapuze: Tisch 4 (x=3.2 z=-3.1), Nordbank → schaut nach Süden
+    this._figure(root, 3.2, -3.83, 0, {
+      cloak: '#1a1520', cloth: '#1a1520', skin: '#c8a070',
+      hair: '#1a1010', legs: '#1a1520', hood: true, seated: true,
+    });
+  },
+
   /* ── Gesamter Innenraum ──────────────────────────────────────────────── */
   _buildRoom(root) {
     const add = e => root.appendChild(e);
@@ -217,6 +349,9 @@ AFRAME.registerComponent('gasthaus-scene', {
       { x:  3.2, z: -3.1 },
       { x:  0.0, z: -4.6 },
     ].forEach(t => this._buildTable(root, t.x, t.z));
+
+    // ── NPCs ───────────────────────────────────────────────────────────
+    this._buildNPCs(root);
   },
 
   /* ── Feuerstelle (Nordwand, Mitte) ───────────────────────────────────── */
@@ -263,10 +398,10 @@ AFRAME.registerComponent('gasthaus-scene', {
     const bx = -5.60;   // Innenseite Westwand
 
     // Tresenkörper
-    add(this._box(0.82, 1.04, 4.40, '#3c2210', bx + 0.41, 0.52, -2.0,
-      'tex-inn-beam', 0.8, 3.5));
+    add(this._box(0.82, 0.74, 4.40, '#3c2210', bx + 0.41, 0.37, -2.0,
+      'tex-inn-beam', 0.8, 2.5));
     // Tresenplatte (etwas heller, leicht überstehend)
-    add(this._box(0.92, 0.09, 4.60, '#5a3818', bx + 0.46, 1.085, -2.0,
+    add(this._box(0.92, 0.09, 4.60, '#5a3818', bx + 0.46, 0.785, -2.0,
       'tex-inn-planks', 0.5, 2.2));
 
     // Wandregale (2 Reihen, 2 Segmente)
@@ -293,20 +428,20 @@ AFRAME.registerComponent('gasthaus-scene', {
     const add = e => root.appendChild(e);
 
     // Tischplatte
-    add(this._box(1.55, 0.08, 0.90, '#7a4c22', tx, 0.76, tz,
+    add(this._box(1.55, 0.08, 0.90, '#3c2210', tx, 0.76, tz,
       'tex-inn-planks', 1, 0.55));
     // Tischbeine
     [[-0.63, -0.35], [-0.63, 0.35], [0.63, -0.35], [0.63, 0.35]].forEach(([lx, lz]) =>
-      add(this._cyl(0.04, 0.76, '#5c3618', tx + lx, 0.38, tz + lz))
+      add(this._cyl(0.04, 0.76, '#2e1a08', tx + lx, 0.38, tz + lz))
     );
 
     // Bänke
     [-0.73, 0.73].forEach(side => {
-      add(this._box(1.40, 0.07, 0.30, '#6a4020', tx, 0.43, tz + side,
+      add(this._box(1.40, 0.07, 0.30, '#3c2210', tx, 0.43, tz + side,
         'tex-inn-planks', 0.8, 0.18));
-      // Bankstützen
-      [-0.58, 0.58].forEach(lx =>
-        add(this._cyl(0.028, 0.43, '#5c3618', tx + lx, 0.215, tz + side))
+      // Bankstützen (vier Ecken)
+      [[-0.58, -0.09], [-0.58, 0.09], [0.58, -0.09], [0.58, 0.09]].forEach(([lx, lz]) =>
+        add(this._cyl(0.028, 0.43, '#2e1a08', tx + lx, 0.215, tz + side + lz))
       );
     });
 

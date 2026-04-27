@@ -265,8 +265,8 @@ AFRAME.registerComponent('kesselstadt-night', {
     // ── Spieler nähert sich < 3m ──────────────────────────────────────
     if (d2 < 9) {
       const msg = g.warned
-        ? 'Hab ich mich nicht klar ausgedrückt?'
-        : 'Ins Gasthaus oder nach Hause –\naber nicht auf der Straße!';
+        ? 'Hab ich mich nicht klar ausgedrueckt?'
+        : 'Geh in das Gasthaus oder nach Hause –\naber nicht auf der Strasse herumlungern!\nVerstanden?';
       g.warned      = true;
       g.dialogActive = true;
       g.dialogAt     = t;

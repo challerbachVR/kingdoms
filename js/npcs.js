@@ -954,7 +954,7 @@ AFRAME.registerComponent('city-life', {
     h.appendChild(bg);
 
     const txt = document.createElement('a-text');
-    txt.setAttribute('value', 'E / Trigger: Füttern');
+    txt.setAttribute('value', 'E / Trigger: F&uuml;ttern');
     txt.setAttribute('align', 'center');
     txt.setAttribute('color', '#ffe8b0');
     txt.setAttribute('width', '0.90');
