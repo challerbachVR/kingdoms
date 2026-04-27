@@ -458,3 +458,155 @@ AFRAME.registerComponent('gasthaus-scene', {
     });
   },
 });
+
+// ─── Reisenden-Dialog (Quest 0) ──────────────────────────────────────────────
+// Automatischer Dialog bei Annäherung < 2.5m an Tisch 3 (Reisender A & B).
+// Reisender A: world (-12.2, 0,  5.63) → bubble y=1.65
+// Reisender B: world (-12.2, 0,  4.17) → bubble y=1.65
+// Triggerachse-Mitte: (-12.2, 0, 4.90)
+AFRAME.registerComponent('gasthaus-travelers', {
+
+  init() {
+    if (!window.QUEST0) window.QUEST0 = {};
+
+    this._cam       = null;
+    this._camWP     = new THREE.Vector3();
+    this._triggered = false;
+    this._step      = 0;   // 0=warten, 1=b1, 2=b2, 3=b3, 4=fertig
+    this._timer     = 0;
+    this._b1        = null;
+    this._b2        = null;
+    this._b3        = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+  },
+
+  _mkBubble(text, wx, wy, wz, bgW, bgH) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', `${wx} ${wy} ${wz}`);
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  (bgW + 0.06).toFixed(2));
+    frame.setAttribute('height', (bgH + 0.06).toFixed(2));
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#9b7040;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#9b7040;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  bgW.toFixed(2));
+    bg.setAttribute('height', bgH.toFixed(2));
+    bg.setAttribute('material',
+      'color:#140c00;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', text);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#ffe8c0');
+    txt.setAttribute('width', (bgW - 0.10).toFixed(2));
+    txt.setAttribute('wrap-count', '32');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _build() {
+    // Reisender A (Südbank, schaut nach Norden): world (-12.2, 1.65, 5.63)
+    this._b1 = this._mkBubble(
+      'Das Westtor war frueher nie verschlossen.\nSeit Jahren kommt niemand mehr raus oder rein.',
+      -12.2, 1.65, 5.63,
+      1.80, 0.48,
+    );
+    // Reisender B (Nordbank, schaut nach Süden): world (-12.2, 1.65, 4.17)
+    this._b2 = this._mkBubble(
+      'Lass es gut sein.\nDer Stadtrat hat seine Gruende.',
+      -12.2, 1.65, 4.17,
+      1.60, 0.30,
+    );
+    // Reisender A – dritte Zeile
+    this._b3 = this._mkBubble(
+      'Gruende... oder Angst.',
+      -12.2, 1.65, 5.63,
+      1.30, 0.22,
+    );
+  },
+
+  _trigger() {
+    this._triggered = true;
+    window.QUEST0.heardTravelers = true;
+    this._step  = 1;
+    this._timer = 6.0;
+    if (this._b1) this._b1.setAttribute('visible', 'true');
+  },
+
+  tick(t, dt) {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam) return;
+
+    const dts = Math.min(dt * 0.001, 0.05);
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const cx = this._camWP.x;
+    const cz = this._camWP.z;
+
+    // Sichtbare Panels zur Kamera ausrichten
+    [this._b1, this._b2, this._b3].forEach(b => {
+      if (b && b.object3D && b.object3D.visible) {
+        b.object3D.rotation.y = Math.atan2(
+          cx - b.object3D.position.x,
+          cz - b.object3D.position.z,
+        );
+      }
+    });
+
+    if (this._step === 4) return;
+
+    // Bereits ausgelöst (z. B. Session-Reload): überspringen
+    if (!this._triggered && window.QUEST0.heardTravelers) {
+      this._triggered = true;
+      this._step = 4;
+      return;
+    }
+
+    if (!this._triggered) {
+      // Näheprüfung zur Tischmitte (-12.2, 0, 4.9)
+      const dx = cx - (-12.2);
+      const dz = cz - 4.9;
+      if (dx * dx + dz * dz < 6.25) this._trigger();   // 2.5m radius
+      return;
+    }
+
+    // Timer-gesteuerte Sequenz
+    this._timer -= dts;
+    if (this._timer > 0) return;
+
+    if (this._step === 1) {
+      if (this._b1) this._b1.setAttribute('visible', 'false');
+      if (this._b2) this._b2.setAttribute('visible', 'true');
+      this._step  = 2;
+      this._timer = 6.0;
+    } else if (this._step === 2) {
+      if (this._b2) this._b2.setAttribute('visible', 'false');
+      if (this._b3) this._b3.setAttribute('visible', 'true');
+      this._step  = 3;
+      this._timer = 5.0;
+    } else if (this._step === 3) {
+      if (this._b3) this._b3.setAttribute('visible', 'false');
+      this._step = 4;
+    }
+  },
+
+  remove() {
+    [this._b1, this._b2, this._b3].forEach(b => {
+      if (b && b.parentNode) b.parentNode.removeChild(b);
+    });
+  },
+});
