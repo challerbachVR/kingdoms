@@ -280,10 +280,11 @@ AFRAME.registerComponent('gasthaus-scene', {
     add(this._cyl(0.046, 0.13, '#787870', 3.2, 0.865, -0.15));
 
     // Frau mit Kapuze: Tisch 4 (x=3.2 z=-3.1), Nordbank → schaut nach Süden
-    this._figure(root, 3.2, -3.83, 0, {
+    const cloakFig = this._figure(root, 3.2, -3.83, 0, {
       cloak: '#1a1520', cloth: '#1a1520', skin: '#c8a070',
       hair: '#1a1010', legs: '#1a1520', hood: true, seated: true,
     });
+    cloakFig.setAttribute('id', 'cloaked-woman-figure');
   },
 
   /* ── Gesamter Innenraum ──────────────────────────────────────────────── */
@@ -608,5 +609,587 @@ AFRAME.registerComponent('gasthaus-travelers', {
     [this._b1, this._b2, this._b3].forEach(b => {
       if (b && b.parentNode) b.parentNode.removeChild(b);
     });
+  },
+});
+
+// ─── Alter Soldat – Dialog (Quest 0) ─────────────────────────────────────────
+// Alter Soldat: local (3.2, 0, 0.33) → world (-5.8, 0, 8.33)
+// Interaktion per E / Trigger / Touch-Button bei < 2m.
+AFRAME.registerComponent('soldier-dialog', {
+
+  init() {
+    if (!window.QUEST0) window.QUEST0 = {};
+
+    this._cam       = null;
+    this._camWP     = new THREE.Vector3();
+    this._near      = false;
+    this._triggered = false;
+    this._step      = 0;   // 0=warten, 1=b1, 2=b2, 3=b3, 4=fertig
+    this._timer     = 0;
+    this._hint      = null;
+    this._b1        = null;
+    this._b2        = null;
+    this._b3        = null;
+    this._touchBtn  = null;
+
+    // Weltposition des Soldaten
+    this._sx = -5.8;
+    this._sz =  8.33;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && this._near) this._trigger();
+    });
+
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => {
+        if (this._near) this._trigger();
+      });
+    }, { once: true });
+  },
+
+  _mkHint() {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', `${this._sx} 1.85 ${this._sz}`);
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.18');
+    frame.setAttribute('height', '0.30');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#607080;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#607080;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.12');
+    bg.setAttribute('height', '0.24');
+    bg.setAttribute('material',
+      'color:#080c10;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'E / Trigger: Ansprechen');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#b0c8d8');
+    txt.setAttribute('width', '1.00');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _mkBubble(text, bgW, bgH) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', `${this._sx} 1.70 ${this._sz}`);
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  (bgW + 0.06).toFixed(2));
+    frame.setAttribute('height', (bgH + 0.06).toFixed(2));
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#607080;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#607080;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  bgW.toFixed(2));
+    bg.setAttribute('height', bgH.toFixed(2));
+    bg.setAttribute('material',
+      'color:#080c10;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', text);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#c8dce8');
+    txt.setAttribute('width', (bgW - 0.12).toFixed(2));
+    txt.setAttribute('wrap-count', '30');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _mkTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch || document.getElementById('soldier-touch-btn')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #soldier-touch-btn {
+        position: fixed; bottom: 200px; left: 50%;
+        transform: translateX(-50%);
+        background: rgba(80,112,128,0.90); color: #dff0ff;
+        border: none; border-radius: 30px;
+        padding: 12px 30px; font-size: 17px;
+        font-family: sans-serif; font-weight: bold;
+        display: none; z-index: 10001; touch-action: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const btn = document.createElement('button');
+    btn.id = 'soldier-touch-btn';
+    btn.textContent = 'Ansprechen';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (this._near) this._trigger();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  _build() {
+    this._hint = this._mkHint();
+    this._b1 = this._mkBubble(
+      'Noch ein Fremder der nicht weiss\nwo er hingehoert.',
+      1.70, 0.32,
+    );
+    this._b2 = this._mkBubble(
+      'Diese Stadt... frueher war sie anders. Offener.\nDie Tore standen immer offen. Jetzt?\nDas Westtor seit Jahren verschlossen.\nNiemand fragt warum.',
+      1.80, 0.72,
+    );
+    this._b3 = this._mkBubble(
+      'Ich frag auch nicht mehr.',
+      1.30, 0.22,
+    );
+    this._mkTouchBtn();
+  },
+
+  _trigger() {
+    if (this._triggered) return;
+    this._triggered = true;
+    window.QUEST0.heardSoldier = true;
+
+    this._near = false;
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._touchBtn) this._touchBtn.style.display = 'none';
+
+    this._step  = 1;
+    this._timer = 6.0;
+    if (this._b1) this._b1.setAttribute('visible', 'true');
+  },
+
+  tick(t, dt) {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam) return;
+
+    const dts = Math.min(dt * 0.001, 0.05);
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const cx = this._camWP.x;
+    const cz = this._camWP.z;
+
+    // Sichtbare Panels zur Kamera ausrichten
+    const panels = [this._hint, this._b1, this._b2, this._b3];
+    panels.forEach(p => {
+      if (p && p.object3D && p.object3D.visible) {
+        p.object3D.rotation.y = Math.atan2(
+          cx - this._sx,
+          cz - this._sz,
+        );
+      }
+    });
+
+    if (this._step === 4) return;
+
+    // Bereits gehört (Session-Reload)
+    if (!this._triggered && window.QUEST0.heardSoldier) {
+      this._triggered = true;
+      this._step = 4;
+      return;
+    }
+
+    if (!this._triggered) {
+      const dx = cx - this._sx;
+      const dz = cz - this._sz;
+      const near = (dx * dx + dz * dz) < 4.0;   // 2m radius
+      if (near !== this._near) {
+        this._near = near;
+        if (this._hint) this._hint.setAttribute('visible', near ? 'true' : 'false');
+        if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
+      }
+      return;
+    }
+
+    // Timer-gesteuerte Sequenz
+    this._timer -= dts;
+    if (this._timer > 0) return;
+
+    if (this._step === 1) {
+      if (this._b1) this._b1.setAttribute('visible', 'false');
+      if (this._b2) this._b2.setAttribute('visible', 'true');
+      this._step  = 2;
+      this._timer = 6.0;
+    } else if (this._step === 2) {
+      if (this._b2) this._b2.setAttribute('visible', 'false');
+      if (this._b3) this._b3.setAttribute('visible', 'true');
+      this._step  = 3;
+      this._timer = 5.0;
+    } else if (this._step === 3) {
+      if (this._b3) this._b3.setAttribute('visible', 'false');
+      this._step = 4;
+    }
+  },
+
+  remove() {
+    [this._hint, this._b1, this._b2, this._b3].forEach(p => {
+      if (p && p.parentNode) p.parentNode.removeChild(p);
+    });
+    if (this._touchBtn && this._touchBtn.parentNode)
+      this._touchBtn.parentNode.removeChild(this._touchBtn);
+  },
+});
+
+// ─── Frau mit Kapuze – Stumme Interaktion (Quest 0) ──────────────────────────
+// Frau mit Kapuze: local (3.2, 0, -3.83) → world (-5.8, 0, 4.17)
+// Annäherung < 2m: aufstehen (0.5s) → wegdrehen (0.4s) → verschwinden (1s).
+AFRAME.registerComponent('cloaked-woman', {
+
+  init() {
+    if (!window.QUEST0) window.QUEST0 = {};
+
+    this._cam         = null;
+    this._camWP       = new THREE.Vector3();
+    this._fig         = null;
+    this._state       = 'waiting';
+    this._timer       = 0;
+    this._startAngle  = 0;
+    this._targetAngle = 0;
+
+    // Weltposition der Figur (interior -9,0,8 + local 3.2,0,-3.83)
+    this._wx = -5.8;
+    this._wz =  4.17;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._setup();
+    else sc.addEventListener('loaded', () => this._setup(), { once: true });
+  },
+
+  _setup() {
+    this._fig = document.getElementById('cloaked-woman-figure');
+    if (this._fig && window.QUEST0.sawCloakedWoman) {
+      this._fig.setAttribute('visible', 'false');
+      this._state = 'done';
+    }
+  },
+
+  tick(t, dt) {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam || !this._fig || this._state === 'done') return;
+
+    const dts = Math.min(dt * 0.001, 0.05);
+
+    // ── Warten: Näheprüfung ──────────────────────────────────────────────
+    if (this._state === 'waiting') {
+      if (window.QUEST0.sawCloakedWoman) {
+        this._fig.setAttribute('visible', 'false');
+        this._state = 'done';
+        return;
+      }
+      this._cam.object3D.getWorldPosition(this._camWP);
+      const dx = this._camWP.x - this._wx;
+      const dz = this._camWP.z - this._wz;
+      if (dx * dx + dz * dz < 4.0) {   // 2m radius
+        window.QUEST0.sawCloakedWoman = true;
+        // Zielwinkel: von Spieler wegdrehen
+        const away = Math.atan2(-dx, -dz);
+        this._startAngle  = this._fig.object3D.rotation.y;
+        let diff = away - this._startAngle;
+        while (diff >  Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+        this._targetAngle = this._startAngle + diff;
+        this._state = 'rising';
+        this._timer = 0;
+      }
+      return;
+    }
+
+    this._timer += dts;
+
+    // ── Aufstehen (0.5s) ─────────────────────────────────────────────────
+    if (this._state === 'rising') {
+      const p    = Math.min(this._timer / 0.5, 1.0);
+      const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      this._fig.object3D.position.y = ease * 0.30;
+      if (p >= 1.0) { this._state = 'turning'; this._timer = 0; }
+
+    // ── Wegdrehen (0.4s) ─────────────────────────────────────────────────
+    } else if (this._state === 'turning') {
+      const p    = Math.min(this._timer / 0.4, 1.0);
+      const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      this._fig.object3D.rotation.y =
+        this._startAngle + ease * (this._targetAngle - this._startAngle);
+      if (p >= 1.0) {
+        this._state = 'fading';
+        this._timer = 0;
+        // Transparency einmalig aktivieren
+        this._fig.object3D.traverse(child => {
+          if (child.material) {
+            child.material.transparent = true;
+            child.material.needsUpdate = true;
+          }
+        });
+      }
+
+    // ── Verschwinden (1s) ────────────────────────────────────────────────
+    } else if (this._state === 'fading') {
+      const p = Math.min(this._timer / 1.0, 1.0);
+      this._fig.object3D.traverse(child => {
+        if (child.material) child.material.opacity = 1.0 - p;
+      });
+      if (p >= 1.0) {
+        this._fig.setAttribute('visible', 'false');
+        this._state = 'done';
+      }
+    }
+  },
+});
+
+// ─── Gastwirt – Dialog (Quest 0) ─────────────────────────────────────────────
+// Gastwirt: local (-5.80, 0, -2.0) → world (-14.8, 0, 6.0)
+// Hinweis nur wenn heardSoldier && heardTravelers. Setzt heardTavern nach Dialog.
+AFRAME.registerComponent('innkeeper-dialog', {
+
+  init() {
+    if (!window.QUEST0) window.QUEST0 = {};
+
+    this._cam       = null;
+    this._camWP     = new THREE.Vector3();
+    this._near      = false;
+    this._triggered = false;
+    this._step      = 0;   // 0=warten, 1=b1, 2=b2, 3=b3, 4=fertig
+    this._timer     = 0;
+    this._hint      = null;
+    this._b1        = null;
+    this._b2        = null;
+    this._b3        = null;
+    this._touchBtn  = null;
+
+    this._wx = -14.8;
+    this._wz =   6.0;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && this._near) this._trigger();
+    });
+
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => {
+        if (this._near) this._trigger();
+      });
+    }, { once: true });
+  },
+
+  _mkHint() {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', `${this._wx} 2.10 ${this._wz}`);
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.18');
+    frame.setAttribute('height', '0.30');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#805030;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#805030;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.12');
+    bg.setAttribute('height', '0.24');
+    bg.setAttribute('material',
+      'color:#100800;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'E / Trigger: Ansprechen');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#e8c090');
+    txt.setAttribute('width', '1.00');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _mkBubble(text, bgW, bgH) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', `${this._wx} 1.90 ${this._wz}`);
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  (bgW + 0.06).toFixed(2));
+    frame.setAttribute('height', (bgH + 0.06).toFixed(2));
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#805030;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#805030;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  bgW.toFixed(2));
+    bg.setAttribute('height', bgH.toFixed(2));
+    bg.setAttribute('material',
+      'color:#100800;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', text);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#f0d0a0');
+    txt.setAttribute('width', (bgW - 0.12).toFixed(2));
+    txt.setAttribute('wrap-count', '30');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _mkTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch || document.getElementById('innkeeper-touch-btn')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #innkeeper-touch-btn {
+        position: fixed; bottom: 200px; left: 50%;
+        transform: translateX(-50%);
+        background: rgba(128,80,48,0.90); color: #fde8c0;
+        border: none; border-radius: 30px;
+        padding: 12px 30px; font-size: 17px;
+        font-family: sans-serif; font-weight: bold;
+        display: none; z-index: 10001; touch-action: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const btn = document.createElement('button');
+    btn.id = 'innkeeper-touch-btn';
+    btn.textContent = 'Ansprechen';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (this._near) this._trigger();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  _build() {
+    this._hint = this._mkHint();
+    this._b1 = this._mkBubble(
+      'Lass die Finger davon, Fremder.\nDer Stadtrat hat lange Ohren.',
+      1.80, 0.32,
+    );
+    this._b2 = this._mkBubble(
+      'Wenn du wirklich Antworten willst...\ngeh zum Schmied. Morgen frueh,\nwenn er seine Esse anfeuert.',
+      1.80, 0.48,
+    );
+    this._b3 = this._mkBubble(
+      'Aber sag nicht ich hab dich geschickt.',
+      1.60, 0.24,
+    );
+    this._mkTouchBtn();
+  },
+
+  _trigger() {
+    if (this._triggered) return;
+    this._triggered = true;
+
+    this._near = false;
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._touchBtn) this._touchBtn.style.display = 'none';
+
+    this._step  = 1;
+    this._timer = 3.0;
+    if (this._b1) this._b1.setAttribute('visible', 'true');
+  },
+
+  tick(t, dt) {
+    if (!this._cam) this._cam = document.getElementById('camera');
+    if (!this._cam) return;
+
+    const dts = Math.min(dt * 0.001, 0.05);
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const cx = this._camWP.x;
+    const cz = this._camWP.z;
+
+    // Sichtbare Panels zur Kamera ausrichten
+    [this._hint, this._b1, this._b2, this._b3].forEach(p => {
+      if (p && p.object3D && p.object3D.visible) {
+        p.object3D.rotation.y = Math.atan2(cx - this._wx, cz - this._wz);
+      }
+    });
+
+    if (this._step === 4) return;
+
+    // Bereits abgeschlossen (Session-Reload)
+    if (!this._triggered && window.QUEST0.heardTavern) {
+      this._triggered = true;
+      this._step = 4;
+      return;
+    }
+
+    if (!this._triggered) {
+      const conditions = window.QUEST0.heardSoldier && window.QUEST0.heardTravelers;
+      const dx   = cx - this._wx;
+      const dz   = cz - this._wz;
+      const near = conditions && (dx * dx + dz * dz) < 4.0;   // 2m radius
+
+      if (near !== this._near) {
+        this._near = near;
+        if (this._hint) this._hint.setAttribute('visible', near ? 'true' : 'false');
+        if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
+      }
+      return;
+    }
+
+    // Timer-gesteuerte Sequenz (Pausen je 3s)
+    this._timer -= dts;
+    if (this._timer > 0) return;
+
+    if (this._step === 1) {
+      if (this._b1) this._b1.setAttribute('visible', 'false');
+      if (this._b2) this._b2.setAttribute('visible', 'true');
+      this._step  = 2;
+      this._timer = 3.0;
+    } else if (this._step === 2) {
+      if (this._b2) this._b2.setAttribute('visible', 'false');
+      if (this._b3) this._b3.setAttribute('visible', 'true');
+      this._step  = 3;
+      this._timer = 4.0;
+    } else if (this._step === 3) {
+      if (this._b3) this._b3.setAttribute('visible', 'false');
+      window.QUEST0.heardTavern = true;
+      this._step = 4;
+    }
+  },
+
+  remove() {
+    [this._hint, this._b1, this._b2, this._b3].forEach(p => {
+      if (p && p.parentNode) p.parentNode.removeChild(p);
+    });
+    if (this._touchBtn && this._touchBtn.parentNode)
+      this._touchBtn.parentNode.removeChild(this._touchBtn);
   },
 });
