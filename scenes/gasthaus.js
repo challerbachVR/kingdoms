@@ -1193,3 +1193,126 @@ AFRAME.registerComponent('innkeeper-dialog', {
       this._touchBtn.parentNode.removeChild(this._touchBtn);
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GASTHAUS-MORNING – Tageswechsel beim Verlassen des Gasthauses
+// Registriert als System (kein index.html-Attribut nötig)
+// ─────────────────────────────────────────────────────────────────────────────
+AFRAME.registerSystem('gasthaus-morning', {
+  init() {
+    this._morningDone    = false;
+    this._blockHintTimer = null;
+    this.el.addEventListener('loaded', () => this._patch(), { once: true });
+  },
+
+  _patch() {
+    const gd = this.el.components['gasthaus-door'];
+    if (!gd) return;
+
+    const self    = this;
+    const origTry = gd._tryTransit.bind(gd);
+
+    gd._tryTransit = function () {
+      if (!this._inside) { origTry(); return; }
+
+      if (!window.QUEST0 || !window.QUEST0.heardTavern) {
+        self._showBlockHint();
+        return;
+      }
+
+      if (!self._morningDone) {
+        self._morningDone = true;
+        self._doMorningExit(gd);
+        return;
+      }
+
+      origTry();
+    };
+  },
+
+  _doMorningExit(gd) {
+    if (!gd._near || gd._transitioning) return;
+    gd._transitioning = true;
+    gd._fadeOut(() => {
+      gd._doExit();
+      this._applyMorning();
+      gd._fadeIn(() => {
+        gd._transitioning = false;
+        gd._cooldown = 1.5;
+        setTimeout(() => this._showText(), 400);
+      });
+    });
+  },
+
+  _applyMorning() {
+    this.el.setAttribute('daynight', 'mode:morning');
+
+    const clRoot = document.querySelector('#city-life-root');
+    if (clRoot && clRoot.components['city-life']) {
+      clRoot.components['city-life']._npcs.forEach(n => {
+        if (n.root) n.root.object3D.visible = true;
+      });
+    }
+
+    const kn = this.el.components['kesselstadt-night'];
+    if (kn && kn._guards) {
+      kn._guards.forEach(g => {
+        if (g.root) g.root.object3D.visible = false;
+      });
+    }
+  },
+
+  _showBlockHint() {
+    if (this._blockHintTimer) return;
+    const cam = document.querySelector('#camera');
+    if (!cam) return;
+
+    const panel = document.createElement('a-entity');
+    panel.setAttribute('position', '0 0.25 -2.0');
+    const t = document.createElement('a-text');
+    t.setAttribute('value', 'Sprich erst mit dem Gastwirt');
+    t.setAttribute('align', 'center');
+    t.setAttribute('color', '#ff9944');
+    t.setAttribute('width', '2.5');
+    t.setAttribute('shader', 'flat');
+    panel.appendChild(t);
+    cam.appendChild(panel);
+
+    this._blockHintTimer = setTimeout(() => {
+      if (panel.parentNode) panel.parentNode.removeChild(panel);
+      this._blockHintTimer = null;
+    }, 3000);
+  },
+
+  _showText() {
+    const cam = document.querySelector('#camera');
+    if (!cam) return;
+
+    const panel = document.createElement('a-entity');
+    panel.setAttribute('position', '0 -0.05 -2.0');
+    const t = document.createElement('a-text');
+    t.setAttribute('value', 'Der Morgen graut\nueber der Kesselstadt...');
+    t.setAttribute('align', 'center');
+    t.setAttribute('color', '#ffd080');
+    t.setAttribute('width', '3.0');
+    t.setAttribute('shader', 'flat');
+    panel.appendChild(t);
+    cam.appendChild(panel);
+
+    const div = document.createElement('div');
+    div.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+      'color:#ffd080;font-size:22px;text-align:center;font-family:Georgia,serif;' +
+      'pointer-events:none;opacity:0;transition:opacity 0.5s;z-index:9999;' +
+      'text-shadow:0 0 8px #000;line-height:1.6;white-space:pre;';
+    div.textContent = 'Der Morgen graut\nueber der Kesselstadt...';
+    document.body.appendChild(div);
+    requestAnimationFrame(() => requestAnimationFrame(() => { div.style.opacity = '1'; }));
+
+    setTimeout(() => {
+      if (panel.parentNode) panel.parentNode.removeChild(panel);
+      div.style.opacity = '0';
+      setTimeout(() => { if (div.parentNode) div.parentNode.removeChild(div); }, 500);
+    }, 3500);
+  },
+});

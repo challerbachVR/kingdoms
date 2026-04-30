@@ -5,7 +5,7 @@
 **Technologie:** A-Frame / Three.js / Web Audio API  
 **Repository:** https://github.com/challerbachvr/kingdoms  
 **Live URL:** https://challerbachvr.github.io/kingdoms  
-**Status:** Kesselstadt ✅ / Feenreich ✅ / Lichtreich 🔲 (Kulisse) / Quest 1 🔄 / Story in Entwicklung
+**Status:** Kesselstadt ✅ / Feenreich ✅ / Lichtreich 🔲 (Kulisse) / Gasthaus ✅ / Quest 0 ✅ / Quest 1 ✅
 
 ---
 
@@ -57,30 +57,28 @@ Die Welt ist als **Kreuz-Dreieck-Karte** aufgebaut. Kesselstadt = Zentrum (|x| �
 
 ```
 kingdoms/
-├── index.html                  (Einstiegspunkt + <a-scene>-Attribute)
-├── GDD.md                      (dieses Dokument – technisch)
-├── STORY.md                    (Story, Quests, Charaktere)
+├── index.html                    (~65 Zeilen – schlanker Einstiegspunkt)
+├── GDD.md                        (dieses Dokument – technisch)
+├── STORY.md                      (Story, Quests, Charaktere)
 ├── js/
-│   ├── textures.js             (prozedurale Canvas-Texturen)
-│   ├── sounds.js               (Web Audio Sound-Engine)
-│   ├── daynight.js             (Tag/Nacht + Steampunk-Animationen)
-│   ├── navigation.js           (Bewegung, Kollision, Terrain-Höhe)
-│   ├── npcs.js                 (NPCs, Tiere, Vögel + Hund-Fütterung)
-│   ├── feenreich-creatures.js  (Feenschwärme, Hasen, Füchse, Schmetterlinge)
-│   ├── touch-controls.js       (Mobile Touch-Joysticks)
-│   ├── ui-panel.js             (Info-Panel, Tageszeit, Sound-Toggles)
-│   ├── fairy-transform.js      (Weise Fee NPC + Feenverwandlung + Flugsteuerung)
-│   └── key-system.js           (Schlüssel + Inventory HUD + Lichtreich-Tor)
+│   ├── textures.js               (prozedurale Canvas-Texturen)
+│   ├── sounds.js                 (Web Audio Sound-Engine)
+│   ├── daynight.js               (Tag/Nacht + Steampunk-Animationen)
+│   ├── navigation.js             (Bewegung, Kollision, Terrain-Höhe)
+│   ├── npcs.js                   (NPCs, Tiere, Vögel; dog-special mit Fütterungs- & Führungs-KI)
+│   ├── feenreich-creatures.js    (Feenschwärme, Hasen, Füchse, Schmetterlinge)
+│   ├── touch-controls.js         (Mobile Touch-Joysticks)
+│   ├── ui-panel.js               (Info-Panel, Tageszeit, Sound-Toggles)
+│   ├── fairy-transform.js        (Weise Fee NPC + Feenverwandlung + Flugsteuerung)
+│   └── key-system.js             (Schlüssel + Inventory HUD + Lichtreich-Tor)
 └── scenes/
-    ├── kesselstadt.js          (statische Welt: Gebäude, Mauern, Tore, NPC alte Frau)
-    ├── kesselstadt-quests.js   (Quest 1 Logik: Knochen, Zeichen, Südtor-Mechanik)
-    ├── feenreich.js            (Feenreich Terrain + Kreaturen + Sounds)
-    └── lichtreich.js           (Lichtreich Kulisse)
+    ├── kesselstadt.js            (Kesselstadt HTML + gate-trigger + old-woman-npc + gasthaus-door)
+    ├── kesselstadt-quests.js     (dog-food-item, magic-signs, quest1-gate)
+    ├── kesselstadt-night.js      (kesselstadt-night – Nacht-Modus + 3 Nachtwachen)
+    ├── gasthaus.js               (gasthaus-scene + 4 NPC-Dialoge / Interaktionen)
+    ├── feenreich.js              (Feenreich Terrain + Kreaturen + Sounds)
+    └── lichtreich.js             (Lichtreich Kulisse)
 ```
-
-### Ladereihenfolge (index.html)
-`kesselstadt.js` → `kesselstadt-quests.js` → `feenreich.js` → `lichtreich.js`  
-Wichtig: `kesselstadt.js` muss vor `kesselstadt-quests.js` geladen sein, da `KESSELSTADT_HTML` (inkl. `gate-south-*`) zuerst im DOM stehen muss.
 
 ---
 
@@ -100,29 +98,20 @@ Wichtig: `kesselstadt.js` muss vor `kesselstadt-quests.js` geladen sein, da `KES
 - Farbe: #f5c842 / Abends: emissiveIntensity 0.55 / Nachts: 1.0
 
 ### Tore & Öffnungslogik
+- **Südtor** (→ Feenreich): gesperrt bis `QUEST1.completed`. Öffnet dauerhaft nach den drei Zeichen
+- **Westtor** (→ Lichtreich): gesperrt via Schloss + Barriere. Öffnet dauerhaft nach Schlüssel-Einsatz
+- **Nordtor** (→ Sturmreich): offen, keine Mechanik
+- **Osttor** (→ Schattenreich): offen, keine Mechanik
 
-| Tor | Richtung | Mechanik |
-|-----|----------|----------|
-| **Südtor** | → Feenreich | Gesperrt (Quest 1). Schloss + blaue Barriere. Öffnet wenn `QUEST1.completed = true` |
-| **Westtor** | → Lichtreich | Gesperrt via Schloss + Barriere. Öffnet dauerhaft nach Schlüssel-Einsatz |
-| **Nordtor** | → Sturmreich | Offen, keine Mechanik |
-| **Osttor** | → Schattenreich | Offen, keine Mechanik |
-
-**Südtor-Sequenz bei Quest-Abschluss:** Schloss + Barriere weiß aufleuchten (400ms) → beides verschwindet → Feen-Partikel erscheinen → Torflügel öffnen (800ms Delay)
-
-### Stadtleben
+### Stadtleben (Tag)
 - 9 NPCs, Patrol-System (28 Wegpunkte), gefilterter Spawn
-- 3 Hunde (1 mit goldenen Augen – Quest 1), 2 Katzen, 6 Hühner, 13 Vögel
-- Alte Frau NPC (statisch, Quest 1) – verschwindet nach Dialog
+- 3 Hunde (dog-special mit goldenen Augen – Quest 1), 2 Katzen, 6 Hühner, 13 Vögel
 
-### NPCs – Alte Frau (weise Fee in Verkleidung)
-- **Position:** (−6.5, 0, 4.5) – Ecke nordöstlich des Gasthauses, blickt zum Marktplatz
-- **Aussehen:** gebückte Haltung (−12° X-Tilt), grauer Umhang, weißes Haar, blassere Haut
-- **Verhalten:** Statisch (kein Patrol)
-- **Sichtbar:** Nur wenn `QUEST1.triggered !== true` (und Knochen noch nicht aufgehoben)
-- **Dialog bei < 2.5m:** „Finde den Hund mit den goldenen Augen. Er kennt den Weg."
-- **Nach 4s:** Panel verschwindet, Figur entfernt sich, `QUEST1.triggered = true`
-- **Einmalig:** Dialog erscheint nur beim ersten Mal
+### Nacht-Modus (`kesselstadt-night`)
+- Tag-NPCs, Tiere und Vögel werden ausgeblendet
+- dog-special bewacht Gasthaus-Eingang (Pos: −9, 0, 12.5)
+- 3 Nachtwachen patrouillieren mit Laterne; Dialog-Panel bei Annäherung
+- Tageszeit wird auf Nacht gesetzt (`daynight: mode:night`)
 
 ### Sounds (Web Audio API)
 - Tag: Stimmengewirr, Dampfpfeifen, Zahnrad-Klingen, Schmiedehammer
@@ -133,13 +122,40 @@ Wichtig: `kesselstadt.js` muss vor `kesselstadt-quests.js` geladen sein, da `KES
 - Kreise: Türme, Brunnen, runde Strukturen
 - Uhrturm: separater AABB (4.5×4.5m)
 - Torlücken (r ≤ 3m um Tormitte) freigelassen
-- Dynamisch (entfernt bei Öffnung):
-  - Lichtreich-Barriere: x=−29..−27, z=−2.5..2.5 → Event `lichtreich-unlocked`
-  - Südtor-Barriere: x=−2.1..2.1, z=27.2..28.8 → via `player-collision._boxes` aus `quest1-gate`
+- Dynamisch: Lichtreich-Barriere (x=−29..−27, z=−2.5..2.5) wird bei Öffnung entfernt
+- Gasthaus-Box wird beim Eintreten aus player-collision entfernt (Innenraum-Navigation)
 
 ---
 
-## 4. Das Feenreich ✅
+## 4. Das Gasthaus ✅
+
+### Zugang (`gasthaus-door`)
+- Außen-Trigger: Weltpos (−9, 0, 10.52), Radius 2m
+- Hint-Panels: „E / Trigger: Eintreten" / „E / Trigger: Verlassen"
+- Fade-Transition (Schwarz, 300ms) beim Wechsel Außen↔Innen
+- Beim Eintreten: Alle Szene-Entities ausgeblendet; Gasthaus-Kollisionsbox deaktiviert
+- Spieler landet bei Weltpos (−9, 0, 7.5) im Inneren
+
+### Innenraum (`gasthaus-scene`)
+- Koordinatenursprung: Weltpos (−9, 0, 8) = `#gasthaus-interior`
+- Raummaße: 12×8m, Höhe 3.20m
+- Feuerstelle (Nordwand), Theke mit Regalen (Westwand), 5 Tische mit Bänken
+- Prozedurale Texturen: `tex-inn-planks`, `tex-inn-stone`, `tex-inn-beam`
+- Feuerschein: 1 Punktlicht (orange, Intensität 1.6)
+
+### NPCs im Gasthaus
+
+| Figur | Lokale Pos | Weltpos | Rotation |
+|-------|-----------|---------|----------|
+| Gastwirt | (−5.80, 0, −2.0) | (−14.8, 0, 6.0) | rotY=90 (Ost) |
+| Reisender A | (−3.2, 0, −2.37) | (−12.2, 0, 5.63) | rotY=180 (Nord) |
+| Reisender B | (−3.2, 0, −3.83) | (−12.2, 0, 4.17) | rotY=0 (Süd) |
+| Alter Soldat | (3.2, 0, 0.33) | (−5.8, 0, 8.33) | rotY=180 (Nord) |
+| Frau mit Kapuze | (3.2, 0, −3.83) | (−5.8, 0, 4.17) | rotY=0 (Süd) |
+
+---
+
+## 5. Das Feenreich ✅
 
 ### Terrain
 - Hügelige Wiese (Pastellfarben), 5 Hügel, 5 Riesenpilze, 10 kleine Pilze
@@ -169,7 +185,7 @@ Wichtig: `kesselstadt.js` muss vor `kesselstadt-quests.js` geladen sein, da `KES
 
 ---
 
-## 5. Das Lichtreich 🔲
+## 6. Das Lichtreich 🔲
 
 ### Lage & Zugang
 - Westen (−x > |z|), erreichbar nach Westtor-Öffnung
@@ -177,86 +193,63 @@ Wichtig: `kesselstadt.js` muss vor `kesselstadt-quests.js` geladen sein, da `KES
 
 ---
 
-## 6. Story-Mechaniken
+## 7. Story-Mechaniken
 
-### Globaler Spielzustand (`window.*`)
+### Quest 0: Gasthaus-Vorgeschichte ✅
 
-```js
-window.INVENTORY = {
-  magicKey: false,   // Schlüssel aufgehoben (Feenreich-Pilz)
-  dogFood:  false,   // Knochen aufgehoben (Marktstand 2)
-}
+Alle Flags in `window.QUEST0`:
 
-window.QUEST1 = {
-  triggered: false,  // Alte Frau wurde getriggert (Dialog einmalig gesehen)
-  signs:     0,      // 0..3 magische Zeichen untersucht
-  dogFed:    false,  // Hund gefüttert (reserviert, nicht aktiv geprüft)
-  completed: false,  // Quest abgeschlossen → Südtor öffnet
-}
+| Flag | Auslöser | Bedingung |
+|------|----------|-----------|
+| `heardTravelers` | Auto bei < 2.5m | — |
+| `heardSoldier` | E/Trigger bei < 2m | — |
+| `sawCloakedWoman` | Auto bei < 2m | — |
+| `heardTavern` | E/Trigger bei < 2m | `heardSoldier && heardTravelers` |
 
-window.LICHTREICH_GATE_UNLOCKED = false  // Westtor dauerhaft geöffnet
-```
+**Reisende** (`gasthaus-travelers`): Auto-Dialog über Tisch 3, Tischmitte (−12.2, 0, 4.9). Drei Zeilen, Pausen 6s. Einmalig.
 
-### Quest 1 – Ablauf ✅ (Rückkehr alte Frau fehlt noch)
+**Alter Soldat** (`soldier-dialog`): Hint „E / Trigger: Ansprechen" bei < 2m. Drei Zeilen, Pausen 6s. Einmalig.
 
-```
-Alte Frau Dialog  →  Hund mit goldenen Augen finden
-      ↓                         ↓
-QUEST1.triggered = true    Knochen aufheben (Marktstand 2)
-                                ↓
-                          INVENTORY.dogFood = true
-                                ↓
-                     3 magische Zeichen erscheinen
-                     (Brunnen / Gasthaus / Dampfmaschine)
-                                ↓
-                     Alle 3 untersuchen (E / Trigger)
-                          QUEST1.signs = 3
-                                ↓
-                     QUEST1.completed = true
-                     Schloss + Barriere Südtor weg
-                     Feen-Partikel + Torflügel öffnen
-```
+**Frau mit Kapuze** (`cloaked-woman`): Stumme Interaktion bei < 2m. Aufstehen (0.5s, easeInOut) → wegdrehen (0.4s) → verblassen (1s, Three.js-Traverse). Einmalig. Kein Hint.
 
-### Quest 1 – Knochen-Item (`dog-food-item`)
-- **Position:** (4.2, 1.08, −4.5) – Tisch von Marktstand 2
-- Schwebt + rotiert (tick-Animation)
-- Interaktionsradius: 1.5m XZ
-- HUD-Slot: `#inv-food-slot` zeigt 🦴
-- Hinweis: „E / Trigger: Aufheben" (kamerazugewandt)
+**Gastwirt** (`innkeeper-dialog`): Hint nur sichtbar wenn `heardSoldier && heardTravelers`. Drei Zeilen, Pausen 3s. Setzt `heardTavern = true` nach letzter Zeile.
 
-### Quest 1 – Magische Zeichen (`magic-signs`)
-Erscheinen erst wenn `INVENTORY.dogFood = true` (einmalige Enthüllung mit Fade-In).
+### Quest 1: Alter Hund / Drei Zeichen / Südtor ✅
 
-| ID | Position | Beschreibung |
-|----|----------|-------------|
-| `sign-brunnen` | (0, 0.90, 2.15) | Außen am Südrand des Brunnenbeckens |
-| `sign-gasthaus` | (−9, 5.20, 11.58) | Am Gasthaus-Vordach |
-| `sign-dampf` | (14.65, 1.50, −2.00) | Am Dampfmaschinen-Zahnrad (ry=90°) |
+Alle Flags in `window.QUEST1`:
 
-- Interaktionsradius: 2m XZ
-- HUD-Counter: `#inv-signs-slot` zeigt ✦ 0/3 … ✦ 3/3
-- Aufleuchten nach Untersuchen: violett (emissiveIntensity 3.0)
+| Flag | Typ | Bedeutung |
+|------|-----|-----------|
+| `signs` | 0–3 | Anzahl untersuchter Runenzeichen |
+| `dogFed` | bool | Hund gefüttert |
+| `completed` | bool | Quest abgeschlossen, Südtor geöffnet |
 
-### Quest 1 – Südtor-Mechanik (`quest1-gate`)
-- **Schloss:** (0, 3.2, 27.5) – goldenes 3D-Objekt, rotiert + schwebt (identisches Schema wie Westtor)
-- **Barriere:** `a-plane` bei (0, 2.5, 28), blaue pulsierende Ebene (`side:double`)
-- **Pulsieren:** `opacity = 0.28 + |sin(t·0.0018)| · 0.30`
-- **Kollision:** AABB `{ x0:−2.1, x1:2.1, z0:27.2, z1:28.8 }` dynamisch in `player-collision._boxes`
-- **Hinweis:** „Finde die drei Zeichen" erscheint bei < 3m (unterhalb des Schlosses, y=2.2)
-- **Abschluss:** Sofort wenn `QUEST1.signs >= 3` → Flash → Entfernung → Torflügel + Partikel
+**Hundefutter** (`dog-food-item`): Knochen auf Marktstand 2, Weltpos (4.2, 1.08, −4.5). Schwebt + rotiert. Pickup per E/Trigger bei < 1.5m. Setzt `INVENTORY.dogFood = true`. HUD-Slot 🦴.
 
-### Schlüssel-System (`magic-key` / `lichtreich-gate`)
+**Magische Zeichen** (`magic-signs`): Drei Runen (Brunnen, Gasthaus-Vordach, Dampfmaschine). Unsichtbar bis `INVENTORY.dogFood = true`, dann Fade-In per A-Frame-Animation (`startEvents:sign-reveal`). Untersuchen per E/Trigger bei < 2m. HUD-Slot `✦ 0/3`. Positionen:
+
+| Zeichen | Weltpos | ry |
+|---------|---------|-----|
+| Brunnen | (0, 0.62, 1.90) | 0° |
+| Gasthaus-Vordach | (−9, 5.20, 11.58) | 0° |
+| Dampfmaschine | (14.65, 1.50, −2.00) | 90° |
+
+**Hund-Fütterung** (in `npcs.js`, `city-life`): dog-special hat goldene Augen (#FFD700, emissiveIntensity 1.5). Retreating bei < 4m Abstand. Nach Fütterung: Fress-Animation (1.5s Kopfnicken, Schwanzwedeln), dann führt Hund den Spieler zu den drei Zeichen.
+
+**Südtor** (`quest1-gate`): Geschlossen bis `QUEST1.signs === 3`. Hint „Finde die drei Zeichen" bei < 3m. Bei Abschluss: Zeichen leuchten weiß auf (1s) → Feen-Partikel (8 Orbs, Farbe #88ffcc) am Tor → Torflügel öffnen (nach 800ms Delay). `QUEST1.completed = true`.
+
+### Schlüssel-System ✅
 - Schlüssel bei (−13, 12, 51), Interaktionsradius 2.5m
 - Hinweis bei Nähe: „E / Trigger: Aufheben"
 
 ### Inventory HUD
-- `#inventory-hud` rechts unten, Slots: 🗝️ `#inv-key-slot` / 🦴 `#inv-food-slot` / ✦ `#inv-signs-slot`
-- Persistent innerhalb der Session via `window.INVENTORY`
-- In VR ausgeblendet
+- `#inventory-hud` rechts unten, `.inv-slot`-Items mit `has-item`-Klasse
+- Slots: 🗝️ (magicKey), 🦴 (dogFood), `✦ 0/3` (signs)
+- Persistent: `window.INVENTORY` / In VR ausgeblendet
 
-### Westtor öffnen (`lichtreich-gate`)
-- Schloss: 3D-Objekt, goldenes Glühen, schwebend + rotierend bei (−26.5, 3.2, 0)
-- Barriere: blaue pulsierende Ebene bei (−28, 2.5, 0)
+### Westtor öffnen ✅
+- Schloss: 3D-Objekt, goldenes Glühen, schwebend + rotierend
+- Barriere: blaue pulsierende Ebene, physisch blockierend
 - Mit Schlüssel bei < 5.5m: „E / Trigger: Tor öffnen"
 - Sequenz: Aufleuchten (400ms) → Schloss + Barriere weg → Torflügel öffnen
 - `window.LICHTREICH_GATE_UNLOCKED = true`
@@ -268,7 +261,7 @@ Erscheinen erst wenn `INVENTORY.dogFood = true` (einmalige Enthüllung mit Fade-
 
 ---
 
-## 7. Navigation & Steuerung
+## 8. Navigation & Steuerung
 
 | Plattform | Bewegung | Kamera | Fee ↑ | Fee ↓ |
 |-----------|----------|--------|-------|-------|
@@ -281,25 +274,27 @@ Erscheinen erst wenn `INVENTORY.dogFood = true` (einmalige Enthüllung mit Fade-
 
 ---
 
-## 8. UI & Panel
+## 9. UI & Panel
 
 - **Quest 3:** X-Button / **Desktop:** M / **Mobile:** Button unten rechts
 - Inhalt: Zone, Tageszeit (nur Kesselstadt), Sound-Toggles
 
 ---
 
-## 9. Bekannte TODOs
+## 10. Bekannte TODOs
 
 | Priorität | Was |
 |-----------|-----|
-| 🟠 Mittel | Quest 1: Alte Frau kehrt nach Quest-Abschluss als Fee in die Kesselstadt zurück |
-| 🟠 Mittel | Lichtreich: Terrain, Kreaturen, Sounds, Quest 2 |
-| 🟡 Niedrig | aframe-watcher nicht kompatibel mit modularer Struktur |
+| 🔴 Hoch | Gasthaus: Ausgang erst nach `heardTavern = true` freigeben |
+| 🔴 Hoch | Schmied-Quest (Quest 2): NPC + Dialog + Mechanik |
+| 🟠 Mittel | Lichtreich: Terrain, Kreaturen, Sounds, Quest 3 |
+| 🟠 Mittel | old-woman-npc aktivieren (wartet auf Quest-0-Abschluss) |
 | 🟡 Niedrig | VR-Teleport trifft nur Y=0 |
+| 🟡 Niedrig | aframe-watcher nicht kompatibel mit modularer Struktur |
 
 ---
 
-## 10. Entwicklungs-Roadmap
+## 11. Entwicklungs-Roadmap
 
 | Phase | Was | Status |
 |-------|-----|--------|
@@ -310,17 +305,18 @@ Erscheinen erst wenn `INVENTORY.dogFood = true` (einmalige Enthüllung mit Fade-
 | 7d | Weise Fee + Feenverwandlung + Flugsteuerung | ✅ |
 | 7e | Schlüssel → Inventory → Westtor | ✅ |
 | 7f | Pilz-Kappe begehbar + Multi-Plattform-Input | ✅ |
-| 8a | Quest 1: Knochen + Zeichen + Südtor (Schloss + Barriere) | ✅ |
-| 8b | Quest 1: Alte Frau NPC (Dialog, verschwindet) | ✅ |
-| 8c | Quest 1: Alte Frau kehrt als Fee zurück | 🔲 |
-| 9 | Lichtreich: Terrain + Kreaturen + Sounds + Quest | 🔲 |
-| 10 | Schattenreich + Sturmreich | 🔲 |
-| 11 | Mixed Reality Modus | 🔲 |
-| 12 | Polish & Optimierung | 🔲 |
+| 8a | Quest 0: Gasthaus-Dialoge (Reisende, Soldat, Kapuze, Gastwirt) | ✅ |
+| 8b | Quest 1: Hund + Zeichen + Südtor | ✅ |
+| 8c | Gasthaus: Nacht-Modus + Nachtwachen | ✅ |
+| 9 | Schmied-Quest (Quest 2) | 🔲 |
+| 10 | Lichtreich: Terrain + Kreaturen + Sounds + Quest | 🔲 |
+| 11 | Schattenreich + Sturmreich | 🔲 |
+| 12 | Mixed Reality Modus | 🔲 |
+| 13 | Polish & Optimierung | 🔲 |
 
 ---
 
-## 11. Technische Erkenntnisse
+## 12. Technische Erkenntnisse
 
 ### Performance Quest 3
 - `shader:flat` wo möglich
@@ -333,18 +329,21 @@ Erscheinen erst wenn `INVENTORY.dogFood = true` (einmalige Enthüllung mit Fade-
 - Feenmodus (rig.y > 1m): `_feenCircles` übersprungen → freies Fliegen
 - Terrain-Höhe: feenHills (Kugeln) + feenMushroomCaps (Ellipsoide)
 - Ellipsoid-Formel: `capY = cy + b × √(1 − d²/a²)`
-- Dynamische Barrieren: per `_boxes.push/splice` aus Quest-Komponenten eintragbar
-
-### Quest-Komponenten-Architektur
-- Quest-Logik strikt getrennt von statischer Welt (`kesselstadt-quests.js` vs. `kesselstadt.js`)
-- `kesselstadt.js` definiert `KESSELSTADT_HTML` (inkl. Torflügel-Entities) → muss vor Quest-Datei geladen sein
-- Kollisions-Barrieren für Quests: dynamisch via `this.el.sceneEl.components['player-collision']._boxes`
-- Quest-Gate-Sequenz-Schema (Schloss + Barriere + Partikel + Torflügel): identisch für West- und Südtor
 
 ### Feenverwandlung
 - Rig-Scale: 1.0 → 0.22 über 2.8s (easeInOut)
 - Kamera-Weltposition bleibt konstant während Skalierung
 - `fairy-mode` nutzt `player-collision._getTerrainHeight()` als Bodenlimit
+
+### NPC-Animationen (Three.js direkt)
+- Aufstehen / Wegdrehen / Verblassen: `object3D.position/rotation/material` direkt → kein `setAttribute` in Tick
+- `material.transparent = true; material.needsUpdate = true` einmalig beim Start der Fade-Phase
+- `object3D.traverse` für Opacity-Fade über alle Kindmeshes
+
+### Dialog-Panels
+- A-Entity mit Frame-Plane + BG-Plane + a-text, initial `visible:false`
+- Kamerazugewandt per `Math.atan2` in tick()
+- `startEvents`-Animationen auf Zeichen-Entities statt `setAttribute` in tick
 
 ### Allgemeine Erkenntnisse
 - Scripts im `<head>`: nie `document.body` direkt – in A-Frame `init()` initialisieren
@@ -353,4 +352,4 @@ Erscheinen erst wenn `INVENTORY.dogFood = true` (einmalige Enthüllung mit Fade-
 - Canvas-Texturen einmalig zeichnen, per Clone wiederverwenden
 - Bodenflächen Y-Reihenfolge: Lichtreich 0.003 < Feenreich 0.005 < Schimmer 0.015–0.02
 - Diagonale Grenze: `z = −x` / `z = x` – alle Grenzelemente folgen 45°-Prinzip
-- NPC-Dialog-Panels: initial bei y=−200 parken, in tick() auf Zielposition setzen + kamera-facing
+- Gasthaus-Innenraum: Kollisionsbox beim Eintreten aus `player-collision._boxes` entfernen, beim Verlassen wiederherstellen
