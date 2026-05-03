@@ -1316,3 +1316,80 @@ AFRAME.registerSystem('gasthaus-morning', {
     }, 3500);
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GASTHAUS-COLLISION – AABB-Boxen für Innenraum-Kollision
+// Fügt Boxen in player-collision ein wenn Spieler drin ist; entfernt sie beim Verlassen.
+// Registriert als System (kein index.html-Attribut nötig)
+//
+// Koordinatensystem: Interior-Ursprung bei Welt (-9, 0, 8)
+//   Welt_x = Lokal_x - 9   |   Welt_z = Lokal_z + 8
+// ─────────────────────────────────────────────────────────────────────────────
+AFRAME.registerSystem('gasthaus-collision', {
+  init() {
+    this._boxes = [
+      // ── Wände ──────────────────────────────────────────────────────────────
+      // Nordwand + Kaminmantel (lokal z=-5.50 → Welt 2.50; Kamin vorspringend bis 3.10)
+      { x0: -15.14, x1:  -2.86, z0:  2.22, z1:  3.10 },
+      // Westwand (lokal x=-6.00 → Welt -15.00)
+      { x0: -15.28, x1: -15.00, z0:  2.22, z1: 10.78 },
+      // Ostwand (lokal x=+6.00 → Welt -3.00)
+      { x0:  -3.00, x1:  -2.72, z0:  2.22, z1: 10.78 },
+      // Südwand links (neben Tür, lokal x=-5.95–-0.90 → Welt -14.95–-9.90)
+      { x0: -14.95, x1:  -9.90, z0: 10.50, z1: 10.78 },
+      // Südwand rechts (lokal x=0.90–5.95 → Welt -8.10–-3.05)
+      { x0:  -8.10, x1:  -3.05, z0: 10.50, z1: 10.78 },
+      // ── Theke ──────────────────────────────────────────────────────────────
+      // Tresenkörper + Tresenplatte (lokal x=-5.60–-4.68, z=-4.30–0.30)
+      { x0: -14.60, x1: -13.90, z0:  3.70, z1:  8.30 },
+      // ── Tische + Bänke (je ±0.80 x, ±0.82 z vom Weltmittelpunkt) ──────────
+      // Tisch 1 (lokal -3.2/-0.4 → Welt -12.2/7.6)
+      { x0: -13.00, x1: -11.40, z0:  6.78, z1:  8.42 },
+      // Tisch 2 (lokal  3.2/-0.4 → Welt  -5.8/7.6)
+      { x0:  -6.60, x1:  -5.00, z0:  6.78, z1:  8.42 },
+      // Tisch 3 (lokal -3.2/-3.1 → Welt -12.2/4.9)
+      { x0: -13.00, x1: -11.40, z0:  4.08, z1:  5.72 },
+      // Tisch 4 (lokal  3.2/-3.1 → Welt  -5.8/4.9)
+      { x0:  -6.60, x1:  -5.00, z0:  4.08, z1:  5.72 },
+      // Tisch 5 (lokal 0.0/-4.6 → Welt -9.0/3.4; Nordbank an Nordwand-Box anschliessend)
+      { x0:  -9.80, x1:  -8.20, z0:  3.10, z1:  4.30 },
+    ];
+    this._active = false;
+    this.el.addEventListener('loaded', () => this._patch(), { once: true });
+  },
+
+  _patch() {
+    const gd = this.el.components['gasthaus-door'];
+    const pc = this.el.components['player-collision'];
+    if (!gd || !pc) return;
+
+    const self      = this;
+    const origEnter = gd._doEnter.bind(gd);
+    const origExit  = gd._doExit.bind(gd);
+
+    gd._doEnter = function () {
+      origEnter();
+      self._addBoxes(pc);
+    };
+
+    gd._doExit = function () {
+      self._removeBoxes(pc);
+      origExit();
+    };
+  },
+
+  _addBoxes(pc) {
+    if (this._active) return;
+    this._active = true;
+    this._boxes.forEach(b => pc._boxes.push(b));
+  },
+
+  _removeBoxes(pc) {
+    if (!this._active) return;
+    this._active = false;
+    this._boxes.forEach(b => {
+      const i = pc._boxes.indexOf(b);
+      if (i !== -1) pc._boxes.splice(i, 1);
+    });
+  },
+});
