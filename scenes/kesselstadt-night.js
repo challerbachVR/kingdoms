@@ -25,9 +25,17 @@ AFRAME.registerComponent('kesselstadt-night', {
 
   /* ── Alle Tages-NPCs / Tiere / Vögel ausblenden ─────────────────────── */
   _hideNPCs() {
+    this._hideRetries = (this._hideRetries || 0) + 1;
     const clEl = document.getElementById('city-life-root');
     const cl   = clEl && clEl.components['city-life'];
-    if (!cl || !cl._built) { setTimeout(() => this._hideNPCs(), 100); return; }
+    if (!cl || !cl._built) {
+      if (this._hideRetries > 20) {
+        console.warn('kesselstadt-night: city-life nicht gefunden');
+        return;
+      }
+      setTimeout(() => this._hideNPCs(), 100);
+      return;
+    }
 
     cl._npcs.forEach(n => { n.root.object3D.visible = false; });
 
@@ -162,7 +170,7 @@ AFRAME.registerComponent('kesselstadt-night', {
         glow.setAttribute('radius', '0.030');
         glow.setAttribute('position', '0 -0.04 0');
         glow.setAttribute('segments-width', '6');
-        glow.setAttribute('segments-height', '4');
+        glow.setAttribute('segments-height', '6');
         glow.setAttribute('material',
           'color:#ffee88;emissive:#ffcc44;emissiveIntensity:2.5;shader:flat');
         anchor.appendChild(glow);
@@ -257,7 +265,7 @@ AFRAME.registerComponent('kesselstadt-night', {
       g.root.object3D.rotation.y = Math.atan2(dx, dz);
       if (t - g.dialogAt >= 4000) {
         g.dialogActive = false;
-        g.panelEl.setAttribute('visible', 'false');
+        g.panelEl.object3D.visible = false;
       }
       return;
     }
@@ -271,7 +279,7 @@ AFRAME.registerComponent('kesselstadt-night', {
       g.dialogActive = true;
       g.dialogAt     = t;
       g.panelTxt.setAttribute('value', msg);
-      g.panelEl.setAttribute('visible', 'true');
+      g.panelEl.object3D.visible = true;
       return;
     }
 

@@ -3,6 +3,95 @@
 // Baut den gesamten Stadtinhalt dynamisch auf.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── Globale NPC-Utilities ────────────────────────────────────────────────
+window.NPC_REGISTRY = window.NPC_REGISTRY || {};
+
+window.showNarrativeText = function(text, duration) {
+  duration = duration || 4000;
+  const existing = document.getElementById('narrative-text-panel');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+  const cam = document.getElementById('camera');
+  if (!cam) return;
+
+  const h = document.createElement('a-entity');
+  h.id = 'narrative-text-panel';
+  h.setAttribute('position', '0 -0.35 -1.8');
+
+  const frame = document.createElement('a-plane');
+  frame.setAttribute('width',  '2.40');
+  frame.setAttribute('height', '0.50');
+  frame.setAttribute('position', '0 0 -0.003');
+  frame.setAttribute('material',
+    'color:#888890;shader:flat;transparent:true;opacity:0.50;' +
+    'emissive:#aaaaaa;emissiveIntensity:0.26');
+  h.appendChild(frame);
+
+  const bg = document.createElement('a-plane');
+  bg.setAttribute('width',  '2.34');
+  bg.setAttribute('height', '0.44');
+  bg.setAttribute('material',
+    'color:#0c0c10;shader:flat;transparent:true;opacity:0.92');
+  h.appendChild(bg);
+
+  const txt = document.createElement('a-text');
+  txt.setAttribute('value', text);
+  txt.setAttribute('align', 'center');
+  txt.setAttribute('color', '#e8e8d8');
+  txt.setAttribute('width', '2.12');
+  txt.setAttribute('position', '0 0 0.005');
+  h.appendChild(txt);
+
+  cam.appendChild(h);
+
+  setTimeout(() => {
+    if (h.parentNode) h.parentNode.removeChild(h);
+  }, duration);
+};
+
+window.showHint = function(text) {
+  const existing = document.getElementById('hint-text-panel');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+  const cam = document.getElementById('camera');
+  if (!cam) return;
+
+  const h = document.createElement('a-entity');
+  h.id = 'hint-text-panel';
+  h.setAttribute('position', '0 -0.60 -1.8');
+
+  const frame = document.createElement('a-plane');
+  frame.setAttribute('width',  '1.40');
+  frame.setAttribute('height', '0.28');
+  frame.setAttribute('position', '0 0 -0.003');
+  frame.setAttribute('material',
+    'color:#b08848;shader:flat;transparent:true;opacity:0.48;' +
+    'emissive:#b08848;emissiveIntensity:0.32');
+  h.appendChild(frame);
+
+  const bg = document.createElement('a-plane');
+  bg.setAttribute('width',  '1.34');
+  bg.setAttribute('height', '0.22');
+  bg.setAttribute('material',
+    'color:#1a0800;shader:flat;transparent:true;opacity:0.92');
+  h.appendChild(bg);
+
+  const txt = document.createElement('a-text');
+  txt.setAttribute('value', text);
+  txt.setAttribute('align', 'center');
+  txt.setAttribute('color', '#ffe8b0');
+  txt.setAttribute('width', '1.20');
+  txt.setAttribute('position', '0 0 0.005');
+  h.appendChild(txt);
+
+  cam.appendChild(h);
+
+  // Auto-remove after 2s
+  setTimeout(() => {
+    if (h.parentNode) h.parentNode.removeChild(h);
+  }, 2000);
+};
+
 AFRAME.registerComponent('gate-trigger', {
   // Westtor wird durch lichtreich-gate gesteuert.
   // Südtor wird durch quest1-gate gesteuert.
@@ -249,12 +338,12 @@ AFRAME.registerComponent('gasthaus-door', {
     else sc.addEventListener('loaded', () => this._build(), { once: true });
 
     document.addEventListener('keydown', e => {
-      if (e.code === 'KeyE') this._tryTransit();
+      if (e.code === 'KeyE' && this._near) this._tryTransit();
     });
 
     sc.addEventListener('loaded', () => {
       const rh = document.getElementById('rightHand');
-      if (rh) rh.addEventListener('triggerdown', () => this._tryTransit());
+      if (rh) rh.addEventListener('triggerdown', () => { if (this._near) this._tryTransit(); });
     }, { once: true });
   },
 
@@ -383,7 +472,7 @@ AFRAME.registerComponent('gasthaus-door', {
       if (goingIn) this._doEnter(); else this._doExit();
       this._fadeIn(() => {
         this._transitioning = false;
-        this._cooldown = 1.5;
+        this._cooldown = 4.0;
       });
     });
   },
@@ -515,11 +604,11 @@ AFRAME.registerComponent('schmiede-door', {
     else sc.addEventListener('loaded', () => this._build(), { once: true });
 
     document.addEventListener('keydown', e => {
-      if (e.code === 'KeyE') this._tryTransit();
+      if (e.code === 'KeyE' && this._near) this._tryTransit();
     });
     sc.addEventListener('loaded', () => {
       const rh = document.getElementById('rightHand');
-      if (rh) rh.addEventListener('triggerdown', () => this._tryTransit());
+      if (rh) rh.addEventListener('triggerdown', () => { if (this._near) this._tryTransit(); });
     }, { once: true });
   },
 
@@ -634,7 +723,7 @@ AFRAME.registerComponent('schmiede-door', {
     const dn = this.el.sceneEl.components.daynight;
     if (!dn) return true;
     const m = dn.data.mode;
-    return m === 'day' || m === 'morning';
+    return m === 'morning';
   },
 
   _tryTransit() {
@@ -653,7 +742,8 @@ AFRAME.registerComponent('schmiede-door', {
 
   _doEnter() {
     this._inside = true;
-    const KEEP = new Set(['rig', 'schmiede-interior', 'sun', 'ambLight']);
+    window.FORGE_INSIDE = true;
+    const KEEP = new Set(['rig', 'schmiede-interior', 'sun', 'ambLight', 'cloaked-woman-figure']);
     this._hiddenEls = [];
     Array.from(this.el.sceneEl.children).forEach(el => {
       if (!el.object3D || KEEP.has(el.id)) return;
@@ -679,6 +769,7 @@ AFRAME.registerComponent('schmiede-door', {
 
   _doExit() {
     this._inside = false;
+    window.FORGE_INSIDE = false;
     this._hiddenEls.forEach(el => { if (el.parentNode) el.object3D.visible = true; });
     this._hiddenEls = [];
     const pc = this.el.sceneEl.components['player-collision'];
@@ -694,6 +785,10 @@ AFRAME.registerComponent('schmiede-door', {
     this._near = false;
     if (this._innerHint) this._innerHint.setAttribute('visible', 'false');
     if (this._touchBtn) { this._touchBtn.textContent = 'Eintreten'; this._touchBtn.style.display = 'none'; }
+    // Tageszeit auf Mittag setzen wenn Flashback gesehen
+    if (window.QUEST1 && window.QUEST1.firstMemory) {
+      this.el.sceneEl.setAttribute('daynight', 'mode:midday');
+    }
   },
 
   tick(t, dt) {
@@ -733,6 +828,1078 @@ AFRAME.registerComponent('schmiede-door', {
     [this._hint, this._innerHint, this._closedHint, this._interior].forEach(el => {
       if (el && el.parentNode) el.parentNode.removeChild(el);
     });
+  },
+});
+
+// ─── Händler-Tür (Händlerhaus NO) ──────────────────────────────────────────
+// Nur Mittags (mode === 'midday') betretbar.
+// Außentür bei Weltpos (9, ~-5.5).
+
+const MERCHANT_OUTER = { x: 9, z: -5.5 };
+const MERCHANT_INNER = { x: 9, z: -4.5 };  // 1m vor Tür (Richtung Straße) – kein Overlap mit NPC-Zone
+const MERCHANT_R2    = 4;   // 2m radius²
+
+AFRAME.registerComponent('haendler-door', {
+
+  init() {
+    this._cam           = null;
+    this._rig           = null;
+    this._camWP         = new THREE.Vector3();
+    this._inside        = false;
+    this._transitioning = false;
+    this._cooldown      = 0;
+    this._near          = false;
+    this._hint          = null;
+    this._innerHint     = null;
+    this._closedHint    = null;
+    this._touchBtn      = null;
+    this._fade          = null;
+    this._interior      = null;
+    this._hiddenEls     = [];
+    this._merchantBox   = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && this._near) this._tryTransit();
+    });
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => { if (this._near) this._tryTransit(); });
+    }, { once: true });
+  },
+
+  _build() {
+    this._cam = document.getElementById('camera');
+    this._rig = document.getElementById('rig');
+    this._buildFade();
+    this._buildHints();
+    this._buildInterior();
+    this._buildTouchBtn();
+  },
+
+  _buildFade() {
+    const fade = document.createElement('a-plane');
+    fade.setAttribute('width',  '40');
+    fade.setAttribute('height', '40');
+    fade.setAttribute('position', '0 0 -0.06');
+    fade.setAttribute('material',
+      'color:#000;shader:flat;transparent:true;opacity:0;depthTest:false;side:double');
+    fade.setAttribute('animation__black',
+      'property:material.opacity;to:1;dur:300;startEvents:fade-black');
+    fade.setAttribute('animation__clear',
+      'property:material.opacity;to:0;dur:300;startEvents:fade-clear');
+    this._cam.appendChild(fade);
+    this._fade = fade;
+  },
+
+  _mkPanel(col, text) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', '0 -200 0');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  '1.48');
+    frame.setAttribute('height', '0.42');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      `color:${col};shader:flat;transparent:true;opacity:0.80`);
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  '1.42');
+    bg.setAttribute('height', '0.36');
+    bg.setAttribute('material',
+      'color:#140c00;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', text);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ffe8b0');
+    txt.setAttribute('width', '1.02');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _buildHints() {
+    this._hint       = this._mkPanel('#5a3818', 'E / Trigger: Eintreten');
+    this._innerHint  = this._mkPanel('#3a2810', 'E / Trigger: Verlassen');
+    this._closedHint = this._mkPanel('#4a1818', 'Nur mittags geöffnet');
+  },
+
+  _buildInterior() {
+    const el = document.createElement('a-entity');
+    el.setAttribute('id', 'haendler-interior');
+    el.setAttribute('position', '9 0 -8');
+    el.setAttribute('visible', 'false');
+    const floor = document.createElement('a-plane');
+    floor.setAttribute('rotation', '-90 0 0');
+    floor.setAttribute('width',  '8');
+    floor.setAttribute('height', '6');
+    floor.setAttribute('material',
+      'shader:flat;transparent:true;opacity:0;side:double');
+    el.appendChild(floor);
+    this.el.sceneEl.appendChild(el);
+    this._interior = el;
+  },
+
+  _buildTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch || document.getElementById('merchant-touch-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'merchant-touch-btn';
+    btn.textContent = 'Eintreten';
+    btn.style.cssText =
+      'position:fixed;bottom:200px;left:50%;transform:translateX(-50%);' +
+      'background:rgba(120,60,20,0.90);color:#fff0e0;border:none;' +
+      'border-radius:30px;padding:12px 30px;font-size:17px;' +
+      'font-family:sans-serif;font-weight:bold;display:none;z-index:10001;touch-action:none;';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      this._tryTransit();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  _fadeOut(cb) {
+    if (!this._fade) { cb(); return; }
+    this._fade.emit('fade-black');
+    setTimeout(cb, 320);
+  },
+  _fadeIn(cb) {
+    if (!this._fade) { cb(); return; }
+    this._fade.emit('fade-clear');
+    setTimeout(cb, 320);
+  },
+
+  _isDaytime() {
+    const dn = this.el.sceneEl.components.daynight;
+    if (!dn) return true;
+    const m = dn.data.mode;
+    return m === 'midday';
+  },
+
+  _tryTransit() {
+    if (!this._near || this._transitioning) return;
+    if (!this._inside && !this._isDaytime()) return;
+    this._transitioning = true;
+    const goingIn = !this._inside;
+    this._fadeOut(() => {
+      if (goingIn) this._doEnter(); else this._doExit();
+      this._fadeIn(() => {
+        this._transitioning = false;
+        this._cooldown = 4.0;
+      });
+    });
+  },
+
+  _doEnter() {
+    this._inside = true;
+    window.MERCHANT_INSIDE = true;
+    const KEEP = new Set(['rig', 'haendler-interior', 'sun', 'ambLight', 'cloaked-woman-figure']);
+    this._hiddenEls = [];
+    Array.from(this.el.sceneEl.children).forEach(el => {
+      if (!el.object3D || KEEP.has(el.id)) return;
+      if (el.object3D.visible) {
+        el.object3D.visible = false;
+        this._hiddenEls.push(el);
+      }
+    });
+    const pc = this.el.sceneEl.components['player-collision'];
+    if (pc) {
+      const idx = pc._boxes.findIndex(b => b.x0 === 6.2 && b.z0 === -10.8);
+      if (idx !== -1) this._merchantBox = pc._boxes.splice(idx, 1)[0];
+    }
+    if (this._interior) this._interior.setAttribute('visible', 'true');
+    if (this._rig && this._cam) {
+      const cl = this._cam.object3D.position;
+      this._rig.object3D.position.set(9 - cl.x, 0, -9.0 - cl.z);
+    }
+    this._near = false;
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._touchBtn) { this._touchBtn.textContent = 'Verlassen'; this._touchBtn.style.display = 'none'; }
+  },
+
+  _doExit() {
+    this._inside = false;
+    window.MERCHANT_INSIDE = false;
+    this._hiddenEls.forEach(el => { if (el.parentNode) el.object3D.visible = true; });
+    this._hiddenEls = [];
+    const pc = this.el.sceneEl.components['player-collision'];
+    if (pc && this._merchantBox) {
+      pc._boxes.push(this._merchantBox);
+      this._merchantBox = null;
+    }
+    if (this._interior) this._interior.setAttribute('visible', 'false');
+    if (this._rig && this._cam) {
+      const cl = this._cam.object3D.position;
+      this._rig.object3D.position.set(9 - cl.x, 0, -6.5 - cl.z);
+    }
+    this._near = false;
+    if (this._innerHint) this._innerHint.setAttribute('visible', 'false');
+    if (this._touchBtn) { this._touchBtn.textContent = 'Eintreten'; this._touchBtn.style.display = 'none'; }
+    if (window.QUEST1 && window.QUEST1.heardMerchant) {
+      this.el.sceneEl.setAttribute('daynight', 'mode:evening');
+    }
+  },
+
+  tick(t, dt) {
+    if (this._transitioning || !this._cam) return;
+    if (this._cooldown > 0) { this._cooldown -= Math.min(dt, 200) * 0.001; return; }
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const trig = this._inside ? MERCHANT_INNER : MERCHANT_OUTER;
+    const dx = this._camWP.x - trig.x;
+    const dz = this._camWP.z - trig.z;
+    const near = (dx * dx + dz * dz) < MERCHANT_R2;
+
+    const activeHint = this._inside
+      ? this._innerHint
+      : (this._isDaytime() ? this._hint : this._closedHint);
+
+    if (near !== this._near) {
+      this._near = near;
+      [this._hint, this._innerHint, this._closedHint].forEach(h => {
+        if (h) h.setAttribute('visible', 'false');
+      });
+      if (near && activeHint) activeHint.setAttribute('visible', 'true');
+      if (this._touchBtn) this._touchBtn.style.display =
+        (near && this._inside) ? 'block' : 'none';
+    }
+
+    if (this._near && activeHint && activeHint.object3D) {
+      activeHint.object3D.position.set(trig.x, 2.4, trig.z);
+      activeHint.object3D.rotation.y = Math.atan2(
+        this._camWP.x - trig.x,
+        this._camWP.z - trig.z,
+      );
+    }
+  },
+
+  remove() {
+    [this._hint, this._innerHint, this._closedHint, this._interior].forEach(el => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCHMIED-NPC – Quest 1a (Child von #schmiede-interior)
+// Hammeranimation + Funken + Dialog-System + Schwertgriff + Flashback.
+// Nur aktiv wenn FORGE_INSIDE && QUEST0.heardTavern.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Globale Quest/Inventory Initialisierung ──────────────────────────────────
+window.QUEST1 = window.QUEST1 || {
+  hasSwordHilt:  false,
+  firstMemory:   false,
+  smithKnows:    false,
+  heardMerchant: false,
+  triggered:     false,
+  alchemistHint: false,
+  dogFed:        false,
+  signs:         0,
+  completed:     false,
+};
+window.INVENTORY = window.INVENTORY || {
+  magicKey:  false,
+  swordHilt: false,
+  dogFood:   false,
+};
+
+const SMITH_HAMMER_CYCLE_MS = 800;
+const SMITH_SPARK_POOL_SIZE = 32;
+const SMITH_SPARK_BURST_COUNT = 16;
+
+const smithState = {
+  dialogStep:   0,
+  extraStep:    0,
+  cooldownMs:   6000,
+  lastTrigger:  0,
+  hammerActive: true,
+  hiltPickedUp: false,
+};
+
+AFRAME.registerComponent('smith-npc', {
+
+  init() {
+    if (typeof window.FORGE_INSIDE === 'undefined') window.FORGE_INSIDE = false;
+    window.QUEST0 = window.QUEST0 || {};
+
+    this._cam = null;
+    this._camWP = new THREE.Vector3();
+    this._tmpVec3 = new THREE.Vector3();
+    this._insideRoot = null;
+    this._insideNpcRoot = null;
+    this._hammerPivot = null;
+    this._anvilMesh = null;
+    this._hiltMesh = null;
+    this._hiltRoot = null;
+    this._state = 'working';
+    this._sparkPool = [];
+    this._sparkMeshes = [];
+    this._bubbles = {};
+    this._hint = null;
+    this._touchBtn = null;
+    this._hiltTouchBtn = null;
+    this._nearSmith = false;
+    this._nearHilt = false;
+    this._bubbleTimer = null;
+    this._flashbackActive = false;
+    this._npcWorldPos = new THREE.Vector3();
+    this._hiltWorldPos = new THREE.Vector3();
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && window.FORGE_INSIDE) {
+        if (this._nearHilt) this._tryPickupHilt();
+        else if (this._nearSmith) this._triggerDialog();
+      }
+    });
+  },
+
+  _box(w, h, d, col, px, py, pz) {
+    const e = document.createElement('a-box');
+    e.setAttribute('width', w); e.setAttribute('height', h); e.setAttribute('depth', d);
+    e.setAttribute('position', `${px} ${py} ${pz}`);
+    e.setAttribute('material', `color:${col};shader:flat`);
+    return e;
+  },
+  _sph(r, col, px, py, pz) {
+    const e = document.createElement('a-sphere');
+    e.setAttribute('radius', r);
+    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '6');
+    e.setAttribute('position', `${px} ${py} ${pz}`);
+    e.setAttribute('material', `color:${col};shader:flat`);
+    return e;
+  },
+  _cyl(r, h, col, px, py, pz) {
+    const e = document.createElement('a-cylinder');
+    e.setAttribute('radius', r); e.setAttribute('height', h);
+    e.setAttribute('segments-radial', '8');
+    e.setAttribute('position', `${px} ${py} ${pz}`);
+    e.setAttribute('material', `color:${col};shader:flat`);
+    return e;
+  },
+
+  _build() {
+    this._cam = document.getElementById('camera');
+    this._buildInteriorFigure();
+    this._buildInteriorAnvil();
+    this._buildHilt();
+    this._buildSparkPool();
+    this._buildBubbles();
+    this._buildHint();
+    this._buildTouchBtns();
+    this._addHUDSlot();
+
+    const sc = this.el.sceneEl;
+    sc.addEventListener('loaded', () => {
+      const rh = document.getElementById('rightHand');
+      if (rh) rh.addEventListener('triggerdown', () => {
+        if (!window.FORGE_INSIDE) return;
+        if (this._nearHilt) this._tryPickupHilt();
+        else if (this._nearSmith) this._triggerDialog();
+      });
+    }, { once: true });
+
+    window.NPC_REGISTRY.schmied = {
+      id: 'schmied-inside',
+      position: { x: -9.5, y: 0, z: -9.5 },
+      state: this._state,
+    };
+  },
+
+  // ── Interior NPC (Child von #schmiede-interior) ──────────────────────────
+  _buildInteriorFigure() {
+    const SKIN  = '#d4a070';
+    const SHIRT = '#6a4020';
+    const APRON = '#3a2818';
+    const PANTS = '#2a1a10';
+    const BOOT  = '#1a0e08';
+    const HAIR  = '#2a1a0a';
+    const METAL = '#383838';
+
+    const interior = document.getElementById('schmiede-interior');
+    if (!interior) { setTimeout(() => this._buildInteriorFigure(), 100); return; }
+
+    const root = document.createElement('a-entity');
+    root.setAttribute('position', '-0.5 0 -1.5');
+    root.setAttribute('rotation', '0 90 0');
+
+    const npcRoot = document.createElement('a-entity');
+
+    npcRoot.appendChild(this._box(0.12, 0.06, 0.18, BOOT,  0.09, 0.03,  0.02));
+    npcRoot.appendChild(this._box(0.12, 0.06, 0.18, BOOT, -0.09, 0.03,  0.02));
+    npcRoot.appendChild(this._cyl(0.06, 0.40, PANTS,  0.09, 0.24, 0));
+    npcRoot.appendChild(this._cyl(0.06, 0.40, PANTS, -0.09, 0.24, 0));
+    npcRoot.appendChild(this._box(0.32, 0.10, 0.22, PANTS, 0, 0.50, 0));
+    npcRoot.appendChild(this._box(0.34, 0.04, 0.24, '#4a2a10', 0, 0.56, 0));
+    npcRoot.appendChild(this._box(0.34, 0.34, 0.24, SHIRT, 0, 0.76, 0));
+    npcRoot.appendChild(this._box(0.26, 0.40, 0.015, APRON, 0, 0.68, 0.125));
+    npcRoot.appendChild(this._box(0.44, 0.08, 0.24, SHIRT, 0, 0.94, 0));
+
+    const armL = document.createElement('a-entity');
+    armL.setAttribute('position', '-0.22 0.94 0');
+    armL.setAttribute('rotation', '15 0 8');
+    armL.appendChild(this._cyl(0.05, 0.30, SHIRT, 0, -0.15, 0));
+    armL.appendChild(this._cyl(0.042, 0.22, SKIN,  0, -0.38, 0));
+    armL.appendChild(this._sph(0.05, SKIN, 0, -0.52, 0));
+    npcRoot.appendChild(armL);
+
+    const armR = document.createElement('a-entity');
+    armR.setAttribute('position', '0.22 0.94 0');
+    armR.setAttribute('rotation', '-10 0 -8');
+    armR.appendChild(this._cyl(0.05, 0.30, SHIRT, 0, -0.15, 0));
+
+    const forearmPiv = document.createElement('a-entity');
+    forearmPiv.setAttribute('position', '0 -0.30 0');
+    forearmPiv.appendChild(this._cyl(0.042, 0.22, SKIN, 0, -0.11, 0));
+    forearmPiv.appendChild(this._sph(0.05, SKIN, 0, -0.24, 0));
+
+    const hammerHandle = this._box(0.04, 0.04, 0.50, '#4a3018', 0, -0.10, -0.25);
+    hammerHandle.setAttribute('rotation', '20 0 0');
+    forearmPiv.appendChild(hammerHandle);
+
+    const hammerHead = this._box(0.18, 0.14, 0.10, METAL, 0, -0.10, -0.52);
+    hammerHead.setAttribute('rotation', '20 0 0');
+    forearmPiv.appendChild(hammerHead);
+
+    armR.appendChild(forearmPiv);
+    npcRoot.appendChild(armR);
+    this._hammerPivot = forearmPiv;
+
+    npcRoot.appendChild(this._cyl(0.05, 0.08, SKIN, 0, 1.04, 0));
+    npcRoot.appendChild(this._sph(0.14, SKIN, 0, 1.18, 0));
+    npcRoot.appendChild(this._box(0.30, 0.10, 0.28, HAIR, 0, 1.30, -0.02));
+    npcRoot.appendChild(this._box(0.07, 0.12, 0.06, HAIR, -0.15, 1.19, -0.05));
+    npcRoot.appendChild(this._box(0.07, 0.12, 0.06, HAIR,  0.15, 1.19, -0.05));
+    npcRoot.appendChild(this._box(0.12, 0.10, 0.08, HAIR, 0, 1.10, 0.10));
+    npcRoot.appendChild(this._sph(0.025, '#f0ece6', -0.05, 1.22, 0.12));
+    npcRoot.appendChild(this._sph(0.025, '#f0ece6',  0.05, 1.22, 0.12));
+    npcRoot.appendChild(this._sph(0.015, '#1a0800', -0.05, 1.22, 0.13));
+    npcRoot.appendChild(this._sph(0.015, '#1a0800',  0.05, 1.22, 0.13));
+    npcRoot.appendChild(this._sph(0.02, SKIN, 0, 1.18, 0.14));
+    npcRoot.appendChild(this._box(0.06, 0.012, 0.01, '#7a3020', 0, 1.14, 0.13));
+
+    root.appendChild(npcRoot);
+    interior.appendChild(root);
+    this._insideRoot = root;
+    this._insideNpcRoot = npcRoot;
+  },
+
+  _buildInteriorAnvil() {
+    const interior = document.getElementById('schmiede-interior');
+    if (!interior) { setTimeout(() => this._buildInteriorAnvil(), 100); return; }
+
+    const anvil = document.createElement('a-entity');
+    anvil.setAttribute('position', '-0.5 0 -1.0');
+    anvil.appendChild(this._box(0.50, 0.70, 0.50, '#3a2510', 0, 0.35, 0));
+    anvil.appendChild(this._box(0.60, 0.10, 0.28, '#282828', 0, 0.75, 0));
+    anvil.appendChild(this._box(0.52, 0.16, 0.26, '#282828', 0, 0.85, 0));
+    anvil.appendChild(this._box(0.24, 0.08, 0.12, '#282828', 0.40, 0.82, 0));
+    anvil.appendChild(this._box(0.52, 0.03, 0.26, '#343434', 0, 0.94, 0));
+    interior.appendChild(anvil);
+    this._anvilMesh = anvil.object3D;
+  },
+
+  // ── Schwertgriff ──────────────────────────────────────────────────────────
+  _buildHilt() {
+    const interior = document.getElementById('schmiede-interior');
+    if (!interior) { setTimeout(() => this._buildHilt(), 100); return; }
+
+    const root = document.createElement('a-entity');
+    root.setAttribute('position', '-0.8 0.92 -0.6');
+    root.setAttribute('visible', 'false');
+
+    const hilt = this._box(0.08, 0.22, 0.06, '#8B6914', 0, 0, 0);
+    hilt.setAttribute('material',
+      'color:#8B6914;emissive:#c8a020;emissiveIntensity:0.4;shader:flat');
+    root.appendChild(hilt);
+
+    interior.appendChild(root);
+    this._hiltRoot = root;
+    this._hiltMesh = hilt;
+
+    // Sichtbar machen wenn dialogStep >= 3 (Session-Reload)
+    if (smithState.dialogStep >= 3 && !smithState.hiltPickedUp) {
+      root.setAttribute('visible', 'true');
+    }
+  },
+
+  // ── Spark-Pool ────────────────────────────────────────────────────────────
+  _buildSparkPool() {
+    for (let i = 0; i < SMITH_SPARK_POOL_SIZE; i++) {
+      this._sparkPool.push({
+        position: new THREE.Vector3(),
+        velocity: new THREE.Vector3(),
+        life: 0,
+        active: false,
+      });
+    }
+    for (let i = 0; i < SMITH_SPARK_POOL_SIZE; i++) {
+      const el = document.createElement('a-sphere');
+      el.setAttribute('radius', '0.025');
+      el.setAttribute('segments-width', '4');
+      el.setAttribute('segments-height', '3');
+      el.setAttribute('material',
+        'color:#FFD700;emissive:#FFD700;emissiveIntensity:2.0;shader:flat');
+      el.object3D.visible = false;
+      this.el.sceneEl.appendChild(el);
+      this._sparkMeshes.push(el);
+    }
+  },
+
+  // ── Dialog-Bubbles ────────────────────────────────────────────────────────
+  _mkBubble(text, bgW, bgH) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  (bgW + 0.06).toFixed(2));
+    frame.setAttribute('height', (bgH + 0.06).toFixed(2));
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#805030;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#805030;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  bgW.toFixed(2));
+    bg.setAttribute('height', bgH.toFixed(2));
+    bg.setAttribute('material',
+      'color:#100800;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', text);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#f0d0a0');
+    txt.setAttribute('width', (bgW - 0.12).toFixed(2));
+    txt.setAttribute('wrap-count', '30');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _buildBubbles() {
+    this._bubbles.b1 = this._mkBubble(
+      'Schmied: Der Wirt schickt mir jeden zweiten Fremden.', 1.80, 0.24);
+    this._bubbles.b2 = this._mkBubble(
+      'Schmied: Du hast die falschen Fragen gestellt.\nDeshalb bist du hier.\nDas Westtor. Ich war dabei.\nVor vielen Jahren.',
+      1.80, 0.64);
+    this._bubbles.b3 = this._mkBubble(
+      'Schmied: Ich schmiede nicht mehr fuer jeden.\nNur noch fuer mich.', 1.80, 0.32);
+    this._bubbles.b3b = this._mkBubble(
+      'Schmied: Hinter dem Amboss, der Schwertgriff. Schau selbst, vieleicht sagt Dir das etwas?\nFrag nicht mich, \nich rede nicht darueber.',
+      1.80, 0.48);
+    this._bubbles.extra1 = this._mkBubble(
+      'Du: Diese Wappen? Weisst Du wer ich bin?!', 1.40, 0.24);
+    this._bubbles.extra2 = this._mkBubble(
+      'Schmied: Ich weiss was dieses Wappen bedeutet. \nAber ich darf Dir nicht mehr dazu sagen. \nVielleicht kann Dir jemand anderes \nin der Stadt weiterhelfen.',
+      1.80, 0.64);
+  },
+
+  // ── Interaktions-Hint ─────────────────────────────────────────────────────
+  _buildHint() {
+    const h = document.createElement('a-entity');
+    h.setAttribute('visible', 'false');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width', '1.18');
+    frame.setAttribute('height', '0.26');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      'color:#805030;shader:flat;transparent:true;opacity:0.50;' +
+      'emissive:#805030;emissiveIntensity:0.18');
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width', '1.12');
+    bg.setAttribute('height', '0.20');
+    bg.setAttribute('material',
+      'color:#100800;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', 'E / Trigger: Ansprechen');
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('baseline', 'center');
+    txt.setAttribute('color', '#f0d0a0');
+    txt.setAttribute('width', '0.98');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    this._hint = h;
+  },
+
+  // ── Touch-Buttons ─────────────────────────────────────────────────────────
+  _buildTouchBtns() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #smith-talk-btn, #smith-hilt-btn {
+        position: fixed; bottom: 200px; left: 50%;
+        transform: translateX(-50%);
+        background: rgba(128,80,48,0.90); color: #fde8c0;
+        border: none; border-radius: 30px;
+        padding: 12px 30px; font-size: 17px;
+        font-family: sans-serif; font-weight: bold;
+        display: none; z-index: 10001; touch-action: none;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const talkBtn = document.createElement('button');
+    talkBtn.id = 'smith-talk-btn';
+    talkBtn.textContent = 'Ansprechen';
+    talkBtn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (this._nearSmith) this._triggerDialog();
+    }, { passive: false });
+    document.body.appendChild(talkBtn);
+    this._touchBtn = talkBtn;
+
+    const hiltBtn = document.createElement('button');
+    hiltBtn.id = 'smith-hilt-btn';
+    hiltBtn.textContent = 'Aufheben';
+    hiltBtn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (this._nearHilt) this._tryPickupHilt();
+    }, { passive: false });
+    document.body.appendChild(hiltBtn);
+    this._hiltTouchBtn = hiltBtn;
+  },
+
+  // ── HUD-Slot ──────────────────────────────────────────────────────────────
+  _addHUDSlot() {
+    if (document.getElementById('inv-hilt-slot')) return;
+    const hud = document.getElementById('inventory-hud');
+    if (!hud) { setTimeout(() => this._addHUDSlot(), 150); return; }
+    const slot = document.createElement('div');
+    slot.id = 'inv-hilt-slot';
+    slot.className = 'inv-slot';
+    slot.textContent = '⚔️';
+    slot.style.display = 'none';
+    hud.appendChild(slot);
+    if (window.INVENTORY.swordHilt) {
+      slot.style.display = '';
+      slot.classList.add('has-item');
+    }
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // TICK
+  // ═════════════════════════════════════════════════════════════════════════
+  tick(t, dt) {
+    if (!window.FORGE_INSIDE) return;
+    if (!window.QUEST0 || !window.QUEST0.heardTavern) return;
+    if (!this._cam || !this._insideRoot || !this._insideNpcRoot) return;
+
+    const clampedDt = Math.min(dt, 50) * 0.001;
+    this._cam.object3D.getWorldPosition(this._camWP);
+    this._insideRoot.object3D.getWorldPosition(this._npcWorldPos);
+
+    const dx = this._camWP.x - this._npcWorldPos.x;
+    const dz = this._camWP.z - this._npcWorldPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    // Hammer animation
+    const now = performance.now();
+    const result = this._animateHammer(now, clampedDt);
+
+    // Spark burst only when hammer is active
+    if (result.strikeOccurred && smithState.hammerActive) {
+      this._emitSparkBurst();
+    }
+
+    // Update particles
+    this._updateSparkParticles(clampedDt);
+
+    // Hilt floating animation
+    if (this._hiltRoot && this._hiltRoot.object3D &&
+        this._hiltRoot.getAttribute('visible') !== 'false') {
+      this._hiltRoot.object3D.position.y = 0.92 + Math.sin(t * 0.002) * 0.03;
+      this._hiltRoot.object3D.rotation.y += 0.01;
+    }
+
+    // Proximity check
+    this._checkProximity(dist, dx, dz, now);
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // HAMMER ANIMATION
+  // ═════════════════════════════════════════════════════════════════════════
+  _animateHammer(elapsed, dt) {
+    if (!this._hammerPivot || !this._hammerPivot.object3D) {
+      return { strikeOccurred: false };
+    }
+    if (!smithState.hammerActive) {
+      // Lerp to 0
+      this._hammerPivot.object3D.rotation.x *= 0.9;
+      return { strikeOccurred: false };
+    }
+
+    const cycleMs = SMITH_HAMMER_CYCLE_MS;
+    const phase = (elapsed % cycleMs) / cycleMs;
+    const prevPhase = ((elapsed - dt * 1000) % cycleMs) / cycleMs;
+
+    let rotX;
+    if (phase < 0.35) {
+      const p = phase / 0.35;
+      rotX = 0 + (-1.4 - 0) * p;
+    } else if (phase < 0.55) {
+      const p = (phase - 0.35) / 0.2;
+      rotX = -1.4 + (0.3 - (-1.4)) * p;
+    } else {
+      const p = (phase - 0.55) / 0.45;
+      rotX = 0.3 + (0 - 0.3) * p;
+    }
+    this._hammerPivot.object3D.rotation.x = rotX;
+
+    const strikeOccurred = prevPhase < 0.50 && phase >= 0.50;
+    return { strikeOccurred };
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // SPARK PARTICLES
+  // ═════════════════════════════════════════════════════════════════════════
+  _updateSparkParticles(dt) {
+    for (let i = 0; i < SMITH_SPARK_POOL_SIZE; i++) {
+      const p = this._sparkPool[i];
+      const mesh = this._sparkMeshes[i];
+      if (!p.active) {
+        if (mesh && mesh.object3D) mesh.object3D.visible = false;
+        continue;
+      }
+      p.velocity.y -= 4.8 * dt;
+      p.position.x += p.velocity.x * dt;
+      p.position.y += p.velocity.y * dt;
+      p.position.z += p.velocity.z * dt;
+      p.life -= dt / 0.6;
+      if (p.life <= 0) {
+        p.active = false;
+        if (mesh && mesh.object3D) mesh.object3D.visible = false;
+        continue;
+      }
+      if (mesh && mesh.object3D) {
+        mesh.object3D.position.copy(p.position);
+        mesh.object3D.visible = true;
+        const t = 1 - p.life;
+        const r = 255, g = Math.round(215 - t * 108), b = Math.round(0 + t * 53);
+        const hex = '#' + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+        const alpha = Math.max(0, p.life);
+        mesh.setAttribute('material',
+          `color:${hex};emissive:${hex};emissiveIntensity:${alpha * 2.0};shader:flat;transparent:true;opacity:${alpha}`);
+      }
+    }
+  },
+
+  _emitSparkBurst() {
+    if (!this._anvilMesh) return;
+    const origin = this._tmpVec3;
+    this._anvilMesh.getWorldPosition(origin);
+
+    const candidates = [];
+    for (let i = 0; i < SMITH_SPARK_POOL_SIZE; i++) {
+      if (!this._sparkPool[i].active) {
+        candidates.push(i);
+        if (candidates.length >= SMITH_SPARK_BURST_COUNT) break;
+      }
+    }
+    if (candidates.length < SMITH_SPARK_BURST_COUNT) {
+      const sorted = this._sparkPool
+        .map((p, i) => ({ idx: i, life: p.active ? p.life : -1 }))
+        .sort((a, b) => a.life - b.life);
+      for (const item of sorted) {
+        if (candidates.length >= SMITH_SPARK_BURST_COUNT) break;
+        if (!candidates.includes(item.idx)) candidates.push(item.idx);
+      }
+    }
+    for (let i = 0; i < Math.min(SMITH_SPARK_BURST_COUNT, candidates.length); i++) {
+      const idx = candidates[i];
+      const p = this._sparkPool[idx];
+      p.position.copy(origin);
+      p.velocity.set(
+        (Math.random() - 0.5) * 3.5,
+        Math.random() * 4.0 + 1.5,
+        (Math.random() - 0.5) * 3.5
+      );
+      p.life = 1.0;
+      p.active = true;
+      if (this._sparkMeshes[idx] && this._sparkMeshes[idx].object3D) {
+        this._sparkMeshes[idx].object3D.position.copy(origin);
+        this._sparkMeshes[idx].object3D.visible = true;
+      }
+    }
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // PROXIMITY
+  // ═════════════════════════════════════════════════════════════════════════
+  _checkProximity(dist, dx, dz, now) {
+    if (dist <= 2.0) {
+      smithState.hammerActive = false;
+      if (this._insideNpcRoot && this._insideNpcRoot.object3D) {
+        const angle = Math.atan2(dx, dz);
+        this._insideNpcRoot.object3D.rotation.y = angle;
+      }
+      this._nearSmith = true;
+      // Hint nur zeigen wenn kein Dialog aktiv:
+      if (!this._bubbleTimer) {
+        this._showInteractionHint();
+      } else {
+        this._hideHint();
+      }
+    } else {
+      this._nearSmith = false;
+      smithState.hammerActive = true;
+      this._hideHint();
+    }
+
+    // Hilt proximity
+    if (this._hiltRoot && this._hiltRoot.getAttribute('visible') !== 'false' &&
+        smithState.dialogStep >= 3 && !smithState.hiltPickedUp) {
+      this._hiltRoot.object3D.getWorldPosition(this._hiltWorldPos);
+      const hdx = this._camWP.x - this._hiltWorldPos.x;
+      const hdz = this._camWP.z - this._hiltWorldPos.z;
+      this._nearHilt = (hdx * hdx + hdz * hdz) < 2.25; // 1.5m
+    } else {
+      this._nearHilt = false;
+    }
+
+    // Touch buttons
+    if (this._touchBtn) {
+      this._touchBtn.style.display = (this._nearSmith && dist <= 2.0) ? 'block' : 'none';
+    }
+    if (this._hiltTouchBtn) {
+      this._hiltTouchBtn.style.display = this._nearHilt ? 'block' : 'none';
+    }
+  },
+
+  _showInteractionHint() {
+    if (!this._hint || !this._hint.object3D) return;
+    // Hint nur zeigen wenn KEINE Bubble aktiv
+    if (this._bubbleTimer) return;
+    this._hint.object3D.position.set(
+      this._npcWorldPos.x,
+      this._npcWorldPos.y + 1.8,
+      this._npcWorldPos.z
+    );
+    this._hint.object3D.rotation.y = Math.atan2(
+      this._camWP.x - this._npcWorldPos.x,
+      this._camWP.z - this._npcWorldPos.z,
+    );
+    this._hint.setAttribute('visible', 'true');
+  },
+
+  _hideHint() {
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // DIALOG
+  // ═════════════════════════════════════════════════════════════════════════
+  _triggerDialog() {
+    const now = performance.now();
+    if (now - smithState.lastTrigger < smithState.cooldownMs) return;
+    if (this._bubbleTimer) return; // bubble still active
+    smithState.lastTrigger = now;
+
+    const npcPos = this._insideRoot.object3D.position;
+
+    if (smithState.dialogStep === 0) {
+      this._showBubble('b1', 5000, () => { smithState.dialogStep = 1; });
+    } else if (smithState.dialogStep === 1) {
+      this._showBubble('b2', 7000, () => { smithState.dialogStep = 2; });
+    } else if (smithState.dialogStep === 2) {
+      this._showBubble('b3', 4000, () => {
+        this._showBubble('b3b', 6000, () => {
+          smithState.dialogStep = 3;
+          if (this._hiltRoot) this._hiltRoot.setAttribute('visible', 'true');
+        });
+      });
+    } else if (smithState.dialogStep >= 3) {
+      if (smithState.hiltPickedUp) {
+        this._triggerExtraDialog();
+      } else {
+        this._showBubble(null, 3000, null, 'Schau hinter den Amboss.');
+      }
+    }
+  },
+
+  _triggerExtraDialog() {
+    if (smithState.extraStep >= 1) return;
+    smithState.extraStep = 1;
+    this._showBubble('extra1', 4000, () => {
+      this._showBubble('extra2', 7000, () => {
+        window.QUEST1.smithKnows = true;
+      });
+    });
+  },
+
+  _showBubble(key, duration, onEnd, customText) {
+    // Hint ausblenden während Dialog läuft
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    // Hide all bubbles
+    Object.values(this._bubbles).forEach(b => b.setAttribute('visible', 'false'));
+
+    if (customText) {
+      // Show custom text via narrative text
+      if (typeof window.showNarrativeText === 'function') {
+        window.showNarrativeText(customText, duration);
+      }
+      this._bubbleTimer = setTimeout(() => {
+        this._bubbleTimer = null;
+        if (onEnd) onEnd();
+      }, duration);
+      return;
+    }
+
+    const bubble = this._bubbles[key];
+    if (!bubble) return;
+
+    // Hint ausblenden während Bubble aktiv ist
+    this._hideHint();
+
+    bubble.object3D.position.set(
+      this._npcWorldPos.x,
+      this._npcWorldPos.y + 1.8,
+      this._npcWorldPos.z
+    );
+    bubble.object3D.rotation.y = Math.atan2(
+      this._camWP.x - this._npcWorldPos.x,
+      this._camWP.z - this._npcWorldPos.z,
+    );
+    bubble.setAttribute('visible', 'true');
+
+    this._bubbleTimer = setTimeout(() => {
+      bubble.setAttribute('visible', 'false');
+      this._bubbleTimer = null;
+      // Hint wieder einblenden wenn Spieler noch nah
+      if (this._nearSmith) this._showInteractionHint();
+      if (onEnd) onEnd();
+    }, duration);
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // HILT PICKUP
+  // ═════════════════════════════════════════════════════════════════════════
+  _tryPickupHilt() {
+    if (smithState.dialogStep < 3) return;
+    if (smithState.hiltPickedUp) return;
+    if (!this._nearHilt) return;
+
+    smithState.hiltPickedUp = true;
+    window.INVENTORY.swordHilt = true;
+    window.QUEST1.hasSwordHilt = true;
+
+    if (this._hiltRoot) this._hiltRoot.setAttribute('visible', 'false');
+    if (this._hiltTouchBtn) this._hiltTouchBtn.style.display = 'none';
+
+    const slot = document.getElementById('inv-hilt-slot');
+    if (slot) {
+      slot.style.display = '';
+      slot.classList.add('has-item');
+    }
+
+    this._triggerFlashback();
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // FLASHBACK
+  // ═════════════════════════════════════════════════════════════════════════
+  _triggerFlashback() {
+    if (this._flashbackActive) return;
+    this._flashbackActive = true;
+
+    const cam = document.getElementById('camera');
+    if (!cam) { this._flashbackActive = false; return; }
+
+    // Eigenes schwarzes Overlay auf camera
+    const overlay = document.createElement('a-plane');
+    overlay.setAttribute('width', '40');
+    overlay.setAttribute('height', '40');
+    overlay.setAttribute('position', '0 0 -0.06');
+    overlay.setAttribute('material',
+      'color:#000;shader:flat;transparent:true;opacity:0;' +
+      'depthTest:false;side:double');
+    cam.appendChild(overlay);
+
+    // 1. Fade to black (300ms)
+    let opacity = 0;
+    const fadeIn = setInterval(() => {
+      opacity = Math.min(1, opacity + 0.1);
+      overlay.setAttribute('material',
+        `color:#000;shader:flat;transparent:true;opacity:${opacity};` +
+        'depthTest:false;side:double');
+      if (opacity >= 1) clearInterval(fadeIn);
+    }, 30);
+
+    setTimeout(() => {
+      // 2. Text einblenden
+      const panel = document.createElement('a-entity');
+      panel.setAttribute('position', '0 -0.10 -2.0');
+      const txt = document.createElement('a-text');
+      txt.setAttribute('value',
+        '...ein Thronsaal. Warmes Licht.\nEine Hand die deine haelt.');
+      txt.setAttribute('align', 'center');
+      txt.setAttribute('color', '#ffffff');
+      txt.setAttribute('width', '3.5');
+      txt.setAttribute('shader', 'flat');
+      panel.appendChild(txt);
+      cam.appendChild(panel);
+
+      // 3. Text 3500ms halten, dann fade out
+      setTimeout(() => {
+        if (panel.parentNode) panel.parentNode.removeChild(panel);
+
+        // 4. Fade back to clear (300ms)
+        let op = 1;
+        const fadeOut = setInterval(() => {
+          op = Math.max(0, op - 0.1);
+          overlay.setAttribute('material',
+            `color:#000;shader:flat;transparent:true;opacity:${op};` +
+            'depthTest:false;side:double');
+          if (op <= 0) {
+            clearInterval(fadeOut);
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            this._flashbackActive = false;
+            window.QUEST1.firstMemory = true;
+          }
+        }, 30);
+
+      }, 3500);
+    }, 320);
+  },
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // REMOVE
+  // ═════════════════════════════════════════════════════════════════════════
+  remove() {
+    if (this._insideRoot && this._insideRoot.parentNode)
+      this._insideRoot.parentNode.removeChild(this._insideRoot);
+    this._sparkMeshes.forEach(el => { if (el && el.parentNode) el.parentNode.removeChild(el); });
+    Object.values(this._bubbles).forEach(b => { if (b && b.parentNode) b.parentNode.removeChild(b); });
+    if (this._hint && this._hint.parentNode) this._hint.parentNode.removeChild(this._hint);
+    if (this._touchBtn && this._touchBtn.parentNode) this._touchBtn.parentNode.removeChild(this._touchBtn);
+    if (this._hiltTouchBtn && this._hiltTouchBtn.parentNode) this._hiltTouchBtn.parentNode.removeChild(this._hiltTouchBtn);
+    delete window.NPC_REGISTRY.schmied;
   },
 });
 
