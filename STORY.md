@@ -48,23 +48,53 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
 
 ## 5. Charaktere
 
+### Die Prinzessin (Spieler)
+- Hat ihr Gedächtnis verloren, erwacht als Mensch in der Kesselstadt
+- Erinnerungen kehren durch Herzstein-Splitter und Begegnungen zurück
+- Wird von der weisen Fee zurück in eine Fee verwandelt
+
 ### Die Weise Fee
 - Hüterin des Feenreichs, wartete auf die Rückkehr der Prinzessin
-- Erscheint zunächst als **alte Frau in der Kesselstadt** (Verkleidung) – gibt den ersten Hinweis
+- Erscheint zunächst als **Alchemistin in der Kesselstadt** (Verkleidung) – gibt den Hinweis auf den Hund
 - Im Feenreich: weißes Haar, lila Robe, goldene Krone, Zauberstab
-- Mentorin des Spielers – weiß mehr als sie zunächst verrät
 - Verwandelt die Prinzessin zurück in eine Fee
 
 ### Der besondere Hund
 - Erkennbar an seinen **goldenen Augen**
 - Einziger in der Kesselstadt der die Prinzessin wirklich erkennt
+- Weicht zunächst zurück – muss mit Futter gewonnen werden
 - Führt sie zu den drei versteckten Zeichen
-- Mögliche tiefere Bedeutung: verzauberter Diener der Königin?
-- Verschwindet nach Erfüllung seiner Aufgabe in der Menge
+- Verschwindet nach Erfüllung seiner Aufgabe
+
+### Der Schmied
+- Alter, schweigsamer Mann
+- Hat einst einen Schwertgriff mit dem Wappen der Königin geschmiedet
+- Redet nur wenn man ihn auf das Westtor anspricht (Hinweis vom Wirt)
+- Gibt keine klaren Antworten – nur Andeutungen
+- Weiß wer die Prinzessin ist, schweigt aber aus Angst
+- Sein Schweigen wird im Schattenreich aufgelöst
+
+### Der Gastwirt
+- Gesprächig aber vorsichtig
+- Hat Angst vor dem Stadtrat
+- Gibt den Hinweis auf den Schmied wenn man ihn auf Soldat + Reisende anspricht
+- *„Sag nicht ich hab dich geschickt."*
+
+### Der Händler
+- Geschwätzig, handelt mit allem
+- Hat einen Schwertgriff (Wappen der Königin) zufällig erworben – weiß nicht was er ist
+- Erkennt das Wappen wenn der Spieler den Griff zeigt
+- Gibt dann den Hinweis auf die Alchemistin
+- Verkauft Hundefutter (wichtig für Quest 1)
+
+### Der alte Soldat
+- Trinkt allein, redet ungern
+- War dabei als die Stadt sich veränderte
+- Spricht über das verschlossene Westtor
+- Könnte in späteren Quests wieder auftauchen
 
 ### Die Königin (verschwunden)
-- Herrscherin aller fünf Bereiche
-- Mutter der Prinzessin
+- Herrscherin aller fünf Bereiche, Mutter der Prinzessin
 - Zerbrach den Herzstein um ihn zu schützen
 - Was wirklich mit ihr geschah: im Schattenreich verborgen
 
@@ -80,34 +110,175 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
 
 ---
 
-## 6. Quest-Struktur
+## 6. Tagesablauf & Hausstruktur
 
-### Quest 1 – Erwachen in der Kesselstadt 🏙️ ✅
+Jedes begehbare Haus ist nur zu einer bestimmten Tageszeit zugänglich.
+Der Besuch eines Hauses löst den Tageswechsel aus.
 
-**Ziel:** Das Südtor öffnen und ins Feenreich gelangen.
+| Tageszeit | Ort | Quest-State danach |
+|-----------|-----|--------------------|
+| 🌙 Nacht | Gasthaus | `QUEST0.heardTavern = true` |
+| 🌅 Morgen | Schmiede | `QUEST1.hasSwordHilt = true` + `QUEST1.firstMemory = true` |
+| ☀️ Mittag | Händlerhaus | `QUEST1.heardMerchant = true` + `INVENTORY.dogFood = true` |
+| 🌆 Abend | Alchemistin | `QUEST1.triggered = true` |
+| 🌆 Abend+ | Kesselstadt | Hund finden → füttern → Zeichen → Südtor |
+| 🍄 Feenreich | Weise Fee | Verwandlung → Schlüssel → Westtor |
 
-1. **Erwachen** – Marktplatz, keine Erinnerung, niemand schenkt Aufmerksamkeit
+---
 
-2. **Die alte Frau (Trigger)** – Die weise Fee in Verkleidung flüstert:
-   *„Finde den Hund mit den goldenen Augen. Er kennt den Weg."*
-   Verschwindet bevor du fragen kannst.
+## 7. Quest-Struktur
 
-3. **Den Hund finden** – Ein Hund mit goldenen Augen lässt sich nicht annähern.
+### Quest 0 – Die erste Nacht 🌙 ✅
 
-4. **Vertrauen aufbauen** – Am Marktstand einen Knochen holen, dem Hund geben.
-   Er frisst, wedelt – und läuft los.
+**Ziel:** Hinweis auf den Schmied bekommen und das Gasthaus verlassen dürfen.
 
-5. **Den Zeichen folgen** – Der Hund führt zu drei versteckten Zeichen:
+1. **Erwachen** – Nacht, leere Stadt, nur Gaslaternen flackern
+2. **Nachtwache** – spricht an: *„Ins Gasthaus oder nach Hause!"*
+3. **Gasthaus betreten** – Wirt begrüßt, stellt Getränk hin
+4. **Reisende belauschen** – Westtor-Gerücht → `QUEST0.heardTravelers = true`
+5. **Soldat ansprechen** – Stadt war früher anders → `QUEST0.heardSoldier = true`
+6. **Frau mit Kapuze** – geht auf sie zu, sie verschwindet wortlos → `QUEST0.sawCloakedWoman = true`
+7. **Wirt ansprechen** (nur wenn Soldat + Reisende gehört):
+   - *„Lass die Finger davon. Der Stadtrat hat lange Ohren."*
+   - *„Geh zum Schmied. Morgen früh, wenn er seine Esse anfeuert."*
+   - *„Aber sag nicht ich hab dich geschickt."*
+   - → `QUEST0.heardTavern = true`
+8. **Gasthaus verlassen** – Überblende → *„Der Morgen graut..."* → Tageszeit: Morgen
+
+**States:** `window.QUEST0 = { heardTravelers, heardSoldier, sawCloakedWoman, heardTavern }`
+
+---
+
+### Quest 1a – Der Schmied 🌅 🔲
+
+**Ziel:** Schwertgriff finden, erste Erinnerung auslösen.
+
+**Voraussetzung:** `QUEST0.heardTavern === true`
+
+1. **Schmiede betreten** – Morgen, Schmied arbeitet am Amboss
+2. **Schmied ansprechen** (Zeile 1):
+   - *„Der Wirt schickt mir jeden zweiten Fremden."*
+3. **Erneut ansprechen** (Zeile 2):
+   - *„Du hast die falschen Fragen gestellt. Deshalb bist du hier."*
+   - *„Das Westtor. Ich war dabei. Vor vielen Jahren."*
+4. **Erneut ansprechen** (Zeile 3):
+   - *„Ich schmied nicht mehr für jeden. Nur noch für mich."*
+   - Legt Hammer hin, dreht sich halb um.
+   - *„Hinter dem Amboss. Schau selbst. Ich hab's nicht weggeworfen – aber ich red nicht drüber."*
+5. **Schwertgriff aufheben** – hinter dem Amboss, interaktiv
+   - Gravur: Krone über zwei gekreuzten Schlüsseln
+   - → `INVENTORY.swordHilt = true`, HUD zeigt ⚔️
+   - **Flashback:** Schwarzblende → *„...ein Thronsaal. Warmes Licht. Eine Hand die deine hält."* → zurück
+   - → `QUEST1.firstMemory = true`
+6. **Schmied erneut ansprechen** (optional):
+   - *„Du weißt wer ich bin."*
+   - *„Ich weiß was dieses Wappen bedeutet. Mehr sag ich nicht."*
+   - *„Geh nach Westen. Wenn du den Schlüssel hast."*
+   - → `QUEST1.smithKnows = true`
+7. **Schmiede verlassen** → Tageszeit: Mittag
+
+**States:** `window.QUEST1.hasSwordHilt`, `QUEST1.firstMemory`, `QUEST1.smithKnows`
+
+---
+
+### Quest 1b – Der Händler ☀️ 🔲
+
+**Ziel:** Hinweis auf die Alchemistin bekommen, Hundefutter erhalten.
+
+**Voraussetzung:** `QUEST1.firstMemory === true`
+
+1. **Händlerhaus betreten** – Mittag, Händler begrüßt sofort (Auto-Trigger 1.5s):
+   - *„Ha! Ein Kunde! Schau dich um – ich hab alles, fast alles."*
+   - → `dialogStep = 1`
+
+2. **E drücken ohne Schwertgriff** (dialogStep=1, kein Wappen):
+   - *„Was darf es sein, Fremder? Ich hab Waren aus aller Welt!"*
+   - Kein Fortschritt. Cooldown 5s.
+
+3. **Schwertgriff aktiv zeigen** (E mit `INVENTORY.swordHilt === true`):
+   - Händler schaut auf den Griff. Pause.
+   - *„Warte mal... das Wappen. Zwei Schlüssel, eine Krone."*
+   - *„Das hab ich schon mal gesehen – bei der Alchemistin."*
+   - *„Sie hat so ein Zeichen an ihrer Tür."*
+   - Auto → Zeile 2:
+   - *„Geh abends hin. Tagsüber macht sie nicht auf."*
+   - *„Und... erwähn meinen Namen lieber nicht."*
+   - → `QUEST1.heardMerchant = true`, `dialogStep = 2`
+
+4. **E drücken nach Wappen-Dialog** (dialogStep=2):
+   - *„Übrigens – brauchst du was Günstiges für unterwegs?"*
+   - Auto → Zeile 2:
+   - *„Altes Brot vom Markt. Nimm's – kostet mich nichts."*
+   - → Brot wird interaktiv (leuchtet auf), `dialogStep = 3`
+
+5. **Brot aufheben** (E beim Brot, dialogStep >= 3):
+   - → `INVENTORY.dogFood = true`, HUD zeigt 🍖
+
+6. **Händlerhaus verlassen** → Tageszeit: Abend
+
+**States:** `window.QUEST1.heardMerchant`, `window.INVENTORY.dogFood`
+
+---
+
+### Quest 1c – Die Alchemistin 🌆 🔲
+
+**Ziel:** Hinweis auf den Hund mit goldenen Augen bekommen.
+
+**Voraussetzung:** `QUEST1.heardMerchant === true` + `INVENTORY.swordHilt === true`
+
+**Raum:** Dunkel, warm. Kerzen, Glasflaschen, getrocknete Kräuter. Leises Summen.
+Das Wappen der Königin (Krone über zwei Schlüsseln) hängt an der Tür — kein Zufall, ein Signal.
+
+1. **Alchemistenladen betreten** – Abend, Alchemistin steht am Arbeitstisch
+   - Dreht sich beim Eintreten um. Hält inne. Schaut lange.
+   - *„Ich habe dich erwartet. Nicht heute — aber irgendwann."*
+2. **Ansprechen** (Zeile 1):
+   - *„Der Händler hat mich geschickt."*
+   - Sie lächelt leicht: *„Der Händler weiß nicht was er gesehen hat. Aber du weißt es auch noch nicht."*
+   - Pause. Sie schaut auf den Schwertgriff.
+   - *„Das Wappen. Du hast es gefunden."*
+   - *„Dann ist es Zeit."*
+3. **Zeile 2** – nach kurzer Pause:
+   - *„In dieser Stadt lebt ein Hund. Goldene Augen — du wirst ihn erkennen."*
+   - *„Er hat auf dich gewartet. Länger als ich."*
+4. **Zeile 3:**
+   - *„Füttere ihn. Dann folge ihm."*
+   - *„Was er dir zeigt — merk es dir."*
+   - Dreht sich wieder zum Tisch. Gespräch beendet.
+   - → `QUEST1.triggered = true`
+5. **Optional – erneut ansprechen:**
+   - *„Wer bist du?"*
+   - Ohne sich umzudrehen: *„Jemand der sich erinnert. Für dich — bis du es selbst kannst."*
+   - → `QUEST1.alchemistHint = true`
+6. **Laden verlassen** – Überblende → kurzer Text:
+   - *„Die Nacht gehört dem Warten. Aber der Hund ist noch wach."*
+   - Tageszeit bleibt Abend. Quest 1d startet sofort.
+
+> 📌 **Auflösung später:** Nach dem Besuch verschwindet die Alchemistin — ihr Laden ist danach leer.
+> Im Feenreich wird klar: sie war die ganze Zeit die weise Fee.
+
+**States:** `QUEST1.triggered`, `QUEST1.alchemistHint`
+
+---
+
+### Quest 1d – Der Hund & die Zeichen 🌆 ✅
+
+**Ziel:** Hund füttern, drei Zeichen finden, Südtor öffnen.
+
+**Voraussetzung:** `QUEST1.triggered === true` + `INVENTORY.dogFood === true`
+
+1. **Hund mit goldenen Augen finden** – weicht zunächst zurück
+2. **Füttern** bei < 3m mit Hundefutter → `QUEST1.dogFed = true`
+3. **Hund führt zu drei Zeichen:**
    - 🔵 Brunnen auf dem Marktplatz
    - 🔵 Dachbalken des Gasthauses
    - 🔵 Zahnrad der Dampfmaschine
+4. **Alle drei gefunden** → Zeichen leuchten auf, zeigen nach Süden
+5. **Hund verschwindet** in der Menge
+6. **Feenlichter** erscheinen am Südtor
+7. **Südtor öffnet** sich dauerhaft
 
-6. **Alle drei gefunden** – Zeichen leuchten auf, Schloss + Barriere am Südtor verschwinden, Tor öffnet sich.
-   Der Hund bellt einmal – und verschwindet.
-
-7. **Feenlichter** – Kleine Feen erscheinen am Südtor und locken hinein.
-
-> 📌 Rätsel wird später weiter ausgebaut. Der Hund hat möglicherweise tiefere Story-Bedeutung – verzauberter Diener der Königin?
+**States:** `window.QUEST1 = { triggered, dogFed, signs: 0-3, completed }`
 
 ---
 
@@ -115,41 +286,33 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
 
 **Ziel:** Schlüssel finden und Westtor zum Lichtreich öffnen.
 
-1. **Ankunft** – Die weise Fee erwartet dich, erkennt dich sofort.
-   *„Du bist endlich zurück. Ich habe so lange gewartet."*
-
-2. **Verwandlung** – Fee bestäubt dich mit Feenstaub. Du wirst zur Fee.
-
-3. **Erste Erinnerung** – Du als Kind, spielend zwischen riesigen Pilzen.
-
-4. **Schlüssel suchen** – *„Deine Mutter hat etwas für dich hinterlassen. Schau nach oben."*
-   Schlüssel liegt auf dem türkisen Riesenpilz bei (−13, 12, 51).
-
-5. **Zurück zur Kesselstadt** – Das Westtor ist mit Schloss und Barriere gesperrt.
-
-6. **Tor öffnen** – Mit Schlüssel: Schloss leuchtet auf, verschwindet → Tor öffnet sich dauerhaft.
+1. **Ankunft** – die weise Fee erwartet dich
+   - *„Du bist endlich zurück. Ich habe so lange gewartet."*
+2. **Verwandlung** – Feenstaub → du wirst zur Fee → `fairy-mode`
+3. **Erste Erinnerung** – du als Kind zwischen riesigen Pilzen
+4. **Schlüssel suchen** – auf dem türkisen Riesenpilz bei (−13, 12, 51)
+5. **Zurück zur Kesselstadt** – Westtor mit Schloss und Barriere
+6. **Westtor öffnen** – mit Schlüssel → dauerhaft geöffnet → `LICHTREICH_GATE_UNLOCKED = true`
 
 ---
 
-### Quest 3 – Das Lichtreich & der falsche König 🌟
-> 📌 In Planung
+### Quest 3 – Das Lichtreich & der falsche König 🌟 🔲
 
-- Herzstein-Splitter Nr. 2 liegt im Lichtreich
+- Herzstein-Splitter Nr. 2
 - Erinnerung an die Mutter kehrt zurück
 - Konfrontation mit dem falschen König
 
 ---
 
-### Quest 4 – Das Schattenreich & die Wahrheit 🌑
-> 📌 In Planung
+### Quest 4 – Das Schattenreich & die Wahrheit 🌑 🔲
 
 - Herzstein-Splitter Nr. 3
-- Die dunkelste Wahrheit: was wirklich mit der Königin geschah
+- Was wirklich mit der Königin geschah
+- Auflösung: warum der Schmied schwieg
 
 ---
 
-### Quest 5 – Das Sturmreich & die Rückkehr 🐉
-> 📌 In Planung
+### Quest 5 – Das Sturmreich & die Rückkehr 🐉 🔲
 
 - Herzstein-Splitter Nr. 4
 - Den alten Drachen überzeugen
@@ -157,22 +320,67 @@ Die weise Fee hat auf deine Rückkehr gewartet. Sie erkennt dich sofort und verw
 
 ---
 
-## 7. Geplante Storytelling-Methoden
+## 8. Inventory
 
-- **Environmental Storytelling** – Geschichte durch Ruinen, Artefakte, Umgebung
-- **NPC-Dialoge** – Kurze, atmosphärische Gesprächsfetzen
-- **Questgegenstände** – Tagebuchseiten, Kristalle, alte Briefe
-- **Narrative UI** – Kurzer atmosphärischer Text beim Zonenbetreten
-- **Erinnerungs-Sequenzen** – Kurze visuelle Flashbacks beim Finden der Splitter
+| Item | Symbol | State | Woher |
+|------|--------|-------|-------|
+| Magischer Schlüssel | 🗝️ | `INVENTORY.magicKey` | Türkiser Pilz (Feenreich) |
+| Schwertgriff | ⚔️ | `INVENTORY.swordHilt` | Schmiede (hinter Amboss) |
+| Hundefutter | 🍖 | `INVENTORY.dogFood` | Händler (Mittag) |
 
 ---
 
-## 8. Mixed Reality (Geplant)
+## 9. Globale Quest-States
+
+```javascript
+window.QUEST0 = {
+  heardTravelers:   false,  // Reisende belauscht
+  heardSoldier:     false,  // Soldat angesprochen
+  sawCloakedWoman:  false,  // Frau mit Kapuze verschwunden
+  heardTavern:      false,  // Wirt: Hinweis auf Schmied
+}
+
+window.QUEST1 = {
+  firstMemory:    false,  // Flashback nach Schwertgriff
+  hasSwordHilt:   false,  // Schwertgriff aufgehoben  ← NEU
+  smithKnows:     false,  // Schmied-Zusatzdialog gehört
+  heardMerchant:  false,  // Händler: Hinweis auf Alchemistin
+  triggered:      false,  // Alchemistin: Hinweis auf Hund
+  alchemistHint:  false,  // Alchemistin-Zusatzdialog gehört
+  dogFed:         false,  // Hund gefüttert
+  signs:          0,      // Zeichen gefunden (0-3)
+  completed:      false,  // Südtor geöffnet
+}
+
+window.INVENTORY = {
+  magicKey:   false,
+  swordHilt:  false,  // ← NEU
+  dogFood:    false,
+}
+
+window.LICHTREICH_GATE_UNLOCKED = false;
+window.FORGE_INSIDE = false;  // ← NEU
+```
+
+---
+
+## 10. Storytelling-Methoden
+
+- **Tageszeit als Narrative** – jede Tageszeit hat einen Ort, einen Charakter, eine Information
+- **Environmental Storytelling** – Geschichte durch Ruinen, Artefakte, Umgebung
+- **NPC-Dialoge** – kurze, atmosphärische Gesprächsfetzen
+- **Begehbare Häuser** – Innenräume als eigene Mini-Szenen
+- **Questgegenstände** – Schwertgriff, Splitter, Briefe
+- **Erinnerungs-Sequenzen** – kurze Flashbacks beim Finden der Splitter
+- **Narrative UI** – kurzer atmosphärischer Text beim Zonenbetreten
+
+---
+
+## 11. Mixed Reality (Geplant)
 
 > 📌 Nach Fertigstellung der VR-Welt
 
 - Feen fliegen durch dein echtes Zimmer
 - Portale in die vier Reiche öffnen sich an echten Wänden
 - Magische Objekte auf echten Tischen/Böden
-- Atmosphärische Partikel im Zimmer
 - Per UI-Knopf zwischen VR und MR umschaltbar

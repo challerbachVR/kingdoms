@@ -1,0 +1,142 @@
+<div style="font-family: var(--font-mono); font-size: 13px; line-height: 1.6;">
+
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+  <div style="font-size: 15px; font-weight: 500; color: var(--color-text-primary);">Kingdoms QA Prompt</div>
+  <button onclick="copyPrompt()" style="font-size: 12px; padding: 4px 12px; cursor: pointer;">Copy</button>
+</div>
+
+<div style="margin-bottom: 12px;">
+  <label style="font-size: 12px; color: var(--color-text-secondary); display: block; margin-bottom: 4px;">Dateiname</label>
+  <input type="text" id="filename" placeholder="z.B. scenes/haendler.js" oninput="updatePrompt()"
+    style="width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 13px;" />
+</div>
+
+<div style="background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 1rem; white-space: pre-wrap; word-break: break-word; color: var(--color-text-primary); font-size: 12px; line-height: 1.7; max-height: 600px; overflow-y: auto;" id="prompt-output"></div>
+
+<script>
+const template = (f) => `KINGDOMS QA: ${f || '[DATEINAME]'} reviewen
+
+Lies zuerst: SKILL.md
+Lese dann: ${f || '[DATEINAME]'}
+
+Du bist ein QA-Engineer fuer das Kingdoms WebXR Projekt.
+Schreibe KEINEN Code. Erstelle nur einen Bug-Report.
+
+═══════════════════════════════════════════════════
+PRUECKLISTE
+═══════════════════════════════════════════════════
+
+1. KEYE KONFLIKTE
+   - Gibt es mehrere KeyE Listener die gleichzeitig
+     feuern koennen?
+   - Ist jeder Listener mit einem Guard abgesichert?
+     (z.B. && this._near, && window.FORGE_INSIDE)
+   - Gleiches fuer triggerdown (VR)?
+
+2. POSITIONEN
+   - Werden Weltpositionen via getWorldPosition()
+     berechnet?
+   - Gibt es hardcodierte lokale Koordinaten die
+     als Weltkoordinaten verwendet werden?
+   - Stimmen Spawn-Positionen nach _doEnter()?
+
+3. KEEP-SET in _doEnter()
+   - Sind alle persistenten Elemente im KEEP-Set?
+   - Fehlt cloaked-woman-figure?
+   - Fehlen andere NPC-Figuren oder UI-Elemente?
+
+4. SESSION-RELOAD GUARDS
+   - Werden alle window.QUEST0/QUEST1/INVENTORY
+     States beim Init geprueft?
+   - Werden HUD-Slots korrekt gesetzt wenn
+     State bereits true ist?
+   - Werden Meshes korrekt versteckt wenn
+     Item bereits aufgehoben wurde?
+
+5. PERFORMANCE
+   - Ist dt auf 50ms geclampt?
+     (Math.min(dt, 50) * 0.001)
+   - Wird setAttribute() in tick() verwendet?
+     (sollte object3D direkt manipulieren)
+   - Haben alle Materialien shader:flat?
+   - Haben Kugeln max segments-width:8
+     segments-height:6?
+   - Haben Zylinder max segments-radial:8?
+
+6. DIALOG-SYSTEM
+   - Sind alle Bubbles kamerazugewandt?
+     (rotation.y = atan2 in tick())
+   - Gibt es einen aktiven Bubble-Timer-Guard?
+     (kein neuer Dialog waehrend einer laeuft)
+   - Ist der Cooldown implementiert?
+   - Werden alle Bubbles beim Verlassen
+     des Raums ausgeblendet?
+
+7. TAGESZEIT-WECHSEL
+   - Wird der Wechsel nur ausgeloest wenn
+     der richtige Quest-State true ist?
+   - Wird er in _doExit() gesetzt (nicht _doEnter)?
+
+8. FORGE/MERCHANT INSIDE GUARD
+   - Beginnt tick() mit:
+     if (!window.FORGE_INSIDE) return;
+     ODER
+     if (!window.MERCHANT_INSIDE) return;
+   - Sind alle Event-Listener mit diesem
+     Guard abgesichert?
+
+9. TEXTUREN
+   - Haben Boden, Waende, Decke tex-Attribute?
+   - Haben Theken, Regale, Balken tex-Attribute?
+   - Haben Lichter, Flammen, Flaschen
+     KEINE tex-Attribute? (nur emissive)
+
+10. TOUCH-SUPPORT
+    - Gibt es Touch-Buttons fuer alle
+      E/Trigger Interaktionen?
+    - Werden Touch-Buttons korrekt
+      ein/ausgeblendet?
+    - Haben Touch-Buttons touch-action:none?
+
+═══════════════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════════════
+
+## QA Report: ${f || '[DATEINAME]'}
+
+### OK
+- [Was funktioniert korrekt]
+
+### KRITISCH (verhindert Funktionalitaet)
+- [Bug] -> [Zeile/Funktion] -> [Ursache]
+
+### MITTEL (beeintraechtigt Experience)
+- [Bug] -> [Zeile/Funktion] -> [Ursache]
+
+### NIEDRIG (Kleinigkeit)
+- [Bug] -> [Zeile/Funktion] -> [Ursache]
+
+### VERBESSERUNGSVORSCHLAEGE
+- [Was koennte besser sein]
+
+Maximal 20 Eintraege gesamt.
+Keine Code-Snippets im Report.
+Nur Beschreibungen und Fundstellen.`;
+
+function updatePrompt() {
+  const f = document.getElementById('filename').value.trim();
+  document.getElementById('prompt-output').textContent = template(f);
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('button');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+updatePrompt();
+</script>
+</div>

@@ -16,8 +16,16 @@ AFRAME.registerComponent('schmiede-scene', {
   },
 
   _build() {
+    this._buildRetries = (this._buildRetries || 0) + 1;
     const interior = document.getElementById('schmiede-interior');
-    if (!interior) { setTimeout(() => this._build(), 100); return; }
+    if (!interior) {
+      if (this._buildRetries > 20) {
+        console.warn('schmiede-scene: #schmiede-interior nicht gefunden');
+        return;
+      }
+      setTimeout(() => this._build(), 100);
+      return;
+    }
     this._initTextures();
     this._buildRoom(interior);
   },
@@ -133,7 +141,7 @@ AFRAME.registerComponent('schmiede-scene', {
   _emissiveSph(r, col, emiCol, emi, px, py, pz, transp) {
     const e = document.createElement('a-sphere');
     e.setAttribute('radius', r);
-    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '5');
+    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '6');
     e.setAttribute('position', `${px} ${py} ${pz}`);
     let mat = `color:${col};emissive:${emiCol};emissiveIntensity:${emi};shader:flat`;
     if (transp) mat += `;transparent:true;opacity:${transp}`;
@@ -144,7 +152,7 @@ AFRAME.registerComponent('schmiede-scene', {
   _sph(r, col, px, py, pz) {
     const e = document.createElement('a-sphere');
     e.setAttribute('radius', r);
-    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '5');
+    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '6');
     e.setAttribute('position', `${px} ${py} ${pz}`);
     e.setAttribute('material', `color:${col};shader:flat`);
     return e;
@@ -187,6 +195,7 @@ AFRAME.registerComponent('schmiede-scene', {
     this._buildTools(root);
     this._buildWeapons(root);
     this._buildExtras(root);
+    this._buildTorches(root);
   },
 
   // ── forge (Esse) ──────────────────────────────────────────────────────────
@@ -371,6 +380,54 @@ AFRAME.registerComponent('schmiede-scene', {
     add(this._box(0.09, 0.52, 0.32, '#4a4840', 4.90, 1.76, -3.18));
     add(this._box(0.09, 0.14, 0.58, '#3a3830', 4.90, 2.08, -2.88));
     add(this._box(0.07, 0.09, 0.60, '#3a2010', 4.90, 1.44, -2.88));
+  },
+
+  // ── torches (east & west wall) ────────────────────────────────────────────
+
+  _buildTorches(root) {
+    const add = e => root.appendChild(e);
+    const y = 1.8;
+    const data = [
+      { x: -4.8, z: -1.0, side: 'west' },
+      { x: -4.8, z: -3.5, side: 'west' },
+      { x:  4.8, z: -1.0, side: 'east' },
+      { x:  4.8, z: -3.5, side: 'east' },
+    ];
+
+    for (const t of data) {
+      const stemX  = t.side === 'west' ? t.x + 0.10 : t.x - 0.10;
+      const stemZ  = t.side === 'west' ? -80 : 80;
+      const stemY  = y + 0.04;
+      const tipY   = stemY + 0.14; // cylinder center + half height
+
+      // Halterung (an der Wand)
+      add(this._box(0.08, 0.08, 0.22, '#3a2010', t.x, y, t.z));
+
+      // Stiel
+      const stem = document.createElement('a-cylinder');
+      stem.setAttribute('radius', '0.028');
+      stem.setAttribute('height', '0.28');
+      stem.setAttribute('segments-radial', '6');
+      stem.setAttribute('position', `${stemX} ${stemY} ${t.z}`);
+      stem.setAttribute('rotation', `0 0 ${stemZ}`);
+      stem.setAttribute('material', 'color:#4a3018;shader:flat');
+      root.appendChild(stem);
+
+      // Brennendes Ende (Glut)
+      add(this._emissiveBox(0.06, 0.06, 0.06, '#cc3300', '#ff5500', 1.8, stemX, tipY, t.z));
+
+      // Flamme (untere)
+      add(this._emissiveBox(0.05, 0.10, 0.05, '#ff6600', '#ff3300', 2.2, stemX, tipY + 0.08, t.z, 0.88));
+
+      // Flammenspitze
+      add(this._emissiveSph(0.030, '#ffdd00', '#ffaa00', 3.0, stemX, tipY + 0.16, t.z, 0.75));
+
+      // Punktlicht pro Fackel
+      const light = document.createElement('a-entity');
+      light.setAttribute('position', `${stemX} ${tipY + 0.16} ${t.z}`);
+      light.setAttribute('light', 'type:point;color:#ff8833;intensity:0.8;distance:6');
+      root.appendChild(light);
+    }
   },
 
   // ── extras ────────────────────────────────────────────────────────────────

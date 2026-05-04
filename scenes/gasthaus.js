@@ -17,8 +17,16 @@ AFRAME.registerComponent('gasthaus-scene', {
   },
 
   _build() {
+    this._buildRetries = (this._buildRetries || 0) + 1;
     const interior = document.getElementById('gasthaus-interior');
-    if (!interior) { setTimeout(() => this._build(), 100); return; }
+    if (!interior) {
+      if (this._buildRetries > 20) {
+        console.warn('gasthaus-scene: #gasthaus-interior nicht gefunden');
+        return;
+      }
+      setTimeout(() => this._build(), 100);
+      return;
+    }
     this._initTextures();
     this._buildRoom(interior);
   },
@@ -146,7 +154,7 @@ AFRAME.registerComponent('gasthaus-scene', {
   _emissiveSph(r, col, emiCol, emi, px, py, pz, transp) {
     const e = document.createElement('a-sphere');
     e.setAttribute('radius', r);
-    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '5');
+    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '6');
     e.setAttribute('position', `${px} ${py} ${pz}`);
     let mat = `color:${col};emissive:${emiCol};emissiveIntensity:${emi};shader:flat`;
     if (transp) mat += `;transparent:true;opacity:${transp}`;
@@ -157,7 +165,7 @@ AFRAME.registerComponent('gasthaus-scene', {
   _sph(r, col, px, py, pz) {
     const e = document.createElement('a-sphere');
     e.setAttribute('radius', r);
-    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '5');
+    e.setAttribute('segments-width', '8'); e.setAttribute('segments-height', '6');
     e.setAttribute('position', `${px} ${py} ${pz}`);
     e.setAttribute('material', `color:${col};shader:flat`);
     return e;
@@ -522,19 +530,19 @@ AFRAME.registerComponent('gasthaus-travelers', {
   _build() {
     // Reisender A (Südbank, schaut nach Norden): world (-12.2, 1.65, 5.63)
     this._b1 = this._mkBubble(
-      'Das Westtor war frueher nie verschlossen.\nSeit Jahren kommt niemand mehr raus oder rein.',
+      'Karl: Das Westtor war frueher nie verschlossen.\nSeit Jahren kommt niemand mehr raus oder rein.',
       -12.2, 1.65, 5.63,
       1.80, 0.48,
     );
     // Reisender B (Nordbank, schaut nach Süden): world (-12.2, 1.65, 4.17)
     this._b2 = this._mkBubble(
-      'Lass es gut sein.\nDer Stadtrat hat seine Gruende.',
+      'Franz:Lass es gut sein.\nDer Stadtrat hat seine Gruende.',
       -12.2, 1.65, 4.17,
       1.60, 0.30,
     );
     // Reisender A – dritte Zeile
     this._b3 = this._mkBubble(
-      'Gruende... oder Angst.',
+      'Karl: Gruende... oder Angst.',
       -12.2, 1.65, 5.63,
       1.30, 0.22,
     );
@@ -545,7 +553,7 @@ AFRAME.registerComponent('gasthaus-travelers', {
     window.QUEST0.heardTravelers = true;
     this._step  = 1;
     this._timer = 6.0;
-    if (this._b1) this._b1.setAttribute('visible', 'true');
+    if (this._b1) this._b1.object3D.visible = true;
   },
 
   tick(t, dt) {
@@ -590,17 +598,17 @@ AFRAME.registerComponent('gasthaus-travelers', {
     if (this._timer > 0) return;
 
     if (this._step === 1) {
-      if (this._b1) this._b1.setAttribute('visible', 'false');
-      if (this._b2) this._b2.setAttribute('visible', 'true');
+      if (this._b1) this._b1.object3D.visible = false;
+      if (this._b2) this._b2.object3D.visible = true;
       this._step  = 2;
       this._timer = 6.0;
     } else if (this._step === 2) {
-      if (this._b2) this._b2.setAttribute('visible', 'false');
-      if (this._b3) this._b3.setAttribute('visible', 'true');
+      if (this._b2) this._b2.object3D.visible = false;
+      if (this._b3) this._b3.object3D.visible = true;
       this._step  = 3;
       this._timer = 5.0;
     } else if (this._step === 3) {
-      if (this._b3) this._b3.setAttribute('visible', 'false');
+      if (this._b3) this._b3.object3D.visible = false;
       this._step = 4;
     }
   },
@@ -753,15 +761,15 @@ AFRAME.registerComponent('soldier-dialog', {
   _build() {
     this._hint = this._mkHint();
     this._b1 = this._mkBubble(
-      'Noch ein Fremder der nicht weiss\nwo er hingehoert.',
+      'Soldat: Noch ein Fremder der nicht weiss\nwo er hingehoert.',
       1.70, 0.32,
     );
     this._b2 = this._mkBubble(
-      'Diese Stadt... frueher war sie anders. Offener.\nDie Tore standen immer offen. Jetzt?\nDas Westtor seit Jahren verschlossen.\nNiemand fragt warum.',
+      'Soldat: Diese Stadt... frueher war sie anders. Offener.\nDie Tore standen immer offen. Jetzt?\nDas Westtor seit Jahren verschlossen.\nNiemand fragt warum.',
       1.80, 0.72,
     );
     this._b3 = this._mkBubble(
-      'Ich frag auch nicht mehr.',
+      'Soldat: Ich frag auch nicht mehr.',
       1.30, 0.22,
     );
     this._mkTouchBtn();
@@ -773,12 +781,12 @@ AFRAME.registerComponent('soldier-dialog', {
     window.QUEST0.heardSoldier = true;
 
     this._near = false;
-    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._hint) this._hint.object3D.visible = false;
     if (this._touchBtn) this._touchBtn.style.display = 'none';
 
     this._step  = 1;
     this._timer = 6.0;
-    if (this._b1) this._b1.setAttribute('visible', 'true');
+    if (this._b1) this._b1.object3D.visible = true;
   },
 
   tick(t, dt) {
@@ -817,7 +825,7 @@ AFRAME.registerComponent('soldier-dialog', {
       const near = (dx * dx + dz * dz) < 4.0;   // 2m radius
       if (near !== this._near) {
         this._near = near;
-        if (this._hint) this._hint.setAttribute('visible', near ? 'true' : 'false');
+        if (this._hint) this._hint.object3D.visible = near;
         if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
       }
       return;
@@ -828,17 +836,17 @@ AFRAME.registerComponent('soldier-dialog', {
     if (this._timer > 0) return;
 
     if (this._step === 1) {
-      if (this._b1) this._b1.setAttribute('visible', 'false');
-      if (this._b2) this._b2.setAttribute('visible', 'true');
+      if (this._b1) this._b1.object3D.visible = false;
+      if (this._b2) this._b2.object3D.visible = true;
       this._step  = 2;
       this._timer = 6.0;
     } else if (this._step === 2) {
-      if (this._b2) this._b2.setAttribute('visible', 'false');
-      if (this._b3) this._b3.setAttribute('visible', 'true');
+      if (this._b2) this._b2.object3D.visible = false;
+      if (this._b3) this._b3.object3D.visible = true;
       this._step  = 3;
       this._timer = 5.0;
     } else if (this._step === 3) {
-      if (this._b3) this._b3.setAttribute('visible', 'false');
+      if (this._b3) this._b3.object3D.visible = false;
       this._step = 4;
     }
   },
@@ -879,7 +887,11 @@ AFRAME.registerComponent('cloaked-woman', {
 
   _setup() {
     this._fig = document.getElementById('cloaked-woman-figure');
-    if (this._fig && window.QUEST0.sawCloakedWoman) {
+    // Nur verstecken wenn Quest komplett abgeschlossen (heardTavern),
+    // nicht wenn nur sawCloakedWoman gesetzt ist.
+    // Die Figur soll bei jedem Gasthaus-Besuch sichtbar sein bis
+    // der Spieler sich nähert.
+    if (this._fig && window.QUEST0.heardTavern) {
       this._fig.setAttribute('visible', 'false');
       this._state = 'done';
     }
@@ -893,7 +905,7 @@ AFRAME.registerComponent('cloaked-woman', {
 
     // ── Warten: Näheprüfung ──────────────────────────────────────────────
     if (this._state === 'waiting') {
-      if (window.QUEST0.sawCloakedWoman) {
+      if (window.QUEST0.heardTavern) {
         this._fig.setAttribute('visible', 'false');
         this._state = 'done';
         return;
@@ -1097,15 +1109,15 @@ AFRAME.registerComponent('innkeeper-dialog', {
   _build() {
     this._hint = this._mkHint();
     this._b1 = this._mkBubble(
-      'Lass die Finger davon, Fremder.\nDer Stadtrat hat lange Ohren.',
+      'Wirt: Hör lieber auf Fragen zu stellen, Fremder.\nDer Stadtrat hat lange Ohren.',
       1.80, 0.32,
     );
     this._b2 = this._mkBubble(
-      'Wenn du wirklich Antworten willst...\ngeh zum Schmied. Morgen frueh,\nwenn er seine Esse anfeuert.',
+      'Wirt: Wenn du wirklich Antworten willst...\ngeh zum Schmied. Morgen frueh,\nwenn er seine Esse anfeuert.',
       1.80, 0.48,
     );
     this._b3 = this._mkBubble(
-      'Aber sag nicht ich hab dich geschickt.',
+      'Wirt: Aber sag nicht ich hab dich geschickt.',
       1.60, 0.24,
     );
     this._mkTouchBtn();
@@ -1116,12 +1128,12 @@ AFRAME.registerComponent('innkeeper-dialog', {
     this._triggered = true;
 
     this._near = false;
-    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._hint) this._hint.object3D.visible = false;
     if (this._touchBtn) this._touchBtn.style.display = 'none';
 
     this._step  = 1;
     this._timer = 3.0;
-    if (this._b1) this._b1.setAttribute('visible', 'true');
+    if (this._b1) this._b1.object3D.visible = true;
   },
 
   tick(t, dt) {
@@ -1158,7 +1170,7 @@ AFRAME.registerComponent('innkeeper-dialog', {
 
       if (near !== this._near) {
         this._near = near;
-        if (this._hint) this._hint.setAttribute('visible', near ? 'true' : 'false');
+        if (this._hint) this._hint.object3D.visible = near;
         if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
       }
       return;
@@ -1169,17 +1181,17 @@ AFRAME.registerComponent('innkeeper-dialog', {
     if (this._timer > 0) return;
 
     if (this._step === 1) {
-      if (this._b1) this._b1.setAttribute('visible', 'false');
-      if (this._b2) this._b2.setAttribute('visible', 'true');
+      if (this._b1) this._b1.object3D.visible = false;
+      if (this._b2) this._b2.object3D.visible = true;
       this._step  = 2;
       this._timer = 3.0;
     } else if (this._step === 2) {
-      if (this._b2) this._b2.setAttribute('visible', 'false');
-      if (this._b3) this._b3.setAttribute('visible', 'true');
+      if (this._b2) this._b2.object3D.visible = false;
+      if (this._b3) this._b3.object3D.visible = true;
       this._step  = 3;
       this._timer = 4.0;
     } else if (this._step === 3) {
-      if (this._b3) this._b3.setAttribute('visible', 'false');
+      if (this._b3) this._b3.object3D.visible = false;
       window.QUEST0.heardTavern = true;
       this._step = 4;
     }

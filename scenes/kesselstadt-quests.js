@@ -1,38 +1,16 @@
 // ─── Hundefutter-Item am Marktstand 2 (Quest 1) ──────────────────────────────
-// Knochen auf Tisch von Marktstand 2: world (4.2, 1.08, -4.5)
+// Knochen-Deko auf Tisch von Marktstand 2: world (4.2, 1.08, -4.5)
+// Keine Interaktion – nur 3D-Mesh als Dekoration.
 AFRAME.registerComponent('dog-food-item', {
 
   init() {
-    if (!window.INVENTORY) window.INVENTORY = {};
-    if (window.INVENTORY.dogFood === undefined) window.INVENTORY.dogFood = false;
-
-    this._cam      = null;
-    this._camWP    = new THREE.Vector3();
-    this._picked   = false;
-    this._near     = false;
-    this._root     = null;
-    this._hint     = null;
-    this._touchBtn = null;
-
     const sc = this.el.sceneEl;
     if (sc.hasLoaded) this._build();
     else sc.addEventListener('loaded', () => this._build(), { once: true });
-
-    document.addEventListener('keydown', e => {
-      if (e.code === 'KeyE') this._tryPickup();
-    });
-
-    sc.addEventListener('loaded', () => {
-      const rh = document.getElementById('rightHand');
-      if (rh) rh.addEventListener('triggerdown', () => this._tryPickup());
-    }, { once: true });
   },
 
   _build() {
     this._buildBone();
-    this._buildHint();
-    this._buildTouchBtn();
-    this._addHUDSlot();
   },
 
   _buildBone() {
@@ -46,7 +24,7 @@ AFRAME.registerComponent('dog-food-item', {
     const shaft = document.createElement('a-cylinder');
     shaft.setAttribute('radius', '0.018');
     shaft.setAttribute('height', '0.14');
-    shaft.setAttribute('segments-radial', '6');
+    shaft.setAttribute('segments-radial', '8');
     shaft.setAttribute('material', M);
     root.appendChild(shaft);
 
@@ -54,7 +32,7 @@ AFRAME.registerComponent('dog-food-item', {
     const kTop = document.createElement('a-sphere');
     kTop.setAttribute('radius', '0.030');
     kTop.setAttribute('segments-width', '6');
-    kTop.setAttribute('segments-height', '4');
+    kTop.setAttribute('segments-height', '6');
     kTop.setAttribute('position', '0 0.082 0');
     kTop.setAttribute('material', M);
     root.appendChild(kTop);
@@ -63,7 +41,7 @@ AFRAME.registerComponent('dog-food-item', {
     const kBot = document.createElement('a-sphere');
     kBot.setAttribute('radius', '0.030');
     kBot.setAttribute('segments-width', '6');
-    kBot.setAttribute('segments-height', '4');
+    kBot.setAttribute('segments-height', '6');
     kBot.setAttribute('position', '0 -0.082 0');
     kBot.setAttribute('material', M);
     root.appendChild(kBot);
@@ -74,139 +52,11 @@ AFRAME.registerComponent('dog-food-item', {
     root.appendChild(gl);
 
     this.el.sceneEl.appendChild(root);
-    this._root = root;
-  },
-
-  _buildHint() {
-    const h = document.createElement('a-entity');
-    h.setAttribute('position', '4.2 -200 -4.5');
-    h.setAttribute('visible', 'false');
-
-    const frame = document.createElement('a-plane');
-    frame.setAttribute('width', '1.12');
-    frame.setAttribute('height', '0.24');
-    frame.setAttribute('position', '0 0 -0.003');
-    frame.setAttribute('material',
-      'color:#c8a060;shader:flat;transparent:true;opacity:0.48;' +
-      'emissive:#c8a060;emissiveIntensity:0.32');
-    h.appendChild(frame);
-
-    const bg = document.createElement('a-plane');
-    bg.setAttribute('width', '1.06');
-    bg.setAttribute('height', '0.18');
-    bg.setAttribute('material',
-      'color:#100800;shader:flat;transparent:true;opacity:0.92');
-    h.appendChild(bg);
-
-    const txt = document.createElement('a-text');
-    txt.setAttribute('value', 'E / Trigger: Aufheben');
-    txt.setAttribute('align', 'center');
-    txt.setAttribute('color', '#ffe8b0');
-    txt.setAttribute('width', '0.92');
-    txt.setAttribute('position', '0 0 0.005');
-    h.appendChild(txt);
-
-    this.el.sceneEl.appendChild(h);
-    this._hint = h;
-  },
-
-  _buildTouchBtn() {
-    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    if (!isTouch) return;
-    if (document.getElementById('food-touch-btn')) return;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      #food-touch-btn {
-        position: fixed; bottom: 200px; left: 50%;
-        transform: translateX(-50%);
-        background: rgba(200,160,80,0.90); color: #1a0800;
-        border: none; border-radius: 30px;
-        padding: 12px 30px; font-size: 17px;
-        font-family: sans-serif; font-weight: bold;
-        display: none; z-index: 10001; touch-action: none;
-      }
-    `;
-    document.head.appendChild(style);
-
-    const btn = document.createElement('button');
-    btn.id = 'food-touch-btn';
-    btn.textContent = 'Aufheben';
-    btn.addEventListener('touchstart', e => {
-      e.preventDefault();
-      this._tryPickup();
-    }, { passive: false });
-    document.body.appendChild(btn);
-    this._touchBtn = btn;
-  },
-
-  _addHUDSlot() {
-    if (document.getElementById('inv-food-slot')) return;
-    const hud = document.getElementById('inventory-hud');
-    if (!hud) { setTimeout(() => this._addHUDSlot(), 150); return; }
-    const slot = document.createElement('div');
-    slot.id = 'inv-food-slot';
-    slot.className = 'inv-slot';
-    slot.textContent = '🦴';
-    hud.appendChild(slot);
-  },
-
-  _tryPickup() {
-    if (this._picked || !this._near) return;
-    this._picked = true;
-
-    window.INVENTORY.dogFood = true;
-
-    if (this._root && this._root.parentNode)
-      this._root.parentNode.removeChild(this._root);
-    this._root = null;
-
-    this._near = false;
-    if (this._hint) this._hint.setAttribute('visible', 'false');
-    if (this._touchBtn) this._touchBtn.style.display = 'none';
-
-    const slot = document.getElementById('inv-food-slot');
-    if (slot) slot.classList.add('has-item');
-  },
-
-  tick(t) {
-    if (this._picked) return;
-    if (!this._cam) this._cam = document.getElementById('camera');
-    if (!this._cam || !this._root) return;
-
-    const ts = t * 0.001;
-
-    if (this._root.object3D) {
-      this._root.object3D.position.y = 1.08 + Math.sin(ts * 1.6) * 0.05;
-      this._root.object3D.rotation.y = ts * 0.8;
-    }
-
-    this._cam.object3D.getWorldPosition(this._camWP);
-    const dx   = this._camWP.x - 4.2;
-    const dz   = this._camWP.z + 4.5;
-    const near = (dx * dx + dz * dz) < 2.25;   // 1.5m radius
-
-    if (near !== this._near) {
-      this._near = near;
-      if (this._hint) this._hint.setAttribute('visible', near ? 'true' : 'false');
-      if (this._touchBtn) this._touchBtn.style.display = near ? 'block' : 'none';
-    }
-
-    if (this._near && this._hint && this._hint.object3D) {
-      const iy = this._root ? this._root.object3D.position.y + 0.28 : 1.36;
-      this._hint.object3D.position.set(4.2, iy, -4.5);
-      this._hint.object3D.rotation.y = Math.atan2(
-        this._camWP.x - 4.2,
-        this._camWP.z + 4.5,
-      );
-    }
   },
 
   remove() {
-    if (this._root && this._root.parentNode)
-      this._root.parentNode.removeChild(this._root);
-    if (this._hint && this._hint.parentNode)
-      this._hint.parentNode.removeChild(this._hint);
+    const root = document.getElementById('dog-food-bone');
+    if (root && root.parentNode) root.parentNode.removeChild(root);
   },
 });
 
@@ -295,7 +145,7 @@ AFRAME.registerComponent('magic-signs', {
     const dot = document.createElement('a-sphere');
     dot.setAttribute('radius', '0.016');
     dot.setAttribute('segments-width',  '6');
-    dot.setAttribute('segments-height', '4');
+    dot.setAttribute('segments-height', '6');
     dot.setAttribute('material', M0);
     dot.setAttribute('animation__reveal', ANIM);
     root.appendChild(dot);
@@ -394,7 +244,7 @@ AFRAME.registerComponent('magic-signs', {
     s.root.querySelectorAll('a-torus, a-box, a-sphere')
       .forEach(el => el.setAttribute('material', BRIGHT));
 
-    if (s.hint) s.hint.setAttribute('visible', 'false');
+    if (s.hint) s.hint.object3D.visible = false;
     if (this._nearIdx === idx) {
       this._nearIdx = -1;
       if (this._touchBtn) this._touchBtn.style.display = 'none';
@@ -441,11 +291,11 @@ AFRAME.registerComponent('magic-signs', {
     });
 
     if (newNear !== this._nearIdx) {
-      if (this._nearIdx >= 0 && this._signs[this._nearIdx])
-        this._signs[this._nearIdx].hint.setAttribute('visible', 'false');
+      if (this._nearIdx >= 0 && this._signs[this._nearIdx] && this._signs[this._nearIdx].hint)
+        this._signs[this._nearIdx].hint.object3D.visible = false;
       this._nearIdx = newNear;
-      if (newNear >= 0)
-        this._signs[newNear].hint.setAttribute('visible', 'true');
+      if (newNear >= 0 && this._signs[newNear] && this._signs[newNear].hint)
+        this._signs[newNear].hint.object3D.visible = true;
       if (this._touchBtn)
         this._touchBtn.style.display = newNear >= 0 ? 'block' : 'none';
     }
@@ -527,7 +377,7 @@ AFRAME.registerComponent('quest1-gate', {
     const armL = document.createElement('a-cylinder');
     armL.setAttribute('radius', '0.040');
     armL.setAttribute('height', '0.22');
-    armL.setAttribute('segments-radial', '6');
+    armL.setAttribute('segments-radial', '8');
     armL.setAttribute('position', '-0.12 0.28 0');
     armL.setAttribute('material', M);
     root.appendChild(armL);
@@ -536,7 +386,7 @@ AFRAME.registerComponent('quest1-gate', {
     const armR = document.createElement('a-cylinder');
     armR.setAttribute('radius', '0.040');
     armR.setAttribute('height', '0.22');
-    armR.setAttribute('segments-radial', '6');
+    armR.setAttribute('segments-radial', '8');
     armR.setAttribute('position', '0.12 0.28 0');
     armR.setAttribute('material', M);
     root.appendChild(armR);
@@ -630,11 +480,16 @@ AFRAME.registerComponent('quest1-gate', {
   },
 
   _addCollisionBox() {
-    const pc = this.el.sceneEl.components['player-collision'];
-    if (pc && pc._boxes) {
-      this._collisionBox = { x0: -2.1, x1: 2.1, z0: 27.2, z1: 28.8 };
-      pc._boxes.push(this._collisionBox);
-    }
+    const tryAdd = () => {
+      const pc = this.el.sceneEl.components['player-collision'];
+      if (pc && pc._boxes) {
+        this._collisionBox = { x0: -2.1, x1: 2.1, z0: 27.2, z1: 28.8 };
+        pc._boxes.push(this._collisionBox);
+        return;
+      }
+      setTimeout(tryAdd, 100);
+    };
+    tryAdd();
   },
 
   _removeBarrier() {
@@ -664,7 +519,7 @@ AFRAME.registerComponent('quest1-gate', {
       const orb = document.createElement('a-sphere');
       orb.setAttribute('radius', '0.06');
       orb.setAttribute('segments-width', '6');
-      orb.setAttribute('segments-height', '4');
+      orb.setAttribute('segments-height', '6');
       orb.setAttribute('material',
         `color:${col};emissive:${col};emissiveIntensity:2.0;shader:flat;transparent:true;opacity:0.85`);
       root.appendChild(orb);
@@ -690,7 +545,7 @@ AFRAME.registerComponent('quest1-gate', {
     this._triggered = true;
     window.QUEST1.completed = true;
 
-    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._hint) this._hint.object3D.visible = false;
 
     // Schloss + Barriere weiß aufleuchten, dann entfernen
     const WM = 'color:#ffffff;emissive:#ffffff;emissiveIntensity:3.5;shader:flat';
@@ -780,7 +635,7 @@ AFRAME.registerComponent('quest1-gate', {
     const nearGate = d2 < 9;   // 3m²
     if (nearGate !== this._hintVis) {
       this._hintVis = nearGate;
-      if (this._hint) this._hint.setAttribute('visible', nearGate ? 'true' : 'false');
+      if (this._hint) this._hint.object3D.visible = nearGate;
     }
 
     if (this._hintVis && this._hint && this._hint.object3D) {

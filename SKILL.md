@@ -22,12 +22,14 @@ js/
   fairy-transform.js        – weise Fee NPC + Feenverwandlung + Flugsteuerung
   key-system.js             – Schlüssel + Inventory HUD + Westtor
 scenes/
-  kesselstadt.js            – statische Welt + gasthaus-door Component
+  kesselstadt.js            – statische Welt + gasthaus-door + schmiede-door + haendler-door Components
   kesselstadt-quests.js     – Quest 1: Knochen, Zeichen, Südtor, alte Frau
   kesselstadt-night.js      – Nacht: NPCs ausblenden, Nachtwachen, Hund
   feenreich.js              – Feenreich: Terrain, Kreaturen, Sounds
   lichtreich.js             – Lichtreich Kulisse
   gasthaus.js               – Gasthaus Innenraum + alle NPCs + Dialoge
+  schmiede.js               – Schmied-NPC + Hammer + Funken + Dialog + Flashback (Quest 1a)
+  haendler.js               – Händler-NPC + Innenraum + Hundefutter-Pickup (Quest 1b)
 ```
 
 ---
@@ -35,7 +37,11 @@ scenes/
 ## Globale States
 
 ```javascript
-window.INVENTORY = { magicKey: false, dogFood: false }
+window.INVENTORY = {
+  magicKey:  false,   // Magischer Schlüssel (Feenreich-Pilz)
+  swordHilt: false,   // Schwertgriff mit Königin-Wappen (Schmiede)
+  dogFood:   false    // Hundefutter (Händler)
+}
 
 window.QUEST0 = {
   heardTravelers: false,   // Reisende im Gasthaus belauscht
@@ -45,13 +51,21 @@ window.QUEST0 = {
 }
 
 window.QUEST1 = {
-  triggered: false,   // Alte Frau hat Hinweis gegeben
-  dogFed:    false,   // Hund gefüttert
-  signs:     0,       // Gefundene Zeichen (0-3)
-  completed: false    // Südtor geöffnet
+  hasSwordHilt:  false,  // Schwertgriff aufgehoben
+  firstMemory:   false,  // Flashback nach Schwertgriff
+  smithKnows:    false,  // Schmied-Zusatzdialog gehört
+  heardMerchant: false,  // Händler-Dialog abgeschlossen
+  triggered:     false,  // Alchemistin: Hinweis auf Hund
+  alchemistHint: false,  // Alchemistin-Zusatzdialog
+  dogFed:        false,  // Hund gefüttert
+  signs:         0,      // Gefundene Zeichen (0-3)
+  completed:     false   // Südtor geöffnet
 }
 
 window.LICHTREICH_GATE_UNLOCKED = false  // Westtor dauerhaft offen
+
+window.FORGE_INSIDE    = false  // Spieler in Schmiede
+window.MERCHANT_INSIDE = false  // Spieler im Händlerhaus
 ```
 
 ---
@@ -65,6 +79,12 @@ window.LICHTREICH_GATE_UNLOCKED = false  // Westtor dauerhaft offen
 | Westtor | (-28, 0, 0) |
 | Schlüsselpilz | (-13, 12, 51) |
 | Gasthaus-Tür außen | (-9, 0, 10.5) |
+| Schmiede-Tür außen   | (-9, 0, -5.5)   |
+| Schmiede-Interior    | (-9, 0, -8)     |
+| Schmied-NPC world    | (-9.5, 0, -9.5) |
+| Händler-Tür außen    | (9, 0, -5.5)    |
+| Händler-Interior     | (9, 0, -8)      |
+| Händler-NPC world    | (9, 0, -9.5)    |
 | Feenreich-Trigger | z > 33 |
 
 ---
@@ -138,6 +158,35 @@ setTimeout(() => {
 
 ---
 
+## HUD Slots
+| Slot-ID          | Symbol | State                    |
+|------------------|--------|--------------------------|
+| #inv-key-slot    | 🗝️    | INVENTORY.magicKey       |
+| #inv-hilt-slot   | ⚔️    | INVENTORY.swordHilt      |
+| #inv-food-slot   | 🍖    | INVENTORY.dogFood        |
+
+Alle Slots: display:none wenn false, has-item Klasse wenn true.
+In VR ausgeblendet.
+
+---
+
+## Tageszeit-System
+| Mode     | Gesetzt wann                              |
+|----------|-------------------------------------------|
+| night    | Start / nach Alchemistin                  |
+| morning  | Gasthaus verlassen (heardTavern=true)     |
+| midday   | Schmiede verlassen (firstMemory=true)     |
+| evening  | Händler verlassen (heardMerchant=true)    |
+| day      | Normal-Zyklus                             |
+
+Tageszeit setzen:
+scene.setAttribute('daynight', 'mode:morning')
+
+Tageszeit lesen:
+const mode = scene.components.daynight.data.mode
+
+---
+
 ## Bestehende Components
 
 | Component | Datei | Beschreibung |
@@ -149,6 +198,10 @@ setTimeout(() => {
 | `fairy-transform` | fairy-transform.js | Fee-Verwandlung + Flugmodus |
 | `key-system` | key-system.js | Schlüssel-Pickup + Westtor-Öffnung |
 | `gasthaus-door` | kesselstadt.js | Eintreten/Verlassen Gasthaus + Fade |
+| `schmiede-door` | kesselstadt.js | Eintreten/Verlassen Schmiede, nur morgens |
+| `haendler-door` | kesselstadt.js | Eintreten/Verlassen Händlerhaus, nur mittags |
+| `smith-npc`     | schmiede.js    | Schmied Dialog + Hammer + Funken + Flashback |
+| `haendler-npc`  | haendler.js    | Händler Dialog + Hundefutter-Pickup |
 | `quest1-gate` | kesselstadt-quests.js | Südtor-Sperre + Öffnungs-Sequenz |
 | `kesselstadt-night` | kesselstadt-night.js | Nacht-Modus + Nachtwachen |
 | `feenreich-scene` | feenreich.js | Feenreich Terrain + Zonenwechsel |
