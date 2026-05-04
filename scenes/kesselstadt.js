@@ -1138,7 +1138,6 @@ AFRAME.registerComponent('smith-npc', {
     this._insideRoot = null;
     this._insideNpcRoot = null;
     this._hammerPivot = null;
-    this._anvilMesh = null;
     this._hiltMesh = null;
     this._hiltRoot = null;
     this._state = 'working';
@@ -1194,7 +1193,6 @@ AFRAME.registerComponent('smith-npc', {
   _build() {
     this._cam = document.getElementById('camera');
     this._buildInteriorFigure();
-    this._buildInteriorAnvil();
     this._buildHilt();
     this._buildSparkPool();
     this._buildBubbles();
@@ -1295,21 +1293,6 @@ AFRAME.registerComponent('smith-npc', {
     interior.appendChild(root);
     this._insideRoot = root;
     this._insideNpcRoot = npcRoot;
-  },
-
-  _buildInteriorAnvil() {
-    const interior = document.getElementById('schmiede-interior');
-    if (!interior) { setTimeout(() => this._buildInteriorAnvil(), 100); return; }
-
-    const anvil = document.createElement('a-entity');
-    anvil.setAttribute('position', '-0.5 0 -1.0');
-    anvil.appendChild(this._box(0.50, 0.70, 0.50, '#3a2510', 0, 0.35, 0));
-    anvil.appendChild(this._box(0.60, 0.10, 0.28, '#282828', 0, 0.75, 0));
-    anvil.appendChild(this._box(0.52, 0.16, 0.26, '#282828', 0, 0.85, 0));
-    anvil.appendChild(this._box(0.24, 0.08, 0.12, '#282828', 0.40, 0.82, 0));
-    anvil.appendChild(this._box(0.52, 0.03, 0.26, '#343434', 0, 0.94, 0));
-    interior.appendChild(anvil);
-    this._anvilMesh = anvil.object3D;
   },
 
   // ── Schwertgriff ──────────────────────────────────────────────────────────
@@ -1611,9 +1594,7 @@ AFRAME.registerComponent('smith-npc', {
   },
 
   _emitSparkBurst() {
-    if (!this._anvilMesh) return;
-    const origin = this._tmpVec3;
-    this._anvilMesh.getWorldPosition(origin);
+    const origin = new THREE.Vector3(-9.5, 1.06, -9.5);
 
     const candidates = [];
     for (let i = 0; i < SMITH_SPARK_POOL_SIZE; i++) {

@@ -271,10 +271,6 @@ AFRAME.registerComponent('schmiede-scene', {
     // Half-forged blade on anvil
     add(this._box(0.44, 0.04, 0.07, '#382820', ax - 0.04, 1.10, az));
 
-    // Resting hammer (beside anvil)
-    add(this._box(0.06, 0.06, 0.56, '#3a2510', -0.58, 0.89, az + 0.05));
-    add(this._box(0.13, 0.16, 0.11, '#282828', -0.58, 0.89, az - 0.23));
-
     // Quench barrel (right of anvil)
     add(this._cyl(0.34, 0.74, '#3a2810', 1.82, 0.37, az));
     add(this._cyl(0.32, 0.04, '#2a5870', 1.82, 0.75, az));
@@ -388,20 +384,21 @@ AFRAME.registerComponent('schmiede-scene', {
     const add = e => root.appendChild(e);
     const y = 1.8;
     const data = [
-      { x: -4.8, z: -1.0, side: 'west' },
-      { x: -4.8, z: -3.5, side: 'west' },
-      { x:  4.8, z: -1.0, side: 'east' },
-      { x:  4.8, z: -3.5, side: 'east' },
+      { x: -4.5, z: -1.0, side: 'west' },
+      { x: -4.5, z: -3.0, side: 'west' },
+      { x:  4.5, z: -1.0, side: 'east' },
+      { x:  4.5, z: -3.0, side: 'east' },
     ];
 
     for (const t of data) {
-      const stemX  = t.side === 'west' ? t.x + 0.10 : t.x - 0.10;
-      const stemZ  = t.side === 'west' ? -80 : 80;
+      const stemX  = t.side === 'west' ? t.x + 0.30 : t.x - 0.30;
+      const stemZ  = t.side === 'west' ? -65 : 65;
       const stemY  = y + 0.04;
       const tipY   = stemY + 0.14; // cylinder center + half height
 
-      // Halterung (an der Wand)
-      add(this._box(0.08, 0.08, 0.22, '#3a2010', t.x, y, t.z));
+      // Halterung (an der Wand, zwischen Fackel und Wand)
+      const bracketX = t.side === 'west' ? -4.88 : 4.88;
+      add(this._box(0.08, 0.08, 0.22, '#3a2010', bracketX, y, t.z));
 
       // Stiel
       const stem = document.createElement('a-cylinder');
@@ -444,10 +441,6 @@ AFRAME.registerComponent('schmiede-scene', {
     add(this._box(0.24, 0.07, 0.07, '#2a1808', 5.08, 2.65, 0.0));
     add(this._cyl(0.04, 0.24, '#3a2818', 5.08, 2.78, 0.0));
     add(this._emissiveSph(0.06, '#ffcc44', '#ff8800', 3.0, 5.08, 2.91, 0.0, 0.8));
-
-    // Metal scraps near anvil
-    add(this._box(0.32, 0.04, 0.16, '#282828', -0.82, 0.88, -0.5));
-    add(this._box(0.18, 0.03, 0.10, '#2a2828', 0.62, 0.88, -0.8));
 
     // Horseshoe above door entry
     add(this._box(0.05, 0.30, 0.05, '#282828', 4.38, 1.94, 3.50));
