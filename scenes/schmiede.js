@@ -209,8 +209,6 @@ AFRAME.registerComponent('schmiede-scene', {
     add(this._box(0.68, 1.55, 0.95, '#3a3028', -1.32, 1.05, -3.625, 'tex-forge-stone', 0.25, 0.6));
     // Right pillar
     add(this._box(0.68, 1.55, 0.95, '#3a3028', 1.32, 1.05, -3.625, 'tex-forge-stone', 0.25, 0.6));
-    // Fire chamber (dark)
-    add(this._box(1.56, 1.02, 0.85, '#0e0806', 0, 1.18, -3.625));
     // Hood / Haube
     add(this._box(2.9, 3.1, 0.60, '#484038', 0, 3.25, -3.84, 'tex-forge-stone', 1.0, 1.2));
     // Chimney
@@ -431,16 +429,6 @@ AFRAME.registerComponent('schmiede-scene', {
 
   _buildExtras(root) {
     const add = e => root.appendChild(e);
-
-    // Wall torch – West
-    add(this._box(0.24, 0.07, 0.07, '#2a1808', -5.08, 2.65, 0.0));
-    add(this._cyl(0.04, 0.24, '#3a2818', -5.08, 2.78, 0.0));
-    add(this._emissiveSph(0.06, '#ffcc44', '#ff8800', 3.0, -5.08, 2.91, 0.0, 0.8));
-
-    // Wall torch – East
-    add(this._box(0.24, 0.07, 0.07, '#2a1808', 5.08, 2.65, 0.0));
-    add(this._cyl(0.04, 0.24, '#3a2818', 5.08, 2.78, 0.0));
-    add(this._emissiveSph(0.06, '#ffcc44', '#ff8800', 3.0, 5.08, 2.91, 0.0, 0.8));
 
     // Horseshoe above door entry
     add(this._box(0.05, 0.30, 0.05, '#282828', 4.38, 1.94, 3.50));

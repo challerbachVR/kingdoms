@@ -1200,15 +1200,19 @@ AFRAME.registerComponent('smith-npc', {
     this._buildTouchBtns();
     this._addHUDSlot();
 
-    const sc = this.el.sceneEl;
-    sc.addEventListener('loaded', () => {
+    const tryBindVR = () => {
       const rh = document.getElementById('rightHand');
-      if (rh) rh.addEventListener('triggerdown', () => {
-        if (!window.FORGE_INSIDE) return;
-        if (this._nearHilt) this._tryPickupHilt();
-        else if (this._nearSmith) this._triggerDialog();
-      });
-    }, { once: true });
+      if (rh) {
+        rh.addEventListener('triggerdown', () => {
+          if (!window.FORGE_INSIDE) return;
+          if (this._nearHilt) this._tryPickupHilt();
+          else if (this._nearSmith) this._triggerDialog();
+        });
+      } else {
+        setTimeout(tryBindVR, 200);
+      }
+    };
+    tryBindVR();
 
     window.NPC_REGISTRY.schmied = {
       id: 'schmied-inside',
