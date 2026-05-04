@@ -95,16 +95,23 @@ AFRAME.registerComponent('haendler-npc', {
     this._buildTouchBtns();
     this._addHUDSlot();
 
-    const sc = this.el.sceneEl;
-    sc.addEventListener('loaded', () => {
-      const rh = document.getElementById('rightHand');
-      if (rh) rh.addEventListener('triggerdown', () => {
-        if (!window.MERCHANT_INSIDE) return;
-        if (this._nearFood && merchantState.dialogStep >= 2) { this._tryPickupFood(); return; }
-        if (this._nearCounter && !merchantState.hiltPlaced) { this._placeHiltOnCounter(); return; }
-        if (this._nearMerchant) { this._triggerMerchantDialog(); return; }
-      });
-    }, { once: true });
+    const tryBindVR = () => {
+  const rh = document.getElementById('rightHand');
+  if (rh) {
+    rh.addEventListener('triggerdown', () => {
+      if (!window.MERCHANT_INSIDE) return;
+      if (this._nearFood && merchantState.dialogStep >= 2)
+        { this._tryPickupFood(); return; }
+      if (this._nearCounter && !merchantState.hiltPlaced)
+        { this._placeHiltOnCounter(); return; }
+      if (this._nearMerchant)
+        { this._triggerMerchantDialog(); return; }
+    });
+  } else {
+    setTimeout(tryBindVR, 200);
+  }
+};
+tryBindVR();
 
   },
 
@@ -607,117 +614,130 @@ AFRAME.registerComponent('haendler-npc', {
     this._hiltOnCounter = root;
   },
 
-  // ── Mehr Interieur (Tisch, Regal 3, Laterne) ────────────────────────────
+  // ── Mehr Interieur (Regale, Laterne) ────────────────────────────────────
   _buildInteriorDecor() {
     const interior = document.getElementById('haendler-interior');
     if (!interior) return;
 
-    // A) Zweiter Ausstellungstisch (Mitte-Links)
-    const table2 = document.createElement('a-box');
-    table2.setAttribute('width', '1.8');
-    table2.setAttribute('height', '0.04');
-    table2.setAttribute('depth', '0.9');
-    table2.setAttribute('position', '-2.5 0.82 -1.5');
-    table2.setAttribute('material', 'color:#3c2210;shader:flat');
-    table2.setAttribute('tex', 'id:tex-wood; repx:1; repy:0.5');
-    interior.appendChild(table2);
+    // ── A) Regal 1 (niedrig, Nordwand hinter Tresen) ──────────────────────
+    const shelf1 = document.createElement('a-box');
+    shelf1.setAttribute('width', '3.5');
+    shelf1.setAttribute('height', '0.06');
+    shelf1.setAttribute('depth', '0.25');
+    shelf1.setAttribute('position', '0 1.55 -3.82');
+    shelf1.setAttribute('material', 'color:#4a2c10;shader:flat');
+    shelf1.setAttribute('tex', 'id:tex-beam; repx:2; repy:0.5');
+    interior.appendChild(shelf1);
 
-    // 4 Beine für Tisch 2
-    [
-      [-3.3, 0.41, -1.1],
-      [-3.3, 0.41, -1.9],
-      [-1.7, 0.41, -1.1],
-      [-1.7, 0.41, -1.9],
-    ].forEach(([x, y, z]) => {
-      const leg = document.createElement('a-cylinder');
-      leg.setAttribute('radius', '0.04');
-      leg.setAttribute('height', '0.82');
-      leg.setAttribute('segments-radial', '8');
-      leg.setAttribute('position', `${x} ${y} ${z}`);
-      leg.setAttribute('material', 'color:#2e1a08;shader:flat');
-      interior.appendChild(leg);
-    });
+    // Waren auf Regal 1
+    // Krug 1
+    const jug1 = document.createElement('a-cylinder');
+    jug1.setAttribute('radius', '0.07');
+    jug1.setAttribute('height', '0.18');
+    jug1.setAttribute('segments-radial', '8');
+    jug1.setAttribute('position', '-1.2 1.67 -3.82');
+    jug1.setAttribute('material', 'color:#9a7060;shader:flat');
+    interior.appendChild(jug1);
 
-    // Waren auf Tisch (Deko)
-    // Kleines Kästchen
-    const chest = document.createElement('a-box');
-    chest.setAttribute('width', '0.22');
-    chest.setAttribute('height', '0.14');
-    chest.setAttribute('depth', '0.18');
-    chest.setAttribute('position', '-2.7 0.90 -1.5');
-    chest.setAttribute('material', 'color:#5a3818;shader:flat');
-    chest.setAttribute('tex', 'id:tex-wood; repx:1; repy:1');
-    interior.appendChild(chest);
+    // Krug 2
+    const jug2 = document.createElement('a-cylinder');
+    jug2.setAttribute('radius', '0.05');
+    jug2.setAttribute('height', '0.14');
+    jug2.setAttribute('segments-radial', '8');
+    jug2.setAttribute('position', '-0.5 1.64 -3.82');
+    jug2.setAttribute('material', 'color:#7a5840;shader:flat');
+    interior.appendChild(jug2);
 
-    // Rolle/Schriftrolle
-    const scroll = document.createElement('a-cylinder');
-    scroll.setAttribute('radius', '0.04');
-    scroll.setAttribute('height', '0.24');
-    scroll.setAttribute('segments-radial', '8');
-    scroll.setAttribute('rotation', '90 30 0');
-    scroll.setAttribute('position', '-2.3 0.87 -1.4');
-    scroll.setAttribute('material', 'color:#c8b080;shader:flat');
-    interior.appendChild(scroll);
+    // Krug 3
+    const jug3 = document.createElement('a-cylinder');
+    jug3.setAttribute('radius', '0.08');
+    jug3.setAttribute('height', '0.20');
+    jug3.setAttribute('segments-radial', '8');
+    jug3.setAttribute('position', '0.4 1.68 -3.82');
+    jug3.setAttribute('material', 'color:#806050;shader:flat');
+    interior.appendChild(jug3);
 
     // Kleines Fläschchen
-    const flask2 = document.createElement('a-cylinder');
-    flask2.setAttribute('radius', '0.03');
-    flask2.setAttribute('height', '0.14');
-    flask2.setAttribute('segments-radial', '8');
-    flask2.setAttribute('position', '-2.5 0.89 -1.7');
-    flask2.setAttribute('material',
+    const flaskShelf = document.createElement('a-cylinder');
+    flaskShelf.setAttribute('radius', '0.03');
+    flaskShelf.setAttribute('height', '0.14');
+    flaskShelf.setAttribute('segments-radial', '8');
+    flaskShelf.setAttribute('position', '1.1 1.64 -3.82');
+    flaskShelf.setAttribute('material',
       'color:#00CED1;emissive:#00CED1;emissiveIntensity:0.5;shader:flat');
-    interior.appendChild(flask2);
+    interior.appendChild(flaskShelf);
 
-    // B) Regal 3 (höher, über bisherigen Regalen)
-    const shelf3 = document.createElement('a-box');
-    shelf3.setAttribute('width', '3.8');
-    shelf3.setAttribute('height', '0.06');
-    shelf3.setAttribute('depth', '0.28');
-    shelf3.setAttribute('position', '0 2.28 -3.82');
-    shelf3.setAttribute('material', 'color:#4a2c10;shader:flat');
-    shelf3.setAttribute('tex', 'id:tex-beam; repx:2; repy:0.5');
-    interior.appendChild(shelf3);
+    // ── B) Regal 2 (höher, Nordwand hinter Tresen) ────────────────────────
+    const shelf2 = document.createElement('a-box');
+    shelf2.setAttribute('width', '3.5');
+    shelf2.setAttribute('height', '0.06');
+    shelf2.setAttribute('depth', '0.25');
+    shelf2.setAttribute('position', '0 2.10 -3.82');
+    shelf2.setAttribute('material', 'color:#4a2c10;shader:flat');
+    shelf2.setAttribute('tex', 'id:tex-beam; repx:2; repy:0.5');
+    interior.appendChild(shelf2);
 
-    // Waren auf Regal 3
+    // Waren auf Regal 2
+    // Truhe
+    const chestShelf = document.createElement('a-box');
+    chestShelf.setAttribute('width', '0.22');
+    chestShelf.setAttribute('height', '0.14');
+    chestShelf.setAttribute('depth', '0.16');
+    chestShelf.setAttribute('position', '-1.0 2.19 -3.82');
+    chestShelf.setAttribute('material', 'color:#3a2010;shader:flat');
+    chestShelf.setAttribute('tex', 'id:tex-wood; repx:1; repy:1');
+    interior.appendChild(chestShelf);
+
     // Topf
-    const pot = document.createElement('a-cylinder');
-    pot.setAttribute('radius', '0.07');
-    pot.setAttribute('height', '0.14');
-    pot.setAttribute('segments-radial', '8');
-    pot.setAttribute('position', '-0.8 2.38 -3.82');
-    pot.setAttribute('material', 'color:#7a5840;shader:flat');
-    interior.appendChild(pot);
+    const potShelf = document.createElement('a-cylinder');
+    potShelf.setAttribute('radius', '0.07');
+    potShelf.setAttribute('height', '0.14');
+    potShelf.setAttribute('segments-radial', '8');
+    potShelf.setAttribute('position', '0.2 2.17 -3.82');
+    potShelf.setAttribute('material', 'color:#5a4030;shader:flat');
+    interior.appendChild(potShelf);
 
-    // Krug groß
-    const jugBig = document.createElement('a-cylinder');
-    jugBig.setAttribute('radius', '0.08');
-    jugBig.setAttribute('height', '0.22');
-    jugBig.setAttribute('segments-radial', '8');
-    jugBig.setAttribute('position', '0.2 2.41 -3.82');
-    jugBig.setAttribute('material', 'color:#9a7060;shader:flat');
-    interior.appendChild(jugBig);
+    // Rolle
+    const rollShelf = document.createElement('a-cylinder');
+    rollShelf.setAttribute('radius', '0.04');
+    rollShelf.setAttribute('height', '0.22');
+    rollShelf.setAttribute('segments-radial', '8');
+    rollShelf.setAttribute('rotation', '90 20 0');
+    rollShelf.setAttribute('position', '1.0 2.13 -3.82');
+    rollShelf.setAttribute('material', 'color:#c8b080;shader:flat');
+    interior.appendChild(rollShelf);
 
-    // Krug klein
-    const jugSmall = document.createElement('a-cylinder');
-    jugSmall.setAttribute('radius', '0.05');
-    jugSmall.setAttribute('height', '0.16');
-    jugSmall.setAttribute('segments-radial', '8');
-    jugSmall.setAttribute('position', '0.9 2.39 -3.82');
-    jugSmall.setAttribute('material', 'color:#806050;shader:flat');
-    interior.appendChild(jugSmall);
+    // ── C) Regal West-Wand (links) ────────────────────────────────────────
+    const shelfWest = document.createElement('a-box');
+    shelfWest.setAttribute('width', '0.25');
+    shelfWest.setAttribute('height', '0.06');
+    shelfWest.setAttribute('depth', '1.8');
+    shelfWest.setAttribute('position', '-4.88 1.60 -1.5');
+    shelfWest.setAttribute('material', 'color:#4a2c10;shader:flat');
+    shelfWest.setAttribute('tex', 'id:tex-beam; repx:0.5; repy:1');
+    interior.appendChild(shelfWest);
 
-    // Truhe (klein)
-    const chest2 = document.createElement('a-box');
-    chest2.setAttribute('width', '0.18');
-    chest2.setAttribute('height', '0.12');
-    chest2.setAttribute('depth', '0.14');
-    chest2.setAttribute('position', '-0.1 2.37 -3.72');
-    chest2.setAttribute('material', 'color:#3a2010;shader:flat');
-    chest2.setAttribute('tex', 'id:tex-wood; repx:1; repy:1');
-    interior.appendChild(chest2);
+    // Waren an West-Wand
+    // Krug
+    const jugWest = document.createElement('a-cylinder');
+    jugWest.setAttribute('radius', '0.06');
+    jugWest.setAttribute('height', '0.16');
+    jugWest.setAttribute('segments-radial', '8');
+    jugWest.setAttribute('position', '-4.82 1.70 -1.0');
+    jugWest.setAttribute('material', 'color:#806050;shader:flat');
+    interior.appendChild(jugWest);
 
-    // C) Hängende Laterne (Mitte Decke)
+    // Kästchen
+    const chestWest = document.createElement('a-box');
+    chestWest.setAttribute('width', '0.16');
+    chestWest.setAttribute('height', '0.12');
+    chestWest.setAttribute('depth', '0.20');
+    chestWest.setAttribute('position', '-4.82 1.67 -1.8');
+    chestWest.setAttribute('material', 'color:#3a2010;shader:flat');
+    chestWest.setAttribute('tex', 'id:tex-wood; repx:1; repy:1');
+    interior.appendChild(chestWest);
+
+    // ── D) Hängende Laterne (Mitte Decke) ─────────────────────────────────
     // Kette
     const chain = document.createElement('a-cylinder');
     chain.setAttribute('radius', '0.008');
@@ -737,22 +757,22 @@ AFRAME.registerComponent('haendler-npc', {
     lanternBody.setAttribute('tex', 'id:tex-wood; repx:1; repy:1');
     interior.appendChild(lanternBody);
 
-    // Laternenglas
+    // Laternenglas (repariert: emissive + opacity erhöht)
     const lanternGlass = document.createElement('a-box');
     lanternGlass.setAttribute('width', '0.12');
     lanternGlass.setAttribute('height', '0.16');
     lanternGlass.setAttribute('depth', '0.12');
     lanternGlass.setAttribute('position', '0 2.80 -1.5');
     lanternGlass.setAttribute('material',
-      'color:#ffee88;emissive:#ffcc44;emissiveIntensity:1.8;' +
-      'shader:flat;transparent:true;opacity:0.7');
+      'color:#ffee88;emissive:#ffcc44;emissiveIntensity:2.5;' +
+      'shader:flat;transparent:true;opacity:0.85');
     interior.appendChild(lanternGlass);
 
-    // Laternenlicht
+    // Laternenlicht (stärker)
     const lanternLight = document.createElement('a-entity');
     lanternLight.setAttribute('position', '0 2.70 -1.5');
     lanternLight.setAttribute('light',
-      'type:point;color:#f4a460;intensity:1.2;distance:7');
+      'type:point;color:#f4a460;intensity:1.8;distance:9');
     interior.appendChild(lanternLight);
   },
 
@@ -895,12 +915,13 @@ AFRAME.registerComponent('haendler-npc', {
   _checkProximityMerchant(dist, dx, dz) {
     if (dist <= 2.0) {
       this._nearMerchant = true;
-      if (this._insideNpcRoot && this._insideNpcRoot.object3D) {
+      if (this._insideRoot && this._insideRoot.object3D) {
         const angle = Math.atan2(
           this._camWP.x - this._npcWorldPos.x,
           this._camWP.z - this._npcWorldPos.z
         );
-        this._insideNpcRoot.object3D.rotation.y = angle;
+        // Weltrotation setzen (nicht lokal) – _insideRoot hat Basis-Rotation 180°
+        this._insideRoot.object3D.rotation.y = angle;
       }
       this._showHint();
     } else {

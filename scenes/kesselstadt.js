@@ -1393,7 +1393,7 @@ AFRAME.registerComponent('smith-npc', {
       'Schmied: Hinter dem Amboss, der Schwertgriff. Schau selbst, vieleicht sagt Dir das etwas?\nFrag nicht mich, \nich rede nicht darueber.',
       1.80, 0.48);
     this._bubbles.extra1 = this._mkBubble(
-      'Du: Diese Wappen? Weisst Du wer ich bin?!', 1.40, 0.24);
+      'Du: Dieses Wappen? Weisst Du wer ich bin?!', 1.40, 0.24);
     this._bubbles.extra2 = this._mkBubble(
       'Schmied: Ich weiss was dieses Wappen bedeutet. \nAber ich darf Dir nicht mehr dazu sagen. \nVielleicht kann Dir jemand anderes \nin der Stadt weiterhelfen.',
       1.80, 0.64);
