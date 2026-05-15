@@ -185,10 +185,14 @@ AFRAME.registerComponent('schmiede-scene', {
     // South wall right
     add(this._box(4.3, 5, 0.28, '#2a2220', 2.85, 2.5, 4.14, 'tex-forge-stone', 1.7, 2));
     // Door arch beam (above 2.2m door opening)
-    add(this._box(1.3, 2.8, 0.28, '#2a2220', 0, 3.9, 4.14, 'tex-forge-stone', 0.5, 1.1));
-    // Door frame posts
-    add(this._box(0.14, 5, 0.22, '#2a1808', -0.72, 2.5, 4.14, 'tex-forge-beam', 1, 2.5));
-    add(this._box(0.14, 5, 0.22, '#2a1808', 0.72, 2.5, 4.14, 'tex-forge-beam', 1, 2.5));
+    add(this._box(1.72, 2.8, 0.28, '#2a2220', 0, 3.9, 4.14, 'tex-forge-stone', 0.6, 1.1));
+
+    // Türblatt
+    add(this._box(1.40, 2.2, 0.10, '#2a1808', 0, 1.1, 4.10, 'tex-forge-beam', 0.8, 1.2));
+    // Türrahmen links (an Wandkante x=-0.70)
+    add(this._box(0.14, 5, 0.22, '#2a1808', -0.77, 2.5, 4.14, 'tex-forge-beam', 1, 2.5));
+    // Türrahmen rechts
+    add(this._box(0.14, 5, 0.22, '#2a1808',  0.77, 2.5, 4.14, 'tex-forge-beam', 1, 2.5));
 
     this._buildForge(root);
     this._buildAnvil(root);

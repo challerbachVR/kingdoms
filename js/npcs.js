@@ -73,6 +73,14 @@ AFRAME.registerComponent('city-life', {
 
   tick(t, dt) {
     if (!this._built || dt > 200) return;
+    // Kamera-Referenz + tmpV3 lazy init (wichtig für Hund-Rückzug)
+    if (!this._playerCam) {
+      this._playerCam = document.getElementById('camera');
+      if (!this._playerCam) return;
+    }
+    if (!this._tmpV3) {
+      this._tmpV3 = new THREE.Vector3();
+    }
     const s = Math.min(dt, 50) * 0.001;
     this._tickNPCs(t, s);
     this._tickAnim(t, s);
@@ -82,6 +90,9 @@ AFRAME.registerComponent('city-life', {
   _build() {
     this._built     = true;
     this._playerCam = document.getElementById('camera');
+    if (!this._playerCam) {
+      console.warn('city-life: camera not found at build time, will retry in tick');
+    }
     this._tmpV3     = new THREE.Vector3();
     this._initNpcTextures();
     this._mkNPCs();
@@ -765,20 +776,21 @@ AFRAME.registerComponent('city-life', {
   _tickDog(a, t, dt) {
     const p = a.root.object3D.position;
 
-    if (a.wait > 0) {
-      a.wait -= dt;
-      if (a.legFL && a.legFL.object3D) {
-        a.legFL.object3D.rotation.x *= 0.88; a.legFR.object3D.rotation.x *= 0.88;
-        a.legRL.object3D.rotation.x *= 0.88; a.legRR.object3D.rotation.x *= 0.88;
-      }
-      if (a.headPiv && a.headPiv.object3D)
-        a.headPiv.object3D.rotation.z = Math.sin(t * 0.003 + a.phase) * 0.18;
-      if (a.tailPiv && a.tailPiv.object3D)
-        a.tailPiv.object3D.rotation.z = Math.sin(t * 0.010 + a.phase) * 0.50;
-      return;
-    }
-
+    // Special dog (golden) hat eigene Logik – wait-Check kommt NACH special-Block
     if (a.special) {
+      if (a.wait > 0) {
+        a.wait -= dt;
+        if (a.legFL && a.legFL.object3D) {
+          a.legFL.object3D.rotation.x *= 0.88; a.legFR.object3D.rotation.x *= 0.88;
+          a.legRL.object3D.rotation.x *= 0.88; a.legRR.object3D.rotation.x *= 0.88;
+        }
+        if (a.headPiv && a.headPiv.object3D)
+          a.headPiv.object3D.rotation.z = Math.sin(t * 0.003 + a.phase) * 0.18;
+        if (a.tailPiv && a.tailPiv.object3D)
+          a.tailPiv.object3D.rotation.z = Math.sin(t * 0.010 + a.phase) * 0.50;
+        return;
+      }
+
       // ── Fress-Animation ────────────────────────────────────────────────
       if (a.feeding) {
         a.feedTimer -= dt;
@@ -1296,9 +1308,18 @@ AFRAME.registerComponent('city-life', {
     root.appendChild(tailPiv);
 
     root.setAttribute('id', 'dog-special');
+    root.setAttribute('visible', 'false');
     this.el.appendChild(root);
-    const wps = this._pickWPs(6, 0.22);
-    root.object3D.position.set(wps[0][0], 0, wps[0][1]);
+   // Wegpunkte explizit – weg von Gasthaus (-9,10),
+// Schmiede (-9,-8), Händler (9,-8)
+const SAFE_WPS = [
+  [8, 5], [6, 0], [10, -5], [5, 8],
+  [0, 5], [-5, 0]
+];
+const wps = SAFE_WPS;
+setTimeout(() => {
+  root.object3D.position.set(8, 0, 5);
+}, 500);
 
     this._anim.push({
       root, wps, wpIdx: 0, type: 'dog',

@@ -330,11 +330,18 @@ AFRAME.registerComponent('gasthaus-scene', {
     add(this._box(1.80, 0.72, 0.28, '#a08868', 0, H - 0.36, 2.64,
       'tex-inn-stone', 0.65, 0.28));
 
-    // ── Türrahmen (markiert Ausgang → Exit-Trigger bei local z ≈ 2.0) ──
-    add(this._box(0.14, H, 0.22, '#3a2010', -0.74, H / 2, 2.64,
-      'tex-inn-beam', 1, 2.5));
-    add(this._box(0.14, H, 0.22, '#3a2010',  0.74, H / 2, 2.64,
-      'tex-inn-beam', 1, 2.5));
+      // Türblatt Innenraum
+add(this._box(1.80, 2.48, 0.10, '#3a2010',
+  0, 1.24, 2.60, 'tex-inn-beam', 0.9, 1.2));
+
+// Türrahmen links
+add(this._box(0.16, H, 0.24, '#3a2010',
+  -0.98, H / 2, 2.64, 'tex-inn-beam', 1, 2.5));
+
+// Türrahmen rechts
+add(this._box(0.16, H, 0.24, '#3a2010',
+  0.98, H / 2, 2.64, 'tex-inn-beam', 1, 2.5));
+
 
     // ── Deckenbalken (Querträger, entlang X) ───────────────────────────
     [-4.8, -3.0, -1.2,  0.6,  2.4].forEach(z => {

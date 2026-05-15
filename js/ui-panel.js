@@ -139,8 +139,69 @@
         if (!btn) return;
         const act = () => {
           if (this._zone !== 'city') return;                 // nur in Kesselstadt aktiv
-          this.el.setAttribute('daynight', 'mode: ' + mode);
-          if (window._KS) window._KS.setMode(mode);
+          // Map UI-mode zu daynight-mode
+          const dnMode = mode === 'day' ? 'midday' : mode;
+          this.el.setAttribute('daynight', 'mode: ' + dnMode);
+          if (window._KS) window._KS.setMode(dnMode);
+
+          // ── Quest-States nach Tageszeit setzen ──────────────────────────
+          if (mode === 'morning') {
+            window.QUEST0 = window.QUEST0 || {};
+            window.QUEST0.heardTavern = true;
+            window.QUEST0.heardSoldier = true;
+            window.QUEST0.heardTravelers = true;
+            window.QUEST0.sawCloakedWoman = true;
+          }
+
+          if (mode === 'day') {
+            // morning States auch setzen
+            window.QUEST0 = window.QUEST0 || {};
+            window.QUEST0.heardTavern = true;
+            window.QUEST0.heardSoldier = true;
+            window.QUEST0.heardTravelers = true;
+            window.QUEST0.sawCloakedWoman = true;
+            window.QUEST1 = window.QUEST1 || {};
+            window.QUEST1.firstMemory = true;
+            window.QUEST1.hasSwordHilt = true;
+            window.INVENTORY = window.INVENTORY || {};
+            window.INVENTORY.swordHilt = true;
+            // HUD Slot aktualisieren:
+            const hiltSlot = document.getElementById('inv-hilt-slot');
+            if (hiltSlot) {
+              hiltSlot.style.display = '';
+              hiltSlot.classList.add('has-item');
+            }
+          }
+
+          if (mode === 'evening') {
+            // midday States auch setzen
+            window.QUEST0 = window.QUEST0 || {};
+            window.QUEST0.heardTavern = true;
+            window.QUEST0.heardSoldier = true;
+            window.QUEST0.heardTravelers = true;
+            window.QUEST0.sawCloakedWoman = true;
+            window.QUEST1 = window.QUEST1 || {};
+            window.QUEST1.firstMemory = true;
+            window.QUEST1.hasSwordHilt = true;
+            window.QUEST1.heardMerchant = true;
+            window.QUEST1.smithKnows = true;
+            window.INVENTORY = window.INVENTORY || {};
+            window.INVENTORY.swordHilt = true;
+            window.INVENTORY.dogFood = true;
+            // HUD Slot aktualisieren:
+            const hiltSlot = document.getElementById('inv-hilt-slot');
+            if (hiltSlot) {
+              hiltSlot.style.display = '';
+              hiltSlot.classList.add('has-item');
+            }
+            const foodSlot = document.getElementById('inv-food-slot');
+            if (foodSlot) {
+              foodSlot.style.display = '';
+              foodSlot.classList.add('has-item');
+            }
+          }
+
+          // night: kein Reset – Nacht ist Startpunkt
         };
         btn.addEventListener('click',       act);
         btn.addEventListener('triggerdown', act);

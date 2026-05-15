@@ -194,6 +194,47 @@ tryBindVR();
     wallSR.setAttribute('tex', 'id:tex-stone; repx:3; repy:1.2');
     interior.appendChild(wallSR);
 
+    // ── Tür (Südwand) ──────────────────────────────────────────────────────
+    // Türrahmen links (an Wandkante x=-1.1)
+    const doorFrameL = document.createElement('a-box');
+    doorFrameL.setAttribute('width', '0.16');
+    doorFrameL.setAttribute('height', '3.2');
+    doorFrameL.setAttribute('depth', '0.32');
+    doorFrameL.setAttribute('position', '-1.18 1.6 3.5');
+    doorFrameL.setAttribute('material', 'color:#4a2c10;shader:flat');
+    doorFrameL.setAttribute('tex', 'id:tex-beam; repx:1; repy:2');
+    interior.appendChild(doorFrameL);
+
+    // Türrahmen rechts
+    const doorFrameR = document.createElement('a-box');
+    doorFrameR.setAttribute('width', '0.16');
+    doorFrameR.setAttribute('height', '3.2');
+    doorFrameR.setAttribute('depth', '0.32');
+    doorFrameR.setAttribute('position', '1.18 1.6 3.5');
+    doorFrameR.setAttribute('material', 'color:#4a2c10;shader:flat');
+    doorFrameR.setAttribute('tex', 'id:tex-beam; repx:1; repy:2');
+    interior.appendChild(doorFrameR);
+
+    // Türblatt
+    const door = document.createElement('a-box');
+    door.setAttribute('width', '2.2');
+    door.setAttribute('height', '2.4');
+    door.setAttribute('depth', '0.10');
+    door.setAttribute('position', '0 1.2 3.46');
+    door.setAttribute('material', 'color:#3c2210;shader:flat');
+    door.setAttribute('tex', 'id:tex-wood; repx:1; repy:1.2');
+    interior.appendChild(door);
+
+    // Sturz (nur über Türöffnung, nicht über Rahmen)
+    const lintel = document.createElement('a-box');
+    lintel.setAttribute('width', '2.52');
+    lintel.setAttribute('height', '0.56');
+    lintel.setAttribute('depth', '0.32');
+    lintel.setAttribute('position', '0 2.92 3.5');
+    lintel.setAttribute('material', 'color:#a08868;shader:flat');
+    lintel.setAttribute('tex', 'id:tex-stone; repx:1; repy:0.3');
+    interior.appendChild(lintel);
+
     // Ambientlicht
     const amb = document.createElement('a-entity');
     amb.setAttribute('light', 'type:ambient;color:#f0d0a0;intensity:0.9');

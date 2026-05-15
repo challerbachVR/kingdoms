@@ -179,7 +179,112 @@ fog: type="exponential" color="#1A2A3A" density=0.02
 
 ---
 
-## 6. Übergangszonen
+## 6. 🔮 Alchemistin-Innenraum
+
+**Stil:** Mystisch & warm | Kerzen & Kräuter | Lila Akzente
+
+### Farbpalette
+| Element | Hex | Beschreibung |
+|---------|-----|--------------|
+| Wände | `#6a5a4a` | Warmer Bruchstein |
+| Boden | `#3c2818` | Dunkle Holzdielen |
+| Theke | `#2a1a0e` | Sehr dunkles Holz |
+| Thekenplatte | `#3a2510` | Mitteldunkles Holz |
+| Kerze | `#ede8d4` | Cremewachs |
+| Kerzenflamme | `#ffee88` | Warmgelb |
+| Fläschchen Lila | `#8040c0` | Magisch-lila |
+| Fläschchen Gold | `#c8a020` | Alchemie-Gold |
+| Akzentlicht | `#c060ff` | Lila Punktlicht |
+
+### Beleuchtung
+```
+ambientLight: color="#3a2840" intensity=0.6
+PointLight (Kerze): color="#c060ff" intensity=1.5 distance=5
+```
+
+### Atmosphäre
+- Lila Kerzenlicht dominiert
+- Regale mit farbigen Fläschchen (emissive)
+- Dunkle, geheimnisvolle Atmosphäre
+- Kein Tageslicht
+
+---
+
+## 7. 🔨 Schmiede-Innenraum
+
+**Stil:** Düster & industriell | Feuer & Metall | Rusß
+
+### Farbpalette
+| Element | Hex | Beschreibung |
+|---------|-----|--------------|
+| Wände | `#2a2220` | Dunkler Bruchstein mit Ruß |
+| Boden | `#1a1614` | Schieferplatten |
+| Amboss | `#282828` | Dunkles Metall |
+| Holz-Ständer | `#3a2510` | Verbranntes Holz |
+| Esse-Glut | `#cc2200` | Tiefes Rot |
+| Flamme | `#ff6600` | Orange-Feuer |
+| Flammenspitze | `#ffcc00` | Goldgelb |
+| Werkzeuge | `#2a2828` | Dunkles Schmiedemetall |
+
+### Beleuchtung
+```
+PointLight (Esse): color="#ff5522" intensity=2.0 distance=12
+PointLight (Fill): color="#ff8844" intensity=0.35 distance=8
+PointLights (Fackeln): color="#ff8833" intensity=0.8 distance=6
+```
+
+### Atmosphäre
+- Essenlicht dominiert (orange-rot)
+- Fackeln an Ost- und Westwand
+- Dunkle prozedurale Texturen: `tex-forge-stone`, `tex-forge-floor`, `tex-forge-beam`
+- Werkzeuge und Waffen an den Wänden
+
+---
+
+## 8. 🍺 Händler-Innenraum
+
+**Stil:** Warm & einladend | Holz & Messing | Kaufmannsatmosphäre
+
+### Farbpalette
+| Element | Hex | Beschreibung |
+|---------|-----|--------------|
+| Theke | `#3c2210` | Dunkles Handelsholz |
+| Thekenplatte | `#5a3818` | Mittelhelles Holz |
+| Kasse | `#3a2010` | Steampunk-Holz |
+| Kassendetails | `#B87333` | Kupfer |
+| Kassenknopf | `#CFB53B` | Messing |
+| Flasche Türkis | `#00CED1` | Exotische Ware |
+| Kerze | `#ede8d4` | Cremewachs |
+
+### Beleuchtung
+```
+ambientLight: color="#f0d0a0" intensity=0.9
+PointLight (Kerze): color="#f4a460" intensity=1.4 distance=12
+```
+
+---
+
+## 9. 🍻 Gasthaus-Innenraum
+
+**Stil:** Gemütlich & warm | Holz & Feuer | Taverne
+
+### Farbpalette
+| Element | Hex | Beschreibung |
+|---------|-----|--------------|
+| Boden | `#5a3618` | Dunkle Holzdielen |
+| Wände | `#a08868` | Warmer Innenputzstein |
+| Balken | `#38200c` | Dunkle Eiche |
+| Theke | `#3c2210` | Gasthaus-Holz |
+| Feuer | `#ff6600` | Kaminfeuer |
+
+### Beleuchtung
+```
+PointLight (Kamin): color="#ff8833" intensity=1.6 distance=10
+```
+
+---
+
+## 10. Übergangszonen
 
 ### Kesselstadt → Feenreich (Südtor)
 - Fog-Farbe wechselt über 22 Einheiten: `#8A7A6A` → `#1A0A2E`
@@ -193,7 +298,7 @@ fog: type="exponential" color="#1A2A3A" density=0.02
 
 ---
 
-## 7. Quest für Claude Code: Standard-Prompt
+## 11. Quest für Claude Code: Standard-Prompt
 
 Füge diesen Satz an den Anfang jeder Optik-Session:
 

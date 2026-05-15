@@ -13,21 +13,62 @@ AFRAME.registerComponent('kesselstadt-night', {
     const sc = this.el.sceneEl;
     if (sc.hasLoaded) this._setup();
     else sc.addEventListener('loaded', () => this._setup(), { once: true });
+
+    // daynight.js ruft window._KS.setMode(mode) auf – hier registrieren
+    window._KS = this;
   },
 
   /* ── Szene auf Nacht umschalten ──────────────────────────────────────── */
   _setup() {
     this._cam = document.getElementById('camera');
+    // setAttribute('daynight', 'mode:night') triggert daynight.update()
+    // → daynight.apply('night') → window._KS.setMode('night')
+    // → _hideNPCs() + _buildGuards() – also kein separater Aufruf nötig
     this.el.setAttribute('daynight', 'mode:night');
-    this._hideNPCs();
-    this._buildGuards();
+  },
+
+  /* ── setMode() wird von daynight.js aufgerufen ───────────────────────── */
+  setMode(mode) {
+    if (mode === 'night') {
+      this._hideNPCs();
+      this._buildGuards();
+    } else {
+      this._showNPCs();
+      this._removeGuards();
+    }
+  },
+
+  /* ── Alle Tages-NPCs / Tiere / Vögel wieder einblenden ──────────────── */
+  _showNPCs() {
+    const clEl = document.querySelector('[city-life]');
+const cl   = clEl && clEl.components['city-life'];
+    if (!cl || !cl._built) return;
+
+    cl._npcs.forEach(n => { n.root.object3D.visible = true; });
+    cl._anim.forEach(a => { a.root.object3D.visible = true; });
+    cl._birds.forEach(b => { b.root.object3D.visible = true; });
+
+    // Goldener Hund nur tagsüber sichtbar (nicht nachts)
+    const dogSpecial = document.getElementById('dog-special');
+    if (dogSpecial) {
+      const dn = document.querySelector('[daynight]');
+      const mode = dn ? dn.components.daynight.data.mode : 'day';
+      dogSpecial.object3D.visible = (mode !== 'night');
+      // wait-Reset: nachts auf 9999 gesetzt → tagsüber wieder aktivieren
+      if (mode !== 'night' && cl._anim) {
+        const specialDog = cl._anim.find(a => a.special);
+        if (specialDog && specialDog.wait > 10) {
+          specialDog.wait = 0.5 + Math.random();
+        }
+      }
+    }
   },
 
   /* ── Alle Tages-NPCs / Tiere / Vögel ausblenden ─────────────────────── */
   _hideNPCs() {
     this._hideRetries = (this._hideRetries || 0) + 1;
-    const clEl = document.getElementById('city-life-root');
-    const cl   = clEl && clEl.components['city-life'];
+    const clEl = document.querySelector('[city-life]');
+const cl   = clEl && clEl.components['city-life'];
     if (!cl || !cl._built) {
       if (this._hideRetries > 20) {
         console.warn('kesselstadt-night: city-life nicht gefunden');
@@ -78,6 +119,15 @@ AFRAME.registerComponent('kesselstadt-night', {
     e.setAttribute('position', `${px} ${py} ${pz}`);
     e.setAttribute('material', `color:${col};shader:flat`);
     return e;
+  },
+
+  /* ── Nachtwachen entfernen (beim Wechsel zu Tag) ────────────────────── */
+  _removeGuards() {
+    this._guards.forEach(g => {
+      if (g.root    && g.root.parentNode)    g.root.parentNode.removeChild(g.root);
+      if (g.panelEl && g.panelEl.parentNode) g.panelEl.parentNode.removeChild(g.panelEl);
+    });
+    this._guards = [];
   },
 
   /* ── Drei Nachtwachen aufbauen ───────────────────────────────────────── */

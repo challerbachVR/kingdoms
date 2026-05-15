@@ -598,6 +598,7 @@ AFRAME.registerComponent('schmiede-door', {
     this._interior      = null;
     this._hiddenEls     = [];
     this._schmiedeBox   = null;
+    this._interiorBoxes = [];
 
     const sc = this.el.sceneEl;
     if (sc.hasLoaded) this._build();
@@ -756,6 +757,20 @@ AFRAME.registerComponent('schmiede-door', {
     if (pc) {
       const idx = pc._boxes.findIndex(b => b.x0 === -11.8 && b.z0 === -10.8);
       if (idx !== -1) this._schmiedeBox = pc._boxes.splice(idx, 1)[0];
+      // Innenraum-Kollisionsboxen (Wände, Türöffnung freilassen)
+      this._interiorBoxes = [
+        // Nordwand (z = -12.14, 0.2m in Raum)
+        { x0: -14.14, x1: -3.86, z0: -12.14, z1: -11.94 },
+        // Südwand links (neben Tür)
+        { x0: -14.14, x1: -9.72, z0: -4.06, z1: -3.86 },
+        // Südwand rechts
+        { x0: -8.28, x1: -3.86, z0: -4.06, z1: -3.86 },
+        // Westwand (x = -14.14, 0.2m in Raum)
+        { x0: -14.14, x1: -13.94, z0: -12.14, z1: -3.86 },
+        // Ostwand (x = -3.86, 0.2m in Raum)
+        { x0: -3.86, x1: -3.66, z0: -12.14, z1: -3.86 },
+      ];
+      this._interiorBoxes.forEach(b => pc._boxes.push(b));
     }
     if (this._interior) this._interior.setAttribute('visible', 'true');
     if (this._rig && this._cam) {
@@ -773,9 +788,20 @@ AFRAME.registerComponent('schmiede-door', {
     this._hiddenEls.forEach(el => { if (el.parentNode) el.object3D.visible = true; });
     this._hiddenEls = [];
     const pc = this.el.sceneEl.components['player-collision'];
-    if (pc && this._schmiedeBox) {
-      pc._boxes.push(this._schmiedeBox);
-      this._schmiedeBox = null;
+    if (pc) {
+      // Innenraum-Boxen entfernen
+      this._interiorBoxes.forEach(b => {
+        const i = pc._boxes.findIndex(
+          x => x.x0 === b.x0 && x.x1 === b.x1 && x.z0 === b.z0 && x.z1 === b.z1
+        );
+        if (i !== -1) pc._boxes.splice(i, 1);
+      });
+      this._interiorBoxes = [];
+      // Äußere Gebäude-Box wiederherstellen
+      if (this._schmiedeBox) {
+        pc._boxes.push(this._schmiedeBox);
+        this._schmiedeBox = null;
+      }
     }
     if (this._interior) this._interior.setAttribute('visible', 'false');
     if (this._rig && this._cam) {
@@ -1062,6 +1088,280 @@ AFRAME.registerComponent('haendler-door', {
     const activeHint = this._inside
       ? this._innerHint
       : (this._isDaytime() ? this._hint : this._closedHint);
+
+    if (near !== this._near) {
+      this._near = near;
+      [this._hint, this._innerHint, this._closedHint].forEach(h => {
+        if (h) h.setAttribute('visible', 'false');
+      });
+      if (near && activeHint) activeHint.setAttribute('visible', 'true');
+      if (this._touchBtn) this._touchBtn.style.display =
+        (near && this._inside) ? 'block' : 'none';
+    }
+
+    if (this._near && activeHint && activeHint.object3D) {
+      activeHint.object3D.position.set(trig.x, 2.4, trig.z);
+      activeHint.object3D.rotation.y = Math.atan2(
+        this._camWP.x - trig.x,
+        this._camWP.z - trig.z,
+      );
+    }
+  },
+
+  remove() {
+    [this._hint, this._innerHint, this._closedHint, this._interior].forEach(el => {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+  },
+});
+
+// ─── Alchemisten-Tür (Alchemistenladen NO) ──────────────────────────────────
+// Nur abends (mode === 'evening') betretbar, nur wenn heardMerchant.
+// Außentür bei Weltpos (9, ~10.5).
+
+const ALCHEMIST_OUTER = { x: 9, z: 10.5 };
+const ALCHEMIST_INNER = { x: 9, z: 11.5 };   // 1m vor Tür (Innenseite)
+const ALCHEMIST_R2    = 6;
+
+AFRAME.registerComponent('alchemisten-door', {
+
+  init() {
+    this._cam           = null;
+    this._rig           = null;
+    this._camWP         = new THREE.Vector3();
+    this._inside        = false;
+    this._transitioning = false;
+    this._cooldown      = 0;
+    this._near          = false;
+    this._hint          = null;
+    this._innerHint     = null;
+    this._closedHint    = null;
+    this._touchBtn      = null;
+    this._fade          = null;
+    this._interior      = null;
+    this._hiddenEls     = [];
+    this._alchemistBox  = null;
+
+    const sc = this.el.sceneEl;
+    if (sc.hasLoaded) this._build();
+    else sc.addEventListener('loaded', () => this._build(), { once: true });
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'KeyE' && this._near) this._tryTransit();
+    });
+    const tryBindVR = () => {
+  const rh = document.getElementById('rightHand');
+  if (rh) {
+    rh.addEventListener('triggerdown',
+      () => { if (this._near) this._tryTransit(); });
+  } else {
+    setTimeout(tryBindVR, 200);
+  }
+};
+tryBindVR();
+  },
+
+  _build() {
+    this._cam = document.getElementById('camera');
+    this._rig = document.getElementById('rig');
+    this._buildFade();
+    this._buildHints();
+    this._buildInterior();
+    this._buildTouchBtn();
+  },
+
+  _buildFade() {
+    const fade = document.createElement('a-plane');
+    fade.setAttribute('width',  '40');
+    fade.setAttribute('height', '40');
+    fade.setAttribute('position', '0 0 -0.06');
+    fade.setAttribute('material',
+      'color:#000;shader:flat;transparent:true;opacity:0;depthTest:false;side:double');
+    fade.setAttribute('animation__black',
+      'property:material.opacity;to:1;dur:300;startEvents:fade-black');
+    fade.setAttribute('animation__clear',
+      'property:material.opacity;to:0;dur:300;startEvents:fade-clear');
+    this._cam.appendChild(fade);
+    this._fade = fade;
+  },
+
+  _mkPanel(col, text) {
+    const h = document.createElement('a-entity');
+    h.setAttribute('position', '0 -200 0');
+
+    const frame = document.createElement('a-plane');
+    frame.setAttribute('width',  '1.48');
+    frame.setAttribute('height', '0.42');
+    frame.setAttribute('position', '0 0 -0.003');
+    frame.setAttribute('material',
+      `color:${col};shader:flat;transparent:true;opacity:0.80`);
+    h.appendChild(frame);
+
+    const bg = document.createElement('a-plane');
+    bg.setAttribute('width',  '1.42');
+    bg.setAttribute('height', '0.36');
+    bg.setAttribute('material',
+      'color:#140c00;shader:flat;transparent:true;opacity:0.90');
+    h.appendChild(bg);
+
+    const txt = document.createElement('a-text');
+    txt.setAttribute('value', text);
+    txt.setAttribute('align', 'center');
+    txt.setAttribute('color', '#ffe8b0');
+    txt.setAttribute('width', '1.02');
+    txt.setAttribute('position', '0 0 0.005');
+    h.appendChild(txt);
+
+    this.el.sceneEl.appendChild(h);
+    return h;
+  },
+
+  _buildHints() {
+    this._hint       = this._mkPanel('#5a3818', 'E / Trigger: Eintreten');
+    this._innerHint  = this._mkPanel('#3a2810', 'E / Trigger: Verlassen');
+    this._closedHint = this._mkPanel('#4a1818', 'Komm abends wieder.');
+  },
+
+  _buildInterior() {
+    const el = document.createElement('a-entity');
+    el.setAttribute('id', 'alchemist-interior');
+    el.setAttribute('position', '9 0 8');
+    el.setAttribute('visible', 'false');
+    const floor = document.createElement('a-plane');
+    floor.setAttribute('rotation', '-90 0 0');
+    floor.setAttribute('width',  '5');
+    floor.setAttribute('height', '4');
+    floor.setAttribute('material',
+      'shader:flat;transparent:true;opacity:0;side:double');
+    el.appendChild(floor);
+    this.el.sceneEl.appendChild(el);
+    this._interior = el;
+  },
+
+  _buildTouchBtn() {
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (!isTouch || document.getElementById('alchemist-touch-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'alchemist-touch-btn';
+    btn.textContent = 'Eintreten';
+    btn.style.cssText =
+      'position:fixed;bottom:200px;left:50%;transform:translateX(-50%);' +
+      'background:rgba(120,60,20,0.90);color:#fff0e0;border:none;' +
+      'border-radius:30px;padding:12px 30px;font-size:17px;' +
+      'font-family:sans-serif;font-weight:bold;display:none;z-index:10001;touch-action:none;';
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      this._tryTransit();
+    }, { passive: false });
+    document.body.appendChild(btn);
+    this._touchBtn = btn;
+  },
+
+  _fadeOut(cb) {
+    if (!this._fade) { cb(); return; }
+    this._fade.emit('fade-black');
+    setTimeout(cb, 320);
+  },
+  _fadeIn(cb) {
+    if (!this._fade) { cb(); return; }
+    this._fade.emit('fade-clear');
+    setTimeout(cb, 320);
+  },
+
+  _canEnter() {
+    const dn = this.el.sceneEl.components.daynight;
+    if (!dn) return true;
+    const m = dn.data.mode;
+    if (m !== 'evening') return false;
+    return !!(window.QUEST1 && window.QUEST1.heardMerchant);
+  },
+
+  _tryTransit() {
+    if (!this._near || this._transitioning) return;
+    if (!this._inside && !this._canEnter()) return;
+    this._transitioning = true;
+    const goingIn = !this._inside;
+    this._fadeOut(() => {
+      if (goingIn) this._doEnter(); else this._doExit();
+      this._fadeIn(() => {
+        this._transitioning = false;
+        this._cooldown = 1.5;
+      });
+    });
+  },
+
+  _doEnter() {
+    this._inside = true;
+    window.ALCHEMIST_INSIDE = true;
+    const KEEP = new Set(['rig', 'alchemist-interior', 'sun', 'ambLight']);
+    this._hiddenEls = [];
+    Array.from(this.el.sceneEl.children).forEach(el => {
+      if (!el.object3D || KEEP.has(el.id)) return;
+      if (el.object3D.visible) {
+        el.object3D.visible = false;
+        this._hiddenEls.push(el);
+      }
+    });
+    const pc = this.el.sceneEl.components['player-collision'];
+    if (pc) {
+      const idx = pc._boxes.findIndex(b => b.x0 === 6.5 && b.z0 === 5.8);
+      if (idx !== -1) this._alchemistBox = pc._boxes.splice(idx, 1)[0];
+    }
+    if (this._interior) this._interior.setAttribute('visible', 'true');
+    if (this._rig && this._cam) {
+      const cl = this._cam.object3D.position;
+      this._rig.object3D.position.set(9 - cl.x, 0, 9.5 - cl.z);
+    }
+    this._near = false;
+    if (this._hint) this._hint.setAttribute('visible', 'false');
+    if (this._touchBtn) { this._touchBtn.textContent = 'Verlassen'; this._touchBtn.style.display = 'none'; }
+  },
+
+  _doExit() {
+    this._inside = false;
+    window.ALCHEMIST_INSIDE = false;
+
+    // NPC verstecken wenn Quest abgeschlossen
+    if (window.QUEST1 && window.QUEST1.triggered) {
+      const npc = document.querySelector('[alchemist-npc]');
+      if (npc && npc.components['alchemist-npc']) {
+        const comp = npc.components['alchemist-npc'];
+        if (comp._insideRoot)
+          comp._insideRoot.object3D.visible = false;
+      }
+    }
+
+    this._hiddenEls.forEach(el => { if (el.parentNode) el.object3D.visible = true; });
+    this._hiddenEls = [];
+    const pc = this.el.sceneEl.components['player-collision'];
+    if (pc && this._alchemistBox) {
+      pc._boxes.push(this._alchemistBox);
+      this._alchemistBox = null;
+    }
+    if (this._interior) this._interior.setAttribute('visible', 'false');
+    if (this._rig && this._cam) {
+      const cl = this._cam.object3D.position;
+      this._rig.object3D.position.set(9 - cl.x, 0, 11.5 - cl.z);
+    }
+    this._near = false;
+    if (this._innerHint) this._innerHint.setAttribute('visible', 'false');
+    if (this._touchBtn) { this._touchBtn.textContent = 'Eintreten'; this._touchBtn.style.display = 'none'; }
+    // Tageszeit bleibt 'evening'
+  },
+
+  tick(t, dt) {
+    if (this._transitioning || !this._cam) return;
+    if (this._cooldown > 0) { this._cooldown -= Math.min(dt, 200) * 0.001; return; }
+
+    this._cam.object3D.getWorldPosition(this._camWP);
+    const trig = this._inside ? ALCHEMIST_INNER : ALCHEMIST_OUTER;
+    const dx = this._camWP.x - trig.x;
+    const dz = this._camWP.z - trig.z;
+    const near = (dx * dx + dz * dz) < ALCHEMIST_R2;
+
+    const activeHint = this._inside
+      ? this._innerHint
+      : (this._canEnter() ? this._hint : this._closedHint);
 
     if (near !== this._near) {
       this._near = near;
@@ -2108,7 +2408,7 @@ const KESSELSTADT_HTML = /* html */`
       material="color:#f5c842;emissive:#f5a020;emissiveIntensity:0;opacity:0.82;transparent:true"
       class="window-pane">
     </a-plane>
-    <a-box position="0 1.1 2.27" width="1" height="2.2" depth="0.06"
+    <a-box position="0 1.1 2.27" width="1.4" height="2.2" depth="0.06"
       material="color:#a08860;roughness:0.9"
       tex="id:tex-wood; repx:0.9; repy:1">
     </a-box>

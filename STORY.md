@@ -149,7 +149,7 @@ Der Besuch eines Hauses löst den Tageswechsel aus.
 
 ---
 
-### Quest 1a – Der Schmied 🌅 🔲
+### Quest 1a – Der Schmied 🌅 ✅
 
 **Ziel:** Schwertgriff finden, erste Erinnerung auslösen.
 
@@ -181,7 +181,7 @@ Der Besuch eines Hauses löst den Tageswechsel aus.
 
 ---
 
-### Quest 1b – Der Händler ☀️ 🔲
+### Quest 1b – Der Händler ☀️ ✅
 
 **Ziel:** Hinweis auf die Alchemistin bekommen, Hundefutter erhalten.
 
@@ -220,7 +220,7 @@ Der Besuch eines Hauses löst den Tageswechsel aus.
 
 ---
 
-### Quest 1c – Die Alchemistin 🌆 🔲
+### Quest 1c – Die Alchemistin 🌆 ✅
 
 **Ziel:** Hinweis auf den Hund mit goldenen Augen bekommen.
 
@@ -359,7 +359,9 @@ window.INVENTORY = {
 }
 
 window.LICHTREICH_GATE_UNLOCKED = false;
-window.FORGE_INSIDE = false;  // ← NEU
+window.FORGE_INSIDE = false;     // Spieler in Schmiede
+window.MERCHANT_INSIDE = false;  // Spieler im Händlerhaus
+window.ALCHEMIST_INSIDE = false; // Spieler in Alchemistin
 ```
 
 ---

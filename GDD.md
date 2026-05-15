@@ -5,7 +5,7 @@
 **Technologie:** A-Frame / Three.js / Web Audio API  
 **Repository:** https://github.com/challerbachvr/kingdoms  
 **Live URL:** https://challerbachvr.github.io/kingdoms  
-**Status:** Kesselstadt ✅ / Feenreich ✅ / Lichtreich 🔲 (Kulisse) / Gasthaus ✅ / Quest 0 ✅ / Quest 1 ✅
+**Status:** Kesselstadt ✅ / Feenreich ✅ / Lichtreich 🔲 (Kulisse) / Gasthaus ✅ / Schmiede ✅ / Händler ✅ / Alchemistin ✅ / Quest 0 ✅ / Quest 1a-d ✅
 
 ---
 
@@ -57,25 +57,29 @@ Die Welt ist als **Kreuz-Dreieck-Karte** aufgebaut. Kesselstadt = Zentrum (|x| �
 
 ```
 kingdoms/
-├── index.html                    (~65 Zeilen – schlanker Einstiegspunkt)
+├── index.html                    (Einstiegspunkt, lädt alle Scripts)
 ├── GDD.md                        (dieses Dokument – technisch)
 ├── STORY.md                      (Story, Quests, Charaktere)
+├── SKILL.md                      (Claude Code Kontext)
 ├── js/
-│   ├── textures.js               (prozedurale Canvas-Texturen)
+│   ├── textures.js               (prozedurale Canvas-Texturen + tex-Component)
 │   ├── sounds.js                 (Web Audio Sound-Engine)
 │   ├── daynight.js               (Tag/Nacht + Steampunk-Animationen)
 │   ├── navigation.js             (Bewegung, Kollision, Terrain-Höhe)
-│   ├── npcs.js                   (NPCs, Tiere, Vögel; dog-special mit Fütterungs- & Führungs-KI)
+│   ├── npcs.js                   (city-life: NPCs, Tiere, Vögel + dog-special Quest 1)
 │   ├── feenreich-creatures.js    (Feenschwärme, Hasen, Füchse, Schmetterlinge)
 │   ├── touch-controls.js         (Mobile Touch-Joysticks)
-│   ├── ui-panel.js               (Info-Panel, Tageszeit, Sound-Toggles)
+│   ├── ui-panel.js               (UI-Panel: Tageszeit, Sound, Quest-State-Toggle)
 │   ├── fairy-transform.js        (Weise Fee NPC + Feenverwandlung + Flugsteuerung)
 │   └── key-system.js             (Schlüssel + Inventory HUD + Lichtreich-Tor)
 └── scenes/
-    ├── kesselstadt.js            (Kesselstadt HTML + gate-trigger + old-woman-npc + gasthaus-door)
+    ├── kesselstadt.js            (Kesselstadt HTML + alle Door-Components)
     ├── kesselstadt-quests.js     (dog-food-item, magic-signs, quest1-gate)
     ├── kesselstadt-night.js      (kesselstadt-night – Nacht-Modus + 3 Nachtwachen)
-    ├── gasthaus.js               (gasthaus-scene + 4 NPC-Dialoge / Interaktionen)
+    ├── gasthaus.js               (gasthaus-scene + 4 NPC-Dialoge / Quest 0)
+    ├── schmiede.js               (schmiede-scene + smith-npc / Quest 1a)
+    ├── haendler.js               (haendler-npc + Innenraum / Quest 1b)
+    ├── alchemistin.js            (alchemist-npc + Innenraum / Quest 1c)
     ├── feenreich.js              (Feenreich Terrain + Kreaturen + Sounds)
     └── lichtreich.js             (Lichtreich Kulisse)
 ```
@@ -102,6 +106,15 @@ kingdoms/
 - **Westtor** (→ Lichtreich): gesperrt via Schloss + Barriere. Öffnet dauerhaft nach Schlüssel-Einsatz
 - **Nordtor** (→ Sturmreich): offen, keine Mechanik
 - **Osttor** (→ Schattenreich): offen, keine Mechanik
+
+### Begehbare Innenräume
+
+| Gebäude | Tür-Position | Interior | Tageszeit | Component |
+|---------|-------------|----------|-----------|----------|
+| Gasthaus (NW) | (-9, 0, 10.5) | (-9, 0, 8) | Nacht | `gasthaus-door` |
+| Schmiede (SW) | (-9, 0, -5.5) | (-9, 0, -8) | Morgen | `schmiede-door` |
+| Händlerhaus (SO) | (9, 0, -5.5) | (9, 0, -8) | Mittag | `haendler-door` |
+| Alchemistin (NO) | (9, 0, 10.5) | (9, 0, 8) | Abend | `alchemisten-door` |
 
 ### Stadtleben (Tag)
 - 9 NPCs, Patrol-System (28 Wegpunkte), gefilterter Spawn
@@ -285,10 +298,13 @@ Alle Flags in `window.QUEST1`:
 
 | Priorität | Was |
 |-----------|-----|
-| 🔴 Hoch | Gasthaus: Ausgang erst nach `heardTavern = true` freigeben |
-| 🔴 Hoch | Schmied-Quest (Quest 2): NPC + Dialog + Mechanik |
+| 🔴 Hoch | Kollision Schmiede, Händler, Alchemistin fehlt |
+| 🔴 Hoch | Türen in Innenräumen (schwarze Löcher) |
+| 🔴 Hoch | Hinweisschilder in Mauern versunken |
+| 🟠 Mittel | Schmied hämmert falsche Richtung |
+| 🟠 Mittel | Fackelposition Schmiede noch falsch |
+| 🟠 Mittel | Händler-Spawn-Position zu weit drinnen |
 | 🟠 Mittel | Lichtreich: Terrain, Kreaturen, Sounds, Quest 3 |
-| 🟠 Mittel | old-woman-npc aktivieren (wartet auf Quest-0-Abschluss) |
 | 🟡 Niedrig | VR-Teleport trifft nur Y=0 |
 | 🟡 Niedrig | aframe-watcher nicht kompatibel mit modularer Struktur |
 
@@ -308,7 +324,12 @@ Alle Flags in `window.QUEST1`:
 | 8a | Quest 0: Gasthaus-Dialoge (Reisende, Soldat, Kapuze, Gastwirt) | ✅ |
 | 8b | Quest 1: Hund + Zeichen + Südtor | ✅ |
 | 8c | Gasthaus: Nacht-Modus + Nachtwachen | ✅ |
-| 9 | Schmied-Quest (Quest 2) | 🔲 |
+| 8d | Quest 1a: Schmiede + smith-npc + Dialog + Flashback | ✅ |
+| 8e | Quest 1b: Händler + haendler-npc + Wappen + Hundefutter | ✅ |
+| 8f | Quest 1c: Alchemistin + alchemist-npc + Dialog | ✅ |
+| 8g | Tageszeit-System (night→morning→midday→evening) | ✅ |
+| 8h | UI-Panel Quest-State-Toggle für Testing | ✅ |
+| 9 | Kollisionen + Türen + offene Bugs | 🔲 |
 | 10 | Lichtreich: Terrain + Kreaturen + Sounds + Quest | 🔲 |
 | 11 | Schattenreich + Sturmreich | 🔲 |
 | 12 | Mixed Reality Modus | 🔲 |
